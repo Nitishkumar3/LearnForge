@@ -9,6 +9,7 @@ requests
 google-genai
 groq
 mistralai
+cerebras-cloud-sdk
 
 # AI/ML - Embeddings (embedserver.py)
 onnxruntime-gpu        # GPU inference; use 'onnxruntime' for CPU-only

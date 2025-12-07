@@ -1018,8 +1018,58 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        // Normalize LaTeX notation from different LLMs to standard $$...$$ format
+        function normalizeLatex(text) {
+            // First, protect code blocks from LaTeX processing
+            let codeBlockMap = {};
+            let codeIndex = 0;
+
+            // Protect fenced code blocks ```...```
+            text = text.replace(/```[\s\S]*?```/g, (match) => {
+                const placeholder = `%%CODE_${codeIndex}%%`;
+                codeBlockMap[placeholder] = match;
+                codeIndex++;
+                return placeholder;
+            });
+
+            // Protect inline code `...`
+            text = text.replace(/`[^`]+`/g, (match) => {
+                const placeholder = `%%CODE_${codeIndex}%%`;
+                codeBlockMap[placeholder] = match;
+                codeIndex++;
+                return placeholder;
+            });
+
+            // Convert \[...\] to $$...$$ (display math)
+            // Handle both escaped and unescaped backslashes
+            text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, content) => {
+                return '$$' + content.trim() + '$$';
+            });
+
+            // Convert \(...\) to $...$ (inline math) - less common but some models use it
+            text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, content) => {
+                return '$' + content.trim() + '$';
+            });
+
+            // Convert multi-line $...$ where $ is on its own line to $$...$$
+            // Pattern: $ followed by newline, content, newline, $
+            text = text.replace(/\$\s*\n([\s\S]*?)\n\s*\$/g, (match, content) => {
+                return '$$' + content.trim() + '$$';
+            });
+
+            // Restore code blocks
+            for (const [placeholder, code] of Object.entries(codeBlockMap)) {
+                text = text.replaceAll(placeholder, code);
+            }
+
+            return text;
+        }
+
         function formatAnswerWithCitations(text, sources) {
             if (!text) return '';
+
+            // Step 0: Normalize LaTeX notation from different LLMs
+            text = normalizeLatex(text);
 
             // Step 1: Protect LaTeX expressions from citation processing
             let latexMap = {};

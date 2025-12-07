@@ -65,6 +65,14 @@ MODELS = {
         "supports_thinking": False,
         "search_always_on": False
     },
+    "Llama 3.3 70B": {
+        "provider": "cerebras",
+        "model_id": "llama-3.3-70b",
+        "description": "Llama 3.3 70B on Cerebras - ultra fast inference",
+        "supports_search": False,
+        "supports_thinking": False,
+        "search_always_on": False
+    },
 }
 
 # Default model
@@ -208,11 +216,39 @@ class MistralProvider:
         return str(response)
 
 
+class CerebrasProvider:
+    """Cerebras provider for ultra-fast Llama inference."""
+
+    def __init__(self):
+        from cerebras.cloud.sdk import Cerebras
+        api_key = os.getenv("CEREBRAS_API_KEY")
+        if not api_key:
+            raise ValueError("CEREBRAS_API_KEY not set in .env")
+        self.client = Cerebras(api_key=api_key)
+
+    def generate(
+        self,
+        model_id: str,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> str:
+        response = self.client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=4096,
+            temperature=0.2,
+            top_p=1
+        )
+        return response.choices[0].message.content
+
+
 # Provider registry
 PROVIDERS = {
     "gemini": GeminiProvider,
     "groq": GroqProvider,
     "mistral": MistralProvider,
+    "cerebras": CerebrasProvider,
 }
 
 

@@ -1,0 +1,25 @@
+# Core RAG System Dependencies
+
+# Web Framework
+Flask
+werkzeug
+requests 
+
+# AI/ML - Generation
+google-genai
+groq
+mistralai
+
+# AI/ML - Embeddings (embedserver.py)
+onnxruntime-gpu        # GPU inference; use 'onnxruntime' for CPU-only
+transformers           # AutoTokenizer for BGE-M3
+numpy                  # Array operations
+
+# PDF Processing
+PyPDF2==3.0.1
+
+# Vector Database
+chromadb
+
+# Utilities
+python-dotenv

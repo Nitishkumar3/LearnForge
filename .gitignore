@@ -1,0 +1,34 @@
+0/
+data/
+
+# Virtual environment
+.venv
+venv/
+env/
+
+# Model files
+bge-m3-onnx
+
+# Environment variables (contains sensitive API keys)
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data and database files
+core/data/
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

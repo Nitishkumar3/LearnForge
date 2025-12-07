@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnForge - Smart Document Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- KaTeX for LaTeX math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#EEF2FF',
+                            100: '#E0E7FF',
+                            200: '#C7D2FE',
+                            300: '#A5B4FC',
+                            400: '#818CF8',
+                            500: '#6366F1',
+                            600: '#4F46E5',
+                            700: '#4338CA',
+                            800: '#3730A3',
+                            900: '#312E81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .chat-container {
+            height: calc(100vh - 280px);
+            min-height: 400px;
+        }
+
+        /* Citation badges */
+        .citation {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            border-radius: 4px;
+            margin: 0 2px;
+            cursor: pointer;
+            vertical-align: super;
+            transition: all 0.2s;
+        }
+        .citation:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Source pills */
+        .source-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .source-pill:hover {
+            background: #F1F5F9;
+            border-color: #CBD5E1;
+        }
+        .source-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            border-radius: 4px;
+        }
+
+        /* ========================================
+           ANSWER TEXT - Full Markdown Styling
+           ChatGPT/Claude/Perplexity inspired
+           ======================================== */
+        .answer-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #1E293B;
+        }
+
+        /* Headings */
+        .answer-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .answer-text h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0F172A;
+            margin-top: 1.5rem;
+            margin-bottom: 0.625rem;
+        }
+        .answer-text h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1E293B;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .answer-text h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #334155;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .answer-text h1:first-child,
+        .answer-text h2:first-child,
+        .answer-text h3:first-child {
+            margin-top: 0;
+        }
+
+        /* Paragraphs */
+        .answer-text p {
+            margin-bottom: 1rem;
+        }
+        .answer-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Bold & Italic */
+        .answer-text strong {
+            font-weight: 600;
+            color: #0F172A;
+        }
+        .answer-text em {
+            font-style: italic;
+        }
+
+        /* Lists */
+        .answer-text ul, .answer-text ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+        .answer-text ul {
+            list-style-type: disc;
+        }
+        .answer-text ol {
+            list-style-type: decimal;
+        }
+        .answer-text li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+        .answer-text li:last-child {
+            margin-bottom: 0;
+        }
+        /* Nested lists */
+        .answer-text ul ul, .answer-text ol ol,
+        .answer-text ul ol, .answer-text ol ul {
+            margin: 0.375rem 0;
+        }
+        .answer-text ul ul {
+            list-style-type: circle;
+        }
+        .answer-text ul ul ul {
+            list-style-type: square;
+        }
+
+        /* Inline code */
+        .answer-text code {
+            background: #F1F5F9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            color: #D946EF;
+            border: 1px solid #E2E8F0;
+        }
+
+        /* Code blocks */
+        .answer-text pre {
+            background: #1E293B;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+        .answer-text pre code {
+            background: transparent;
+            padding: 0;
+            border: none;
+            color: #E2E8F0;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Blockquotes */
+        .answer-text blockquote {
+            border-left: 4px solid #6366F1;
+            background: #F8FAFC;
+            margin: 1rem 0;
+            padding: 0.75rem 1rem;
+            border-radius: 0 0.375rem 0.375rem 0;
+            color: #475569;
+        }
+        .answer-text blockquote p {
+            margin-bottom: 0.5rem;
+        }
+        .answer-text blockquote p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Links */
+        .answer-text a {
+            color: #6366F1;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .answer-text a:hover {
+            border-bottom-color: #6366F1;
+        }
+
+        /* Horizontal rule */
+        .answer-text hr {
+            border: none;
+            height: 1px;
+            background: #E2E8F0;
+            margin: 1.5rem 0;
+        }
+
+        /* Tables */
+        .answer-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+        .answer-text th {
+            background: #F8FAFC;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem;
+            border: 1px solid #E2E8F0;
+            color: #0F172A;
+        }
+        .answer-text td {
+            padding: 0.75rem;
+            border: 1px solid #E2E8F0;
+            color: #334155;
+        }
+        .answer-text tr:nth-child(even) {
+            background: #F8FAFC;
+        }
+
+        /* Images */
+        .answer-text img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        /* Better spacing between different content blocks */
+        .answer-text p + ul,
+        .answer-text p + ol {
+            margin-top: 0.5rem;
+        }
+        .answer-text ul + p,
+        .answer-text ol + p {
+            margin-top: 1rem;
+        }
+        .answer-text pre + p,
+        .answer-text blockquote + p {
+            margin-top: 1rem;
+        }
+
+        /* Scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Document card */
+        .doc-card {
+            transition: all 0.2s;
+        }
+        .doc-card:hover {
+            background: #F8FAFC;
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Typing indicator */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
+        /* Upload zone animation */
+        .upload-zone {
+            transition: all 0.3s;
+        }
+        .upload-zone.dragover {
+            border-color: #6366F1;
+            background: #EEF2FF;
+            transform: scale(1.02);
+        }
+
+        /* Feature buttons (Search, Think) */
+        .feature-btn {
+            background: #F1F5F9;
+            color: #64748B;
+            border: 1px solid #E2E8F0;
+        }
+        .feature-btn:hover {
+            background: #E2E8F0;
+            color: #475569;
+        }
+        .feature-btn.active {
+            background: #6366F1;
+            color: white;
+            border-color: #6366F1;
+        }
+        .feature-btn.active:hover {
+            background: #4F46E5;
+        }
+        .feature-btn.active.purple {
+            background: #8B5CF6;
+            border-color: #8B5CF6;
+        }
+        .feature-btn.active.purple:hover {
+            background: #7C3AED;
+        }
+        .feature-btn.always-on {
+            background: #6366F1;
+            color: white;
+            border-color: #6366F1;
+            opacity: 0.7;
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-semibold text-slate-900">LearnForge</h1>
+                        <p class="text-xs text-slate-500">Smart Document Assistant</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button
+                        onclick="clearAll()"
+                        class="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Sidebar -->
+            <aside class="lg:col-span-3 space-y-6">
+                <!-- Upload Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100">
+                        <h2 class="font-semibold text-slate-900">Documents</h2>
+                    </div>
+
+                    <div class="p-4">
+                        <div
+                            id="dropZone"
+                            class="upload-zone border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50"
+                            ondrop="handleDrop(event)"
+                            ondragover="handleDragOver(event)"
+                            ondragleave="handleDragLeave(event)"
+                            onclick="document.getElementById('fileInput').click()"
+                        >
+                            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                            </div>
+                            <p class="text-sm font-medium text-slate-700">Drop PDFs here</p>
+                            <p class="text-xs text-slate-500 mt-1">or click to browse</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".pdf" multiple class="hidden" onchange="handleFileSelect(event)">
+
+                        <!-- Upload Progress -->
+                        <div id="uploadProgress" class="hidden mt-4">
+                            <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-lg">
+                                <div class="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
+                                <span id="uploadStatus" class="text-sm text-primary-700">Processing...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents List -->
+                    <div id="documentsList" class="border-t border-slate-100 max-h-64 overflow-y-auto custom-scrollbar">
+                        <div class="p-4 text-center text-sm text-slate-500">
+                            No documents yet
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div id="statsSection" class="hidden border-t border-slate-100 p-4">
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div id="statDocs" class="text-lg font-semibold text-slate-900">0</div>
+                                <div class="text-xs text-slate-500">Docs</div>
+                            </div>
+                            <div>
+                                <div id="statPages" class="text-lg font-semibold text-slate-900">0</div>
+                                <div class="text-xs text-slate-500">Pages</div>
+                            </div>
+                            <div>
+                                <div id="statChunks" class="text-lg font-semibold text-slate-900">0</div>
+                                <div class="text-xs text-slate-500">Chunks</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Card -->
+                <div class="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-4 text-white">
+                    <h3 class="font-semibold mb-2">Pro Tips</h3>
+                    <ul class="text-sm text-primary-100 space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-primary-300">•</span>
+                            <span>Ask specific questions for better answers</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-primary-300">•</span>
+                            <span>Upload multiple docs to search across all</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-primary-300">•</span>
+                            <span>Citations [1] link to source documents</span>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <div class="lg:col-span-9">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full">
+                    <!-- Chat Header -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span class="font-medium text-slate-900">Chat</span>
+                        </div>
+                        <button
+                            onclick="clearChat()"
+                            class="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                            Clear conversation
+                        </button>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="chatMessages" class="chat-container flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                        <div class="flex flex-col items-center justify-center h-full text-center">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-900 mb-1">Start a conversation</h3>
+                            <p class="text-sm text-slate-500 max-w-sm">Upload documents and ask questions. I'll find answers with inline citations.</p>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="px-6 py-4 border-t border-slate-100">
+                        <!-- Input Row -->
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="flex-1 relative">
+                                <input
+                                    type="text"
+                                    id="questionInput"
+                                    placeholder="Ask anything about your documents..."
+                                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                                    onkeypress="if(event.key === 'Enter') sendQuestion()"
+                                >
+                            </div>
+                            <button
+                                onclick="sendQuestion()"
+                                id="sendButton"
+                                class="px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/25"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Controls Row -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <!-- Search Button -->
+                                <button
+                                    id="searchToggleBtn"
+                                    onclick="toggleSearch()"
+                                    class="hidden feature-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                    title="Web Search"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <span>Search</span>
+                                </button>
+
+                                <!-- Thinking Button -->
+                                <button
+                                    id="thinkingToggleBtn"
+                                    onclick="toggleThinking()"
+                                    class="hidden feature-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                    title="Extended Thinking"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                    </svg>
+                                    <span>Think</span>
+                                </button>
+                            </div>
+
+                            <!-- Model Selector -->
+                            <select
+                                id="modelSelector"
+                                onchange="switchModel(this.value)"
+                                class="text-xs bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer font-medium"
+                            >
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // State
+        let isProcessing = false;
+        let sourceMap = {};
+        let currentModel = null;
+        let searchEnabled = false;
+        let thinkingEnabled = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configure marked.js with highlight.js
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                breaks: true,
+                gfm: true
+            });
+
+            loadDocuments();
+            loadStats();
+            loadModels();
+        });
+
+        // Feature toggle functions
+        function toggleSearch() {
+            if (!currentModel || !currentModel.supports_search || currentModel.search_always_on) return;
+            searchEnabled = !searchEnabled;
+            const btn = document.getElementById('searchToggleBtn');
+            btn.classList.toggle('active', searchEnabled);
+        }
+
+        function toggleThinking() {
+            if (!currentModel || !currentModel.supports_thinking) return;
+            thinkingEnabled = !thinkingEnabled;
+            const btn = document.getElementById('thinkingToggleBtn');
+            btn.classList.toggle('active', thinkingEnabled);
+            btn.classList.toggle('purple', thinkingEnabled);
+        }
+
+        // Models
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                const selector = document.getElementById('modelSelector');
+
+                selector.innerHTML = data.models.map(model =>
+                    `<option value="${escapeHtml(model.name)}" ${model.is_current ? 'selected' : ''}>
+                        ${escapeHtml(model.name)}
+                    </option>`
+                ).join('');
+
+                // Store current model and update toggles
+                currentModel = data.current;
+                updateFeatureToggles();
+            } catch (error) {
+                console.error('Error loading models:', error);
+            }
+        }
+
+        function updateFeatureToggles() {
+            if (!currentModel) return;
+
+            const searchBtn = document.getElementById('searchToggleBtn');
+            const thinkingBtn = document.getElementById('thinkingToggleBtn');
+
+            // Search button
+            if (currentModel.supports_search) {
+                searchBtn.classList.remove('hidden');
+                if (currentModel.search_always_on) {
+                    // Search is always on - show as always active
+                    searchBtn.classList.add('always-on');
+                    searchBtn.classList.remove('active');
+                    searchBtn.title = 'Search is always enabled for this model';
+                    searchEnabled = true;
+                } else {
+                    searchBtn.classList.remove('always-on');
+                    searchBtn.classList.toggle('active', searchEnabled);
+                    searchBtn.title = 'Web Search';
+                }
+            } else {
+                searchBtn.classList.add('hidden');
+                searchEnabled = false;
+            }
+
+            // Thinking button
+            if (currentModel.supports_thinking) {
+                thinkingBtn.classList.remove('hidden');
+                thinkingBtn.classList.toggle('active', thinkingEnabled);
+                thinkingBtn.classList.toggle('purple', thinkingEnabled);
+            } else {
+                thinkingBtn.classList.add('hidden');
+                thinkingEnabled = false;
+            }
+        }
+
+        async function switchModel(modelName) {
+            if (!modelName) return;
+            try {
+                const response = await fetch('/api/models/switch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: modelName })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(`Switched to ${modelName}`, 'success');
+                    currentModel = result.current;
+                    updateFeatureToggles();
+                } else {
+                    showToast(result.error, 'error');
+                    loadModels(); // Reset selector
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+                loadModels();
+            }
+        }
+
+        // Helpers
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-slate-800';
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // File Upload
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.pdf'));
+            if (files.length > 0) uploadFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) uploadFiles(files);
+            e.target.value = '';
+        }
+
+        async function uploadFiles(files) {
+            const progressDiv = document.getElementById('uploadProgress');
+            const statusSpan = document.getElementById('uploadStatus');
+            progressDiv.classList.remove('hidden');
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusSpan.textContent = `Processing ${file.name}...`;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    // No API key needed - using local embedding server
+
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) {
+                        showToast(`Error: ${result.error}`, 'error');
+                    } else {
+                        showToast(`${file.name} uploaded successfully`, 'success');
+                    }
+                } catch (error) {
+                    showToast(`Error: ${error.message}`, 'error');
+                }
+            }
+
+            progressDiv.classList.add('hidden');
+            loadDocuments();
+            loadStats();
+        }
+
+        // Documents
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                const listDiv = document.getElementById('documentsList');
+
+                if (data.documents.length === 0) {
+                    listDiv.innerHTML = '<div class="p-4 text-center text-sm text-slate-500">No documents yet</div>';
+                    return;
+                }
+
+                listDiv.innerHTML = data.documents.map(doc => `
+                    <div class="doc-card flex items-center justify-between px-4 py-3 border-b border-slate-50 last:border-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-slate-900 truncate">${doc.filename}</p>
+                                <p class="text-xs text-slate-500">${doc.num_pages} pages</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteDocument('${doc.id}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Delete this document?')) return;
+            try {
+                const response = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadDocuments();
+                    loadStats();
+                    showToast('Document deleted', 'success');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                const statsSection = document.getElementById('statsSection');
+
+                if (stats.total_documents > 0) {
+                    statsSection.classList.remove('hidden');
+                    document.getElementById('statDocs').textContent = stats.total_documents;
+                    document.getElementById('statChunks').textContent = stats.total_chunks;
+                    document.getElementById('statPages').textContent = stats.total_pages;
+                } else {
+                    statsSection.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Chat
+        async function sendQuestion() {
+            if (isProcessing) return;
+
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            questionInput.value = '';
+            isProcessing = true;
+            document.getElementById('sendButton').disabled = true;
+
+            addUserMessage(question);
+            const loadingId = addLoadingMessage();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question,
+                        use_search: searchEnabled,
+                        use_thinking: thinkingEnabled
+                    })
+                });
+
+                const result = await response.json();
+                document.getElementById(loadingId)?.remove();
+
+                if (!response.ok) {
+                    addErrorMessage(result.error);
+                } else {
+                    addAssistantMessage(result.answer, result.sources);
+                }
+            } catch (error) {
+                document.getElementById(loadingId)?.remove();
+                addErrorMessage(error.message);
+            }
+
+            isProcessing = false;
+            document.getElementById('sendButton').disabled = false;
+        }
+
+        function addUserMessage(text) {
+            const messagesDiv = document.getElementById('chatMessages');
+
+            // Clear welcome message
+            if (messagesDiv.querySelector('.flex-col.items-center')) {
+                messagesDiv.innerHTML = '';
+            }
+
+            const html = `
+                <div class="flex justify-end mb-4">
+                    <div class="max-w-[70%] bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3 rounded-2xl rounded-br-md shadow-lg">
+                        <p class="text-sm">${escapeHtml(text)}</p>
+                    </div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', html);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const messagesDiv = document.getElementById('chatMessages');
+            const id = 'loading-' + Date.now();
+
+            const html = `
+                <div id="${id}" class="flex justify-start mb-4">
+                    <div class="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-md">
+                        <div class="flex items-center gap-1">
+                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
+                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
+                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', html);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return id;
+        }
+
+        function addAssistantMessage(answer, sources) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageId = 'msg-' + Date.now();
+
+            // Build source map for this message
+            const msgSources = sources || [];
+            sourceMap = {};
+            msgSources.forEach((src, idx) => {
+                sourceMap[idx + 1] = src;
+            });
+
+            // Format answer with inline citations
+            const formattedAnswer = formatAnswerWithCitations(answer, msgSources);
+
+            // Build sources section
+            let sourcesHtml = '';
+            if (msgSources.length > 0) {
+                sourcesHtml = `
+                    <div class="mt-4 pt-4 border-t border-slate-100">
+                        <p class="text-xs font-medium text-slate-500 mb-2">Sources</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${msgSources.map((src, idx) => `
+                                <span class="source-pill">
+                                    <span class="source-number">${idx + 1}</span>
+                                    <span>${escapeHtml(src)}</span>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            const html = `
+                <div id="${messageId}" class="flex justify-start mb-4">
+                    <div class="max-w-[85%] bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
+                        <div class="answer-text">${formattedAnswer}</div>
+                        ${sourcesHtml}
+                    </div>
+                </div>
+            `;
+
+            messagesDiv.insertAdjacentHTML('beforeend', html);
+
+            // Render LaTeX math in the new message
+            const messageEl = document.getElementById(messageId);
+            if (messageEl) {
+                renderMath(messageEl);
+            }
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addErrorMessage(error) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const html = `
+                <div class="flex justify-start mb-4">
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl rounded-bl-md">
+                        <p class="text-sm">${escapeHtml(error)}</p>
+                    </div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', html);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function formatAnswerWithCitations(text, sources) {
+            if (!text) return '';
+
+            // Step 1: Protect LaTeX expressions from citation processing
+            let latexMap = {};
+            let latexIndex = 0;
+
+            // Protect block LaTeX $$...$$
+            text = text.replace(/\$\$[\s\S]*?\$\$/g, (match) => {
+                const placeholder = `%%LATEX_${latexIndex}%%`;
+                latexMap[placeholder] = match;
+                latexIndex++;
+                return placeholder;
+            });
+
+            // Protect inline LaTeX $...$
+            text = text.replace(/\$[^$]+\$/g, (match) => {
+                const placeholder = `%%LATEX_${latexIndex}%%`;
+                latexMap[placeholder] = match;
+                latexIndex++;
+                return placeholder;
+            });
+
+            // Step 2: Replace citation patterns with placeholders
+            let citationMap = {};
+            let citationIndex = 0;
+
+            // Replace [Source 1], [Sources 1, 2] patterns
+            text = text.replace(/\[Source[s]?\s*([\d,\s]+)\]/gi, (match, nums) => {
+                const placeholder = `%%CITE_${citationIndex}%%`;
+                citationMap[placeholder] = nums.split(/[,\s]+/).filter(n => n.trim());
+                citationIndex++;
+                return placeholder;
+            });
+
+            // Replace simple [1] or [1, 2] patterns
+            text = text.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (match, nums) => {
+                const placeholder = `%%CITE_${citationIndex}%%`;
+                citationMap[placeholder] = nums.split(/[,\s]+/).filter(n => n.trim());
+                citationIndex++;
+                return placeholder;
+            });
+
+            // Step 3: Restore LaTeX expressions
+            for (const [placeholder, latex] of Object.entries(latexMap)) {
+                text = text.replaceAll(placeholder, latex);
+            }
+
+            // Step 4: Parse markdown
+            let html = marked.parse(text);
+
+            // Step 5: Replace citation placeholders with badges
+            for (const [placeholder, numbers] of Object.entries(citationMap)) {
+                const badges = numbers.map(n =>
+                    `<span class="citation" title="${sourceMap[parseInt(n)] || 'Source ' + n}">${n.trim()}</span>`
+                ).join('');
+                html = html.replaceAll(placeholder, badges);
+            }
+
+            // Step 6: Remove commas/spaces between adjacent citation badges (Perplexity style)
+            html = html.replace(/(<\/span>)\s*,\s*(<span class="citation")/g, '$1$2');
+
+            return html;
+        }
+
+        function renderMath(element) {
+            // Render LaTeX math using KaTeX auto-render
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(element, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false,
+                    strict: false
+                });
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function clearChat() {
+            try {
+                await fetch('/api/chat/clear', { method: 'POST' });
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-900 mb-1">Start a conversation</h3>
+                        <p class="text-sm text-slate-500 max-w-sm">Upload documents and ask questions. I'll find answers with inline citations.</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error clearing chat:', error);
+            }
+        }
+
+        async function clearAll() {
+            if (!confirm('This will delete ALL documents and conversations. Continue?')) return;
+            try {
+                await fetch('/api/clear', { method: 'POST' });
+                loadDocuments();
+                loadStats();
+                clearChat();
+                showToast('All data cleared', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

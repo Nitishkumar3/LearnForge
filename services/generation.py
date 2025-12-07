@@ -5,7 +5,7 @@ Handles answer generation using LLM providers with retrieved context.
 """
 
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Generator
 from services.llm_providers import get_llm_manager
 
 
@@ -263,3 +263,62 @@ Provide your response:"""
         processed_answer = re.sub(r'\[(\d+)\]', replace_citation, answer)
 
         return processed_answer, unique_sources
+
+    def generate_answer_stream(
+        self,
+        query: str,
+        chunks: List[str],
+        metadatas: List[Dict[str, Any]],
+        chat_history: List[Dict[str, str]] = None,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[Dict[str, Any], None, None]:
+        """
+        Stream an answer using the retrieved context.
+
+        Yields:
+            Dict with either:
+                - {"type": "chunk", "content": "text"} for text chunks
+                - {"type": "done", "sources": [...]} when complete
+                - {"type": "error", "message": "..."} on error
+        """
+        if not chunks:
+            yield {
+                "type": "done",
+                "content": "I don't have any documents to search. Please upload some PDFs first.",
+                "sources": []
+            }
+            return
+
+        # Build context from chunks with source info
+        context = self._build_context(chunks, metadatas)
+
+        # Build chat history context
+        history_text = self._build_history(chat_history)
+
+        # Create the prompt
+        prompt = self._build_prompt(query, context, history_text)
+
+        # Stream response
+        full_answer = ""
+        try:
+            for chunk in self.llm.generate_stream(
+                prompt,
+                use_search=use_search,
+                use_thinking=use_thinking
+            ):
+                full_answer += chunk
+                yield {"type": "chunk", "content": chunk}
+        except Exception as e:
+            yield {"type": "error", "message": str(e)}
+            return
+
+        # Process citations after streaming complete
+        processed_answer, sources = self._process_citations(full_answer, metadatas)
+
+        # Yield final done event with sources
+        yield {
+            "type": "done",
+            "content": processed_answer,
+            "sources": sources
+        }

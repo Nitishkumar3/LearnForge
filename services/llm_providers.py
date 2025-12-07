@@ -6,7 +6,7 @@ Add new models by adding to MODELS dict below.
 """
 
 import os
-from typing import Optional
+from typing import Optional, Generator
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -135,6 +135,48 @@ class GeminiProvider:
 
         return response.text
 
+    def generate_stream(
+        self,
+        model_id: str,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[str, None, None]:
+        from google.genai import types
+
+        # Build tools list
+        tools = []
+        if use_search:
+            tools.append(types.Tool(google_search=types.GoogleSearch()))
+
+        # Build config
+        config_params = {}
+
+        # Thinking config
+        if use_thinking:
+            config_params["thinking_config"] = types.ThinkingConfig(
+                thinking_budget=8192
+            )
+        else:
+            config_params["thinking_config"] = types.ThinkingConfig(
+                thinking_budget=0
+            )
+
+        # Add tools if any
+        if tools:
+            config_params["tools"] = tools
+
+        config = types.GenerateContentConfig(**config_params)
+
+        # Stream generate
+        for chunk in self.client.models.generate_content_stream(
+            model=model_id,
+            contents=prompt,
+            config=config
+        ):
+            if chunk.text:
+                yield chunk.text
+
 
 class GroqProvider:
     """Groq provider. Compound models have built-in search."""
@@ -160,6 +202,22 @@ class GroqProvider:
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
+
+    def generate_stream(
+        self,
+        model_id: str,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[str, None, None]:
+        stream = self.client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
 
 class MistralProvider:
@@ -215,6 +273,27 @@ class MistralProvider:
                         return ''.join(text_parts)
         return str(response)
 
+    def generate_stream(
+        self,
+        model_id: str,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[str, None, None]:
+        if use_search:
+            # Conversations API doesn't support streaming well, fall back to non-streaming
+            result = self.generate(model_id, prompt, use_search=True, use_thinking=use_thinking)
+            yield result
+        else:
+            # Use regular chat streaming without search
+            stream = self.client.chat.stream(
+                model=model_id,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            for event in stream:
+                if event.data.choices[0].delta.content:
+                    yield event.data.choices[0].delta.content
+
 
 class CerebrasProvider:
     """Cerebras provider for ultra-fast Llama inference."""
@@ -241,6 +320,25 @@ class CerebrasProvider:
             top_p=1
         )
         return response.choices[0].message.content
+
+    def generate_stream(
+        self,
+        model_id: str,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[str, None, None]:
+        stream = self.client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=4096,
+            temperature=0.2,
+            top_p=1,
+            stream=True
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
 
 # Provider registry
@@ -328,6 +426,27 @@ class LLMManager:
         actual_thinking = use_thinking and model_info.get("supports_thinking", False)
 
         return provider.generate(
+            model_info["model_id"],
+            prompt,
+            use_search=actual_search,
+            use_thinking=actual_thinking
+        )
+
+    def generate_stream(
+        self,
+        prompt: str,
+        use_search: bool = False,
+        use_thinking: bool = False
+    ) -> Generator[str, None, None]:
+        """Stream response using current model with optional features."""
+        model_info = MODELS[self.current_model_name]
+        provider = self._get_provider(model_info["provider"])
+
+        # Only pass features if model supports them
+        actual_search = use_search and model_info.get("supports_search", False)
+        actual_thinking = use_thinking and model_info.get("supports_thinking", False)
+
+        yield from provider.generate_stream(
             model_info["model_id"],
             prompt,
             use_search=actual_search,

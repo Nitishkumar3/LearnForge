@@ -7,7 +7,8 @@ Designed for single-user now, scalable to multi-user later.
 
 import os
 import uuid
-from flask import Flask, request, jsonify, render_template
+import json
+from flask import Flask, request, jsonify, render_template, Response
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from dotenv import load_dotenv
@@ -278,6 +279,89 @@ def chat():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/chat/stream', methods=['POST'])
+def chat_stream():
+    """
+    Stream chat response using Server-Sent Events.
+
+    Expects JSON:
+        - question: User question
+        - use_search: Enable web search (optional)
+        - use_thinking: Enable thinking mode (optional)
+
+    Returns SSE stream with events:
+        - data: {"type": "chunk", "content": "..."} for text chunks
+        - data: {"type": "done", "content": "...", "sources": [...]} when complete
+        - data: {"type": "error", "message": "..."} on error
+    """
+    global chat_history
+
+    data = request.json
+    question = data.get('question', '').strip()
+    use_search = data.get('use_search', False)
+    use_thinking = data.get('use_thinking', False)
+
+    if not question:
+        return jsonify({"error": "Question is required"}), 400
+
+    # Check if we have any documents
+    if vector_store.count() == 0:
+        return jsonify({
+            "error": "No documents uploaded. Please upload some PDFs first."
+        }), 400
+
+    def generate():
+        try:
+            # Retrieve relevant chunks
+            retrieval_result = retrieve(vector_store, embedding_service, question)
+
+            # Stream answer
+            full_answer = ""
+            sources = []
+
+            for event in generation_service.generate_answer_stream(
+                query=question,
+                chunks=retrieval_result["chunks"],
+                metadatas=retrieval_result["metadatas"],
+                chat_history=chat_history,
+                use_search=use_search,
+                use_thinking=use_thinking
+            ):
+                if event["type"] == "chunk":
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "done":
+                    full_answer = event.get("content", "")
+                    sources = event.get("sources", [])
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "error":
+                    yield f"data: {json.dumps(event)}\n\n"
+                    return
+
+            # Update chat history after streaming complete
+            if full_answer:
+                chat_history.append({
+                    "question": question,
+                    "answer": full_answer
+                })
+
+                # Keep only last 20 exchanges
+                if len(chat_history) > 20:
+                    chat_history[:] = chat_history[-20:]
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
+        }
+    )
 
 
 @app.route('/api/clear', methods=['POST'])

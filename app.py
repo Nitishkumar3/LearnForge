@@ -372,6 +372,51 @@ def chat_stream():
     )
 
 
+@app.route('/api/generate-image', methods=['POST'])
+def generate_image():
+    """
+    Generate an image using Imagen model.
+
+    Expects JSON:
+        - prompt: Image description/prompt
+        - aspect_ratio: Optional aspect ratio (1:1, 9:16, 16:9, 4:3, 3:4)
+
+    Returns:
+        - image_base64: Base64 encoded image
+        - mime_type: Image MIME type
+    """
+    data = request.json
+    prompt = data.get('prompt', '').strip()
+    aspect_ratio = data.get('aspect_ratio', '1:1')
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    # Validate aspect ratio
+    valid_ratios = ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"]
+    if aspect_ratio not in valid_ratios:
+        return jsonify({"error": f"Invalid aspect ratio. Must be one of: {valid_ratios}"}), 400
+
+    try:
+        # Check if current model supports image generation
+        current_model = llm_manager.get_current_model()
+        if current_model.get("type") != "image":
+            return jsonify({"error": f"Current model '{current_model['name']}' does not support image generation"}), 400
+
+        result = llm_manager.generate_image(prompt, aspect_ratio=aspect_ratio)
+
+        return jsonify({
+            "success": True,
+            "image_base64": result["image_base64"],
+            "mime_type": result["mime_type"],
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/clear', methods=['POST'])
 def clear_all():
     """Clear all documents and chat history."""

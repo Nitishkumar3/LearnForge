@@ -57,10 +57,10 @@ MODELS = {
         "supports_thinking": False,
         "search_always_on": True  # Search is always enabled for compound
     },
-    "Llama 3.1 8B": {
+    "Llama 4 Scout 17B": {
         "provider": "groq",
-        "model_id": "llama-3.1-8b-instant",
-        "description": "Fast Llama model on Groq",
+        "model_id": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "description": "Llama 4 Scout 17B on Groq",
         "supports_search": False,
         "supports_thinking": False,
         "search_always_on": False
@@ -72,6 +72,16 @@ MODELS = {
         "supports_search": False,
         "supports_thinking": False,
         "search_always_on": False
+    },
+    "Nova Canvas": {
+        "provider": "nova",
+        "model_id": "bedrock-amazon.nova-canvas-v1-0",
+        "description": "Amazon Nova Canvas for image generation",
+        "supports_search": False,
+        "supports_thinking": False,
+        "search_always_on": False,
+        "type": "image",
+        "aspect_ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5"]
     },
 }
 
@@ -184,6 +194,77 @@ class GeminiProvider:
                 else:
                     if part.text:
                         yield {"type": "text", "content": part.text}
+
+    def generate_image(
+        self,
+        model_id: str,
+        prompt: str,
+        aspect_ratio: str = "auto"
+    ) -> dict:
+        """
+        Generate image using Gemini Flash Image model.
+
+        Returns:
+            dict with 'image_base64' and 'mime_type'
+        """
+        import base64
+        from google.genai import types
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=prompt)],
+            ),
+        ]
+
+        # Build config
+        config_params = {
+            "response_modalities": ["IMAGE", "TEXT"],
+        }
+
+        # Add aspect ratio config if not auto
+        if aspect_ratio and aspect_ratio != "auto":
+            config_params["image_config"] = types.ImageConfig(
+                aspect_ratio=aspect_ratio,
+            )
+
+        config = types.GenerateContentConfig(**config_params)
+
+        # Stream and collect image data
+        image_data = None
+        mime_type = None
+
+        for chunk in self.client.models.generate_content_stream(
+            model=model_id,
+            contents=contents,
+            config=config,
+        ):
+            if (
+                chunk.candidates is None
+                or chunk.candidates[0].content is None
+                or chunk.candidates[0].content.parts is None
+            ):
+                continue
+
+            for part in chunk.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.data:
+                    image_data = part.inline_data.data
+                    mime_type = part.inline_data.mime_type
+                    break
+
+            if image_data:
+                break
+
+        if not image_data:
+            raise ValueError("No image generated")
+
+        # Convert to base64
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+
+        return {
+            "image_base64": image_base64,
+            "mime_type": mime_type or "image/png"
+        }
 
 
 class GroqProvider:
@@ -349,12 +430,122 @@ class CerebrasProvider:
                 yield {"type": "text", "content": chunk.choices[0].delta.content}
 
 
+class NovaCanvasProvider:
+    """Amazon Nova Canvas provider via PartyRock API."""
+
+    def __init__(self):
+        import json
+        self.base_url = "https://partyrock.aws"
+        self.cookies = self._load_cookies()
+
+    def _load_cookies(self) -> dict:
+        """Load cookies from cookie.txt file."""
+        import json
+        import os
+
+        cookie_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cookie.txt")
+
+        if not os.path.exists(cookie_path):
+            raise ValueError(f"cookie.txt not found at {cookie_path}. Please export PartyRock cookies.")
+
+        with open(cookie_path, 'r') as f:
+            cookies_data = json.load(f)
+
+        cookies = {}
+        for cookie in cookies_data:
+            if cookie['name'] in ['aws-waf-token', 's_sq', 'pr_refresh_token', 'idToken', 's_fid']:
+                cookies[cookie['name']] = cookie['value']
+
+        return cookies
+
+    def _get_dimensions(self, aspect_ratio: str) -> tuple:
+        """Get width/height for aspect ratio."""
+        aspect_map = {
+            "16:9": (1280, 720),
+            "9:16": (720, 1280),
+            "2:3": (768, 1152),
+            "3:2": (1152, 768),
+            "1:1": (512, 512),
+            "3:4": (768, 1024),
+            "4:3": (1024, 768),
+            "4:5": (768, 960),
+            "5:4": (960, 768),
+        }
+        return aspect_map.get(aspect_ratio, (512, 512))
+
+    def generate_image(
+        self,
+        model_id: str,
+        prompt: str,
+        aspect_ratio: str = "1:1"
+    ) -> dict:
+        """Generate image using Nova Canvas via PartyRock."""
+        import httpx
+        import re
+        from fake_useragent import UserAgent
+
+        image_url = f"{self.base_url}/image"
+        post_url = f"{self.base_url}/api/generateImage"
+        ua = UserAgent()
+
+        with httpx.Client(cookies=self.cookies, timeout=60.0) as client:
+            # Get CSRF token
+            response = client.get(image_url)
+            match = re.search(r'<meta name="anti-csrftoken-a2z" value="([^"]+)"', response.text)
+            csrf_token = match.group(1) if match else None
+
+            if not csrf_token:
+                raise ValueError("Could not extract CSRF token from PartyRock")
+
+            headers = {
+                "Content-Type": "application/json",
+                "Origin": self.base_url,
+                "Referer": image_url,
+                "User-Agent": ua.random,
+                "anti-csrftoken-a2z": csrf_token,
+            }
+
+            width, height = self._get_dimensions(aspect_ratio)
+
+            payload = {
+                "prompt": prompt,
+                "negativePrompt": "",
+                "options": {
+                    "model": model_id,
+                    "cfgScale": 6,
+                    "height": height,
+                    "width": width
+                },
+                "context": {
+                    "type": "image-playground"
+                }
+            }
+
+            response = client.post(post_url, headers=headers, json=payload)
+            response_json = response.json()
+
+            if "result" not in response_json or "data" not in response_json["result"]:
+                raise ValueError(f"Unexpected response: {response_json}")
+
+            image_base64 = response_json["result"]["data"]["imageBase64"]
+
+            # Strip data URL prefix if present
+            if image_base64.startswith("data:image/"):
+                image_base64 = image_base64.split(",")[1]
+
+            return {
+                "image_base64": image_base64,
+                "mime_type": "image/jpeg"
+            }
+
+
 # Provider registry
 PROVIDERS = {
     "gemini": GeminiProvider,
     "groq": GroqProvider,
     "mistral": MistralProvider,
     "cerebras": CerebrasProvider,
+    "nova": NovaCanvasProvider,
 }
 
 
@@ -401,7 +592,9 @@ class LLMManager:
             "description": model_info["description"],
             "supports_search": model_info.get("supports_search", False),
             "supports_thinking": model_info.get("supports_thinking", False),
-            "search_always_on": model_info.get("search_always_on", False)
+            "search_always_on": model_info.get("search_always_on", False),
+            "type": model_info.get("type", "text"),
+            "aspect_ratios": model_info.get("aspect_ratios", [])
         }
 
     def list_models(self) -> list:
@@ -414,6 +607,8 @@ class LLMManager:
                 "supports_search": info.get("supports_search", False),
                 "supports_thinking": info.get("supports_thinking", False),
                 "search_always_on": info.get("search_always_on", False),
+                "type": info.get("type", "text"),
+                "aspect_ratios": info.get("aspect_ratios", []),
                 "is_current": name == self.current_model_name
             }
             for name, info in MODELS.items()
@@ -465,6 +660,33 @@ class LLMManager:
             prompt,
             use_search=actual_search,
             use_thinking=actual_thinking
+        )
+
+    def generate_image(
+        self,
+        prompt: str,
+        aspect_ratio: str = "1:1"
+    ) -> dict:
+        """
+        Generate image using current model (must be image type).
+
+        Returns:
+            dict with 'image_base64' and 'mime_type'
+        """
+        model_info = MODELS[self.current_model_name]
+
+        if model_info.get("type") != "image":
+            raise ValueError(f"Model {self.current_model_name} does not support image generation")
+
+        provider = self._get_provider(model_info["provider"])
+
+        if not hasattr(provider, 'generate_image'):
+            raise ValueError(f"Provider {model_info['provider']} does not support image generation")
+
+        return provider.generate_image(
+            model_info["model_id"],
+            prompt,
+            aspect_ratio=aspect_ratio
         )
 
 

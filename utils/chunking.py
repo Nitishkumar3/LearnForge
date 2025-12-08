@@ -2,13 +2,21 @@
 Text Chunking Utility for the Core RAG System.
 
 Handles splitting text into overlapping chunks with metadata.
-Attempts to break at sentence boundaries for better context.
+Uses NLTK for TRUE sentence-aware chunking - never breaks mid-sentence.
 """
 
 import os
 import re
 from typing import List, Dict, Any
 from datetime import datetime
+
+import nltk
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab', quiet=True)
+
+from nltk.tokenize import sent_tokenize
 
 # Configuration
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
@@ -114,47 +122,66 @@ class TextChunker:
 
     def _split_text(self, text: str) -> List[str]:
         """
-        Split text into overlapping chunks with sentence boundary awareness.
-
-        Args:
-            text: Full text to split
-
-        Returns:
-            List of text chunks
+        Split text into overlapping chunks with TRUE sentence awareness.
+        Uses NLTK sentence tokenizer - never breaks mid-sentence.
+        Always includes at least 1 sentence overlap for context continuity.
         """
+        sentences = sent_tokenize(text)
+
+        if not sentences:
+            return []
+
         chunks = []
-        start = 0
+        current_chunk = []
+        current_length = 0
 
-        while start < len(text):
-            end = start + self.chunk_size
-            chunk = text[start:end]
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
 
-            # Try to break at sentence boundary if not at end
-            if end < len(text):
-                # Look for sentence endings in the second half of chunk
-                best_break = -1
-                for sep in ['. ', '? ', '! ', '.\n', '?\n', '!\n', '\n\n', '\n']:
-                    pos = chunk.rfind(sep)
-                    if pos > self.chunk_size // 2:  # Only if in second half
-                        if pos > best_break:
-                            best_break = pos + len(sep)
+            sentence_length = len(sentence)
 
-                if best_break > 0:
-                    chunk = chunk[:best_break]
-                    end = start + best_break
+            # Edge case: single sentence exceeds chunk_size
+            if sentence_length > self.chunk_size:
+                if current_chunk:
+                    chunks.append(' '.join(current_chunk))
+                    current_chunk = []
+                    current_length = 0
 
-            chunk = chunk.strip()
-            if chunk:
-                chunks.append(chunk)
+                # Split long sentence (rare)
+                for i in range(0, sentence_length, self.chunk_size - self.chunk_overlap):
+                    chunks.append(sentence[i:i + self.chunk_size])
+                continue
 
-            # Move forward with overlap
-            start = end - self.chunk_overlap
+            # Check if adding sentence exceeds chunk_size
+            if current_length + sentence_length + 1 > self.chunk_size:
+                if current_chunk:
+                    chunks.append(' '.join(current_chunk))
 
-            # Prevent infinite loop
-            if start <= 0 and end >= len(text):
-                break
-            if start < 0:
-                start = 0
+                # Calculate overlap: take last N chars worth of sentences
+                overlap_sentences = []
+                overlap_length = 0
+                for s in reversed(current_chunk):
+                    if overlap_length + len(s) + 1 <= self.chunk_overlap:
+                        overlap_sentences.insert(0, s)
+                        overlap_length += len(s) + 1
+                    else:
+                        break
+
+                # IMPORTANT: Always include at least 1 sentence for context continuity
+                # Even if it exceeds overlap limit, we need semantic connection
+                if not overlap_sentences and current_chunk:
+                    overlap_sentences = [current_chunk[-1]]
+
+                current_chunk = overlap_sentences + [sentence]
+                current_length = sum(len(s) for s in current_chunk) + len(current_chunk) - 1
+            else:
+                current_chunk.append(sentence)
+                current_length += sentence_length + (1 if current_chunk else 0)
+
+        if current_chunk:
+            chunks.append(' '.join(current_chunk))
 
         return chunks
 

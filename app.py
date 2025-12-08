@@ -47,7 +47,7 @@ def allowed_file(filename):
 # ===================
 from services.vector_store import VectorStore, DocumentRegistry
 from services.embedding import EmbeddingService
-from services.retrieval import retrieve
+from services.retrieval import retrieve, invalidate_bm25_cache
 from services.generation import GenerationService
 from services.llm_providers import get_llm_manager
 from processors.pdf_processor import PDFProcessor
@@ -160,6 +160,9 @@ def upload_document():
             document_id=doc_id
         )
 
+        # Invalidate BM25 cache for hybrid search
+        invalidate_bm25_cache()
+
         # Register document
         doc_info = {
             "id": doc_id,
@@ -205,6 +208,9 @@ def delete_document(doc_id):
         # Delete from vector store
         vector_store.delete_document(doc_id)
 
+        # Invalidate BM25 cache for hybrid search
+        invalidate_bm25_cache()
+
         # Delete file
         if "file_path" in doc and os.path.exists(doc["file_path"]):
             os.remove(doc["file_path"])
@@ -249,7 +255,7 @@ def chat():
 
     try:
         # Retrieve relevant chunks
-        retrieval_result = retrieve(vector_store, embedding_service, question)
+        retrieval_result = retrieve(vector_store, embedding_service, question, llm_manager)
 
         # Generate answer with optional features
         answer_result = generation_service.generate_answer(
@@ -315,7 +321,7 @@ def chat_stream():
     def generate():
         try:
             # Retrieve relevant chunks
-            retrieval_result = retrieve(vector_store, embedding_service, question)
+            retrieval_result = retrieve(vector_store, embedding_service, question, llm_manager)
 
             # Stream answer
             full_answer = ""
@@ -329,7 +335,9 @@ def chat_stream():
                 use_search=use_search,
                 use_thinking=use_thinking
             ):
-                if event["type"] == "chunk":
+                if event["type"] == "thinking":
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "chunk":
                     yield f"data: {json.dumps(event)}\n\n"
                 elif event["type"] == "done":
                     full_answer = event.get("content", "")
@@ -372,6 +380,9 @@ def clear_all():
     try:
         # Clear vector store
         vector_store.clear_all()
+
+        # Invalidate BM25 cache for hybrid search
+        invalidate_bm25_cache()
 
         # Clear document registry
         document_registry.clear_all()

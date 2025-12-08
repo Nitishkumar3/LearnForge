@@ -147,15 +147,16 @@ class GenerationService:
         """
         prompt = f"""You are a helpful study assistant. Answer any question - both general and document-related.
 
-CONTEXT:
+CONTEXT (for reference only):
 {context}
 {history_text}
 
 QUESTION: {query}
 
 RESPONSE GUIDELINES:
-- For document questions: Use context above, cite sources as [1], [2], etc.
-- For general questions: Answer naturally without citations
+- If the question is related to the documents, use the context and cite sources as [1], [2], etc.
+- If the question is unrelated to the provided context, answer it directly without referencing the documents
+- Do NOT force document references or add document-related information when the question is clearly unrelated
 - Be clear, helpful, and well-structured
 
 FORMATTING (Markdown + LaTeX):
@@ -175,11 +176,6 @@ Math & Science (use LaTeX with $ delimiters):
 - Fractions: $\\frac{{a}}{{b}}$
 - Greek letters: $\\alpha$, $\\beta$, $\\Delta$
 - Block equations (own line): $$\\sum_{{i=1}}^{{n}} x_i$$
-
-Examples:
-- Water is $H_2O$ and carbon dioxide is $CO_2$
-- The quadratic formula is $x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}$
-- Energy equation: $E = mc^2$
 
 IMPORTANT:
 - Always use $ for math/chemistry, never plain text for formulas
@@ -278,15 +274,17 @@ Provide your response:"""
 
         Yields:
             Dict with either:
+                - {"type": "thinking", "content": "text"} for thinking chunks (Gemini only)
                 - {"type": "chunk", "content": "text"} for text chunks
-                - {"type": "done", "sources": [...]} when complete
+                - {"type": "done", "sources": [...], "thinking": "..."} when complete
                 - {"type": "error", "message": "..."} on error
         """
         if not chunks:
             yield {
                 "type": "done",
                 "content": "I don't have any documents to search. Please upload some PDFs first.",
-                "sources": []
+                "sources": [],
+                "thinking": ""
             }
             return
 
@@ -301,14 +299,19 @@ Provide your response:"""
 
         # Stream response
         full_answer = ""
+        full_thinking = ""
         try:
-            for chunk in self.llm.generate_stream(
+            for event in self.llm.generate_stream(
                 prompt,
                 use_search=use_search,
                 use_thinking=use_thinking
             ):
-                full_answer += chunk
-                yield {"type": "chunk", "content": chunk}
+                if event["type"] == "thinking":
+                    full_thinking += event["content"]
+                    yield {"type": "thinking", "content": event["content"]}
+                elif event["type"] == "text":
+                    full_answer += event["content"]
+                    yield {"type": "chunk", "content": event["content"]}
         except Exception as e:
             yield {"type": "error", "message": str(e)}
             return
@@ -316,9 +319,10 @@ Provide your response:"""
         # Process citations after streaming complete
         processed_answer, sources = self._process_citations(full_answer, metadatas)
 
-        # Yield final done event with sources
+        # Yield final done event with sources and full thinking
         yield {
             "type": "done",
             "content": processed_answer,
-            "sources": sources
+            "sources": sources,
+            "thinking": full_thinking
         }

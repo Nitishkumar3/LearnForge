@@ -141,7 +141,14 @@ class GeminiProvider:
         prompt: str,
         use_search: bool = False,
         use_thinking: bool = False
-    ) -> Generator[str, None, None]:
+    ) -> Generator[dict, None, None]:
+        """
+        Stream response with thinking support.
+
+        Yields dicts:
+            - {"type": "thinking", "content": "..."} for thinking chunks
+            - {"type": "text", "content": "..."} for text chunks
+        """
         from google.genai import types
 
         # Build tools list
@@ -152,14 +159,11 @@ class GeminiProvider:
         # Build config
         config_params = {}
 
-        # Thinking config
+        # Thinking config - include_thoughts=True to get thinking content in response
         if use_thinking:
             config_params["thinking_config"] = types.ThinkingConfig(
-                thinking_budget=8192
-            )
-        else:
-            config_params["thinking_config"] = types.ThinkingConfig(
-                thinking_budget=0
+                thinking_budget=8192,
+                include_thoughts=True
             )
 
         # Add tools if any
@@ -174,8 +178,12 @@ class GeminiProvider:
             contents=prompt,
             config=config
         ):
-            if chunk.text:
-                yield chunk.text
+            for part in chunk.candidates[0].content.parts:
+                if part.thought:
+                    yield {"type": "thinking", "content": part.text}
+                else:
+                    if part.text:
+                        yield {"type": "text", "content": part.text}
 
 
 class GroqProvider:
@@ -209,7 +217,7 @@ class GroqProvider:
         prompt: str,
         use_search: bool = False,
         use_thinking: bool = False
-    ) -> Generator[str, None, None]:
+    ) -> Generator[dict, None, None]:
         stream = self.client.chat.completions.create(
             model=model_id,
             messages=[{"role": "user", "content": prompt}],
@@ -217,7 +225,7 @@ class GroqProvider:
         )
         for chunk in stream:
             if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+                yield {"type": "text", "content": chunk.choices[0].delta.content}
 
 
 class MistralProvider:
@@ -279,11 +287,11 @@ class MistralProvider:
         prompt: str,
         use_search: bool = False,
         use_thinking: bool = False
-    ) -> Generator[str, None, None]:
+    ) -> Generator[dict, None, None]:
         if use_search:
             # Conversations API doesn't support streaming well, fall back to non-streaming
             result = self.generate(model_id, prompt, use_search=True, use_thinking=use_thinking)
-            yield result
+            yield {"type": "text", "content": result}
         else:
             # Use regular chat streaming without search
             stream = self.client.chat.stream(
@@ -292,7 +300,7 @@ class MistralProvider:
             )
             for event in stream:
                 if event.data.choices[0].delta.content:
-                    yield event.data.choices[0].delta.content
+                    yield {"type": "text", "content": event.data.choices[0].delta.content}
 
 
 class CerebrasProvider:
@@ -327,7 +335,7 @@ class CerebrasProvider:
         prompt: str,
         use_search: bool = False,
         use_thinking: bool = False
-    ) -> Generator[str, None, None]:
+    ) -> Generator[dict, None, None]:
         stream = self.client.chat.completions.create(
             model=model_id,
             messages=[{"role": "user", "content": prompt}],
@@ -338,7 +346,7 @@ class CerebrasProvider:
         )
         for chunk in stream:
             if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+                yield {"type": "text", "content": chunk.choices[0].delta.content}
 
 
 # Provider registry
@@ -437,8 +445,14 @@ class LLMManager:
         prompt: str,
         use_search: bool = False,
         use_thinking: bool = False
-    ) -> Generator[str, None, None]:
-        """Stream response using current model with optional features."""
+    ) -> Generator[dict, None, None]:
+        """
+        Stream response using current model with optional features.
+
+        Yields dicts:
+            - {"type": "thinking", "content": "..."} for thinking chunks (Gemini only)
+            - {"type": "text", "content": "..."} for text chunks
+        """
         model_info = MODELS[self.current_model_name]
         provider = self._get_provider(model_info["provider"])
 

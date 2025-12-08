@@ -410,6 +410,72 @@
             opacity: 0.7;
             cursor: default;
         }
+
+        /* Thinking section (collapsible) */
+        .thinking-section {
+            margin-bottom: 12px;
+        }
+        .thinking-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+            border: 1px solid #D8B4FE;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: #7C3AED;
+            transition: all 0.2s;
+        }
+        .thinking-toggle:hover {
+            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+        }
+        .thinking-toggle svg {
+            transition: transform 0.2s;
+        }
+        .thinking-toggle.open svg {
+            transform: rotate(90deg);
+        }
+        .thinking-content {
+            display: none;
+            margin-top: 8px;
+            padding: 12px;
+            background: #FAFAF9;
+            border: 1px solid #E7E5E4;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #57534E;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .thinking-content.open {
+            display: block;
+        }
+        .thinking-content .thinking-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+        /* Markdown styling for thinking content */
+        .thinking-content strong {
+            font-weight: 600;
+            color: #44403C;
+        }
+        .thinking-content em {
+            font-style: italic;
+        }
+        .thinking-content p {
+            margin-bottom: 0.5rem;
+        }
+        .thinking-content p:last-child {
+            margin-bottom: 0;
+        }
+        .thinking-streaming {
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -926,6 +992,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let rawText = '';
+                let rawThinking = '';
                 let buffer = '';
 
                 while (true) {
@@ -943,12 +1010,15 @@
                             try {
                                 const data = JSON.parse(line.slice(6));
 
-                                if (data.type === 'chunk') {
+                                if (data.type === 'thinking') {
+                                    rawThinking += data.content;
+                                    updateThinkingContent(messageId, rawThinking);
+                                } else if (data.type === 'chunk') {
                                     rawText += data.content;
                                     updateStreamingMessage(messageId, rawText);
                                 } else if (data.type === 'done') {
-                                    // Final message with processed content and sources
-                                    finalizeStreamingMessage(messageId, data.content, data.sources || []);
+                                    // Final message with processed content, sources, and thinking
+                                    finalizeStreamingMessage(messageId, data.content, data.sources || [], data.thinking || '');
                                 } else if (data.type === 'error') {
                                     removeStreamingMessage(messageId);
                                     addErrorMessage(data.message);
@@ -980,6 +1050,20 @@
             const html = `
                 <div id="${messageId}" class="flex justify-start mb-4">
                     <div class="max-w-[85%] bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
+                        <div class="thinking-section hidden" data-thinking="">
+                            <div class="thinking-toggle open" onclick="toggleThinkingSection(this)">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                </svg>
+                                <span class="thinking-label">Thinking...</span>
+                            </div>
+                            <div class="thinking-content thinking-streaming open">
+                                <div class="thinking-text"></div>
+                            </div>
+                        </div>
                         <div class="answer-text streaming-content">
                             <div class="flex items-center gap-1 py-1">
                                 <div class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></div>
@@ -993,6 +1077,37 @@
             messagesDiv.insertAdjacentHTML('beforeend', html);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return messageId;
+        }
+
+        function toggleThinkingSection(toggleEl) {
+            toggleEl.classList.toggle('open');
+            const contentEl = toggleEl.nextElementSibling;
+            contentEl.classList.toggle('open');
+        }
+
+        function updateThinkingContent(messageId, thinkingText) {
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            const thinkingSection = messageEl.querySelector('.thinking-section');
+            if (!thinkingSection) return;
+
+            // Show thinking section
+            thinkingSection.classList.remove('hidden');
+
+            // Store thinking text in data attribute
+            thinkingSection.dataset.thinking = thinkingText;
+
+            // Update content with markdown rendering
+            const textDiv = thinkingSection.querySelector('.thinking-text');
+            if (textDiv) {
+                // Parse markdown for thinking content
+                const formattedThinking = marked.parse(thinkingText);
+                textDiv.innerHTML = formattedThinking;
+            }
+
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         function updateStreamingMessage(messageId, text) {
@@ -1042,7 +1157,7 @@
             document.getElementById(messageId)?.remove();
         }
 
-        function finalizeStreamingMessage(messageId, processedAnswer, sources) {
+        function finalizeStreamingMessage(messageId, processedAnswer, sources, thinking) {
             // Clear any pending render timeout
             if (streamingRenderTimeout) {
                 clearTimeout(streamingRenderTimeout);
@@ -1061,6 +1176,29 @@
 
             // Format answer with citations and markdown
             const formattedAnswer = formatAnswerWithCitations(processedAnswer, msgSources);
+
+            // Build thinking section (if present)
+            let thinkingHtml = '';
+            if (thinking && thinking.trim()) {
+                // Parse markdown for thinking content
+                const formattedThinking = marked.parse(thinking);
+                thinkingHtml = `
+                    <div class="thinking-section">
+                        <div class="thinking-toggle" onclick="toggleThinkingSection(this)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                            <span>Thought for a moment</span>
+                        </div>
+                        <div class="thinking-content">
+                            <div class="thinking-text">${formattedThinking}</div>
+                        </div>
+                    </div>
+                `;
+            }
 
             // Build sources section
             let sourcesHtml = '';
@@ -1083,6 +1221,7 @@
             // Update message content
             const container = messageEl.querySelector('.bg-white');
             container.innerHTML = `
+                ${thinkingHtml}
                 <div class="answer-text">${formattedAnswer}</div>
                 ${sourcesHtml}
             `;

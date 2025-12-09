@@ -75,8 +75,14 @@ def _get_bm25_index(vector_store) -> tuple:
     return _bm25_index, _bm25_corpus, _bm25_metadatas
 
 
-def _bm25_search(query: str, vector_store, n_results: int) -> Dict[str, Any]:
-    """Perform BM25 keyword search."""
+def _bm25_search(
+    query: str,
+    vector_store,
+    n_results: int,
+    user_id: str = None,
+    workspace_id: str = None
+) -> Dict[str, Any]:
+    """Perform BM25 keyword search with optional user/workspace filtering."""
     bm25_index, corpus, metadatas = _get_bm25_index(vector_store)
 
     if bm25_index is None or not corpus:
@@ -85,12 +91,33 @@ def _bm25_search(query: str, vector_store, n_results: int) -> Dict[str, Any]:
     query_tokens = _tokenize(query)
     scores = bm25_index.get_scores(query_tokens)
 
-    top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_results]
+    # Get all indices sorted by score
+    sorted_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+
+    # Filter by user_id and workspace_id if provided
+    filtered_docs = []
+    filtered_metas = []
+    filtered_scores = []
+
+    for i in sorted_indices:
+        meta = metadatas[i]
+        # Apply filters
+        if user_id and meta.get("user_id") != user_id:
+            continue
+        if workspace_id and meta.get("workspace_id") != workspace_id:
+            continue
+
+        filtered_docs.append(corpus[i])
+        filtered_metas.append(meta)
+        filtered_scores.append(float(scores[i]))
+
+        if len(filtered_docs) >= n_results:
+            break
 
     return {
-        "documents": [corpus[i] for i in top_indices],
-        "metadatas": [metadatas[i] for i in top_indices],
-        "scores": [float(scores[i]) for i in top_indices]
+        "documents": filtered_docs,
+        "metadatas": filtered_metas,
+        "scores": filtered_scores
     }
 
 
@@ -273,7 +300,9 @@ def retrieve(
     vector_store,
     embedding_service,
     query: str,
-    llm_manager=None
+    llm_manager=None,
+    user_id: str = None,
+    workspace_id: str = None
 ) -> Dict[str, Any]:
     """
     Enhanced retrieval pipeline:
@@ -291,6 +320,8 @@ def retrieve(
         embedding_service: EmbeddingService instance
         query: User query
         llm_manager: LLMManager for query rewriting
+        user_id: Filter by user ID
+        workspace_id: Filter by workspace ID
 
     Returns:
         Dict with chunks, metadatas, total_retrieved
@@ -300,15 +331,26 @@ def retrieve(
     if llm_manager is not None:
         search_query = _rewrite_query(query, llm_manager)
 
-    # Step 2: Vector Search
+    # Build filter for vector search
+    filters = {}
+    if user_id:
+        filters["user_id"] = user_id
+    if workspace_id:
+        filters["workspace_id"] = workspace_id
+
+    # Step 2: Vector Search with filters
     query_embedding = embedding_service.embed_query(search_query)
     vector_results = vector_store.query(
         query_embedding=query_embedding,
-        n_results=INITIAL_RETRIEVAL_K
+        n_results=INITIAL_RETRIEVAL_K,
+        filters=filters if filters else None
     )
 
-    # Step 3: BM25 Search + Fusion
-    bm25_results = _bm25_search(search_query, vector_store, INITIAL_RETRIEVAL_K)
+    # Step 3: BM25 Search + Fusion (with user/workspace filtering)
+    bm25_results = _bm25_search(
+        search_query, vector_store, INITIAL_RETRIEVAL_K,
+        user_id=user_id, workspace_id=workspace_id
+    )
 
     fused_results = _reciprocal_rank_fusion(
         {"documents": vector_results["documents"], "metadatas": vector_results["metadatas"]},

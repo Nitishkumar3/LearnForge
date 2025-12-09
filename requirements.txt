@@ -12,9 +12,9 @@ mistralai
 cerebras-cloud-sdk
 
 # AI/ML - Embeddings (embedserver.py)
-onnxruntime-gpu        # GPU inference; use 'onnxruntime' for CPU-only
-transformers           # AutoTokenizer for BGE-M3
-numpy                  # Array operations
+# onnxruntime-gpu        
+transformers           
+numpy                  
 
 # PDF Processing
 PyPDF2==3.0.1
@@ -25,7 +25,17 @@ chromadb
 # Utilities
 python-dotenv
 
+# Database
+psycopg2-binary         
+
+# Authentication
+PyJWT>=2.8.0            # JWT token handling
+bcrypt>=4.0.0           # Password hashing
+
 # Enhanced Retrieval (Hybrid Search + Reranking)
 rank-bm25>=0.2.2        # BM25 keyword search
 nltk>=3.8               # Sentence tokenization for smart chunking
 tiktoken>=0.5.0         # Token counting for context limit
+
+# S3/R2 Storage
+boto3>=1.28.0        

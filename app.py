@@ -8,9 +8,9 @@ Designed for single-user now, scalable to multi-user later.
 import os
 import uuid
 import json
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, current_app
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -50,6 +50,11 @@ from services.embedding import EmbeddingService
 from services.retrieval import retrieve, invalidate_bm25_cache
 from services.generation import GenerationService
 from services.llm_providers import get_llm_manager
+from services.database import init_db
+from services import database as db
+from services.auth import AuthService, auth_required
+from services.email import EmailService
+from services.storage import StorageService
 from processors.pdf_processor import PDFProcessor
 from utils.chunking import TextChunker
 
@@ -69,6 +74,23 @@ embedding_service = EmbeddingService()
 generation_service = GenerationService()
 llm_manager = get_llm_manager()
 
+# Initialize PostgreSQL database (creates tables if not exist)
+init_db()
+
+# Initialize auth and email services
+jwt_secret = os.getenv('JWT_SECRET_KEY')
+auth_service = AuthService(secret_key=jwt_secret)
+email_service = EmailService()
+
+# Initialize S3 storage service (required)
+storage_service = StorageService()
+print("[STORAGE] S3/R2 storage initialized successfully")
+
+# Store in app config for access in auth_required decorator
+app.config['AUTH_SERVICE'] = auth_service
+app.config['EMAIL_SERVICE'] = email_service
+app.config['STORAGE_SERVICE'] = storage_service
+
 # Chat history (in-memory for simplicity, could be persisted)
 chat_history = []
 
@@ -79,14 +101,357 @@ chat_history = []
 
 @app.route('/')
 def index():
-    """Render the main UI."""
+    """Render landing page."""
     return render_template('index.html')
 
 
+@app.route('/dashboard')
+def dashboard():
+    """Render the main app dashboard."""
+    return render_template('dashboard.html')
+
+
+
+
+# ===================
+# AUTH ROUTES
+# ===================
+
+@app.route('/api/auth/signup', methods=['POST'])
+def signup():
+    """Register new user."""
+    data = request.json
+
+    # Validation
+    required = ['name', 'email', 'password', 'confirm_password']
+    for field in required:
+        if not data.get(field):
+            return jsonify({'error': f'{field} is required'}), 400
+
+    if data['password'] != data['confirm_password']:
+        return jsonify({'error': 'Passwords do not match'}), 400
+
+    if len(data['password']) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+    # Check if email exists
+    if db.get_user_by_email(data['email']):
+        return jsonify({'error': 'Email already registered'}), 400
+
+    # Create user
+    verification_token = auth_service.generate_verification_token()
+
+    user = db.create_user(
+        name=data['name'],
+        email=data['email'].lower(),
+        password_hash=auth_service.hash_password(data['password']),
+        verification_token=verification_token
+    )
+
+    # Create default workspace
+    db.create_workspace(
+        user_id=str(user['id']),
+        name='My First Workspace',
+        description='Default workspace'
+    )
+
+    # Send verification email
+    email_service.send_verification_email(
+        to_email=user['email'],
+        name=user['name'],
+        token=verification_token
+    )
+
+    return jsonify({
+        'success': True,
+        'message': 'Account created. Please check your email to verify your account.',
+        'user': {
+            'id': str(user['id']),
+            'name': user['name'],
+            'email': user['email']
+        }
+    }), 201
+
+
+@app.route('/api/auth/signin', methods=['POST'])
+def signin():
+    """Sign in user."""
+    data = request.json
+
+    if not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'Email and password required'}), 400
+
+    user = db.get_user_by_email(data['email'])
+
+    if not user:
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+    if not auth_service.verify_password(data['password'], user['password_hash']):
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+    if not user['email_verified']:
+        return jsonify({'error': 'Please verify your email first'}), 401
+
+    # Generate token
+    token = auth_service.generate_token(str(user['id']))
+
+    return jsonify({
+        'success': True,
+        'token': token,
+        'user': {
+            'id': str(user['id']),
+            'name': user['name'],
+            'email': user['email']
+        }
+    })
+
+
+@app.route('/api/auth/verify-email/<token>', methods=['GET'])
+def verify_email(token):
+    """Verify email with token."""
+    user = db.get_user_by_verification_token(token)
+
+    if not user:
+        return jsonify({'error': 'Invalid verification link'}), 400
+
+    db.verify_user_email(str(user['id']))
+
+    return jsonify({
+        'success': True,
+        'message': 'Email verified successfully. You can now sign in.'
+    })
+
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    """Request password reset."""
+    data = request.json
+    email = data.get('email', '').lower()
+
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    user = db.get_user_by_email(email)
+
+    # Always return success to prevent email enumeration
+    if not user:
+        return jsonify({
+            'success': True,
+            'message': 'If an account exists, a reset link has been sent.'
+        })
+
+    # Generate reset token
+    reset_token = auth_service.generate_reset_token()
+    expires = datetime.utcnow() + timedelta(hours=1)
+
+    db.set_reset_token(str(user['id']), reset_token, expires)
+
+    # Send reset email
+    email_service.send_password_reset_email(
+        to_email=user['email'],
+        name=user['name'],
+        token=reset_token
+    )
+
+    return jsonify({
+        'success': True,
+        'message': 'If an account exists, a reset link has been sent.'
+    })
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Reset password with token."""
+    data = request.json
+
+    if not data.get('token') or not data.get('password'):
+        return jsonify({'error': 'Token and password required'}), 400
+
+    if data['password'] != data.get('confirm_password'):
+        return jsonify({'error': 'Passwords do not match'}), 400
+
+    if len(data['password']) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+    user = db.get_user_by_reset_token(data['token'])
+
+    if not user:
+        return jsonify({'error': 'Invalid or expired reset link'}), 400
+
+    # Check expiry
+    if user['reset_token_expires']:
+        expires = user['reset_token_expires']
+        # Handle both datetime and string
+        if isinstance(expires, str):
+            expires = datetime.fromisoformat(expires.replace('Z', '+00:00'))
+        if expires.replace(tzinfo=None) < datetime.utcnow():
+            return jsonify({'error': 'Reset link has expired'}), 400
+
+    db.update_password(str(user['id']), auth_service.hash_password(data['password']))
+
+    return jsonify({
+        'success': True,
+        'message': 'Password reset successfully. You can now sign in.'
+    })
+
+
+@app.route('/api/auth/me', methods=['GET'])
+@auth_required
+def get_current_user():
+    """Get current authenticated user."""
+    user = db.get_user_by_id(request.user_id)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({
+        'user': {
+            'id': str(user['id']),
+            'name': user['name'],
+            'email': user['email'],
+            'email_verified': user['email_verified']
+        }
+    })
+
+
+# ===================
+# WORKSPACE ROUTES
+# ===================
+
+@app.route('/api/workspaces', methods=['GET'])
+@auth_required
+def list_workspaces():
+    """List all workspaces for the authenticated user."""
+    workspaces = db.get_workspaces_by_user(request.user_id)
+
+    return jsonify({
+        'workspaces': [{
+            'id': str(w['id']),
+            'name': w['name'],
+            'description': w['description'],
+            'created_at': w['created_at'].isoformat() if w['created_at'] else None
+        } for w in workspaces]
+    })
+
+
+@app.route('/api/workspaces', methods=['POST'])
+@auth_required
+def create_workspace():
+    """Create a new workspace."""
+    data = request.json
+
+    if not data.get('name'):
+        return jsonify({'error': 'Workspace name is required'}), 400
+
+    workspace = db.create_workspace(
+        user_id=request.user_id,
+        name=data['name'],
+        description=data.get('description')
+    )
+
+    return jsonify({
+        'success': True,
+        'workspace': {
+            'id': str(workspace['id']),
+            'name': workspace['name'],
+            'description': workspace['description'],
+            'created_at': workspace['created_at'].isoformat() if workspace['created_at'] else None
+        }
+    }), 201
+
+
+@app.route('/api/workspaces/<workspace_id>', methods=['GET'])
+@auth_required
+def get_workspace(workspace_id):
+    """Get a specific workspace."""
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    return jsonify({
+        'workspace': {
+            'id': str(workspace['id']),
+            'name': workspace['name'],
+            'description': workspace['description'],
+            'created_at': workspace['created_at'].isoformat() if workspace['created_at'] else None
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>', methods=['PUT'])
+@auth_required
+def update_workspace_route(workspace_id):
+    """Update a workspace."""
+    data = request.json
+
+    workspace = db.update_workspace(
+        workspace_id=workspace_id,
+        user_id=request.user_id,
+        name=data.get('name'),
+        description=data.get('description')
+    )
+
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    return jsonify({
+        'success': True,
+        'workspace': {
+            'id': str(workspace['id']),
+            'name': workspace['name'],
+            'description': workspace['description']
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>', methods=['DELETE'])
+@auth_required
+def delete_workspace_route(workspace_id):
+    """Delete a workspace and all its documents."""
+    # Check workspace exists and belongs to user
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    # Check if this is the only workspace
+    all_workspaces = db.get_workspaces_by_user(request.user_id)
+    if len(all_workspaces) <= 1:
+        return jsonify({'error': 'Cannot delete your only workspace'}), 400
+
+    # Delete workspace (cascades to documents in DB)
+    db.delete_workspace(workspace_id, request.user_id)
+
+    # TODO: Also delete from vector store and file storage when those are integrated
+
+    return jsonify({
+        'success': True,
+        'message': 'Workspace deleted'
+    })
+
+
+# ===================
+# DOCUMENT ROUTES
+# ===================
+
 @app.route('/api/documents', methods=['GET'])
+@auth_required
 def list_documents():
-    """List all uploaded documents."""
-    documents = document_registry.list_documents()
+    """List documents for the current user/workspace."""
+    workspace_id = request.args.get('workspace_id')
+
+    if workspace_id:
+        # Verify workspace belongs to user
+        workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+        if not workspace:
+            return jsonify({"error": "Workspace not found"}), 404
+
+    # Filter documents by user and workspace
+    documents = document_registry.list_documents(
+        user_id=request.user_id,
+        workspace_id=workspace_id
+    )
 
     return jsonify({
         "documents": documents,
@@ -96,14 +461,21 @@ def list_documents():
 
 
 @app.route('/api/upload', methods=['POST'])
+@auth_required
 def upload_document():
     """
     Upload and process a PDF document.
 
     Expects:
         - file: PDF file (multipart/form-data)
+        - workspace_id: Workspace to upload to
 
-    Note: Embeddings are generated using local server (no API key needed)
+    Flow:
+        1. Save file temporarily for PDF processing
+        2. Extract text and generate embeddings
+        3. Upload to S3 (if configured)
+        4. Delete temp file
+        5. Store metadata in registry
     """
     global chat_history
 
@@ -112,6 +484,15 @@ def upload_document():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files['file']
+    workspace_id = request.form.get('workspace_id')
+
+    if not workspace_id:
+        return jsonify({"error": "Workspace ID is required"}), 400
+
+    # Verify workspace belongs to user
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({"error": "Workspace not found"}), 404
 
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
@@ -119,21 +500,22 @@ def upload_document():
     if not allowed_file(file.filename):
         return jsonify({"error": "Only PDF files are allowed"}), 400
 
+    temp_file_path = None
+
     try:
         # Generate document ID
         doc_id = f"doc_{uuid.uuid4().hex[:12]}"
-
-        # Secure and save file
         original_filename = file.filename
         safe_filename = secure_filename(file.filename)
-        stored_filename = f"{doc_id}_{safe_filename}"
-        file_path = os.path.join(UPLOADS_PATH, stored_filename)
-        file.save(file_path)
+
+        # Save file temporarily for PDF processing (required for text extraction)
+        temp_file_path = os.path.join(UPLOADS_PATH, f"temp_{doc_id}_{safe_filename}")
+        file.save(temp_file_path)
 
         # Extract text from PDF
-        pdf_result = pdf_processor.process(file_path)
+        pdf_result = pdf_processor.process(temp_file_path)
 
-        # Chunk the text with metadata
+        # Chunk the text with metadata (include user_id and workspace_id)
         chunks = text_chunker.chunk_text(
             text=pdf_result["text"],
             document_id=doc_id,
@@ -142,8 +524,14 @@ def upload_document():
         )
 
         if not chunks:
-            os.remove(file_path)
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
             return jsonify({"error": "Could not extract text from PDF"}), 400
+
+        # Add user_id and workspace_id to all chunk metadata
+        for chunk in chunks:
+            chunk["metadata"]["user_id"] = request.user_id
+            chunk["metadata"]["workspace_id"] = workspace_id
 
         # Generate embeddings using local server
         chunk_texts = [c["text"] for c in chunks]
@@ -163,18 +551,42 @@ def upload_document():
         # Invalidate BM25 cache for hybrid search
         invalidate_bm25_cache()
 
-        # Register document
+        # Upload to S3 (required)
+        storage_key = storage_service.generate_key(
+            user_id=request.user_id,
+            workspace_id=workspace_id,
+            filename=original_filename,
+            doc_id=doc_id
+        )
+        storage_bucket = storage_service.bucket_name
+
+        # Upload file to S3
+        storage_service.upload_file(
+            key=storage_key,
+            file_path=temp_file_path,
+            content_type='application/pdf'
+        )
+
+        # Delete temp file after S3 upload
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        temp_file_path = None
+
+        # Register document with user_id, workspace_id, and storage info
         doc_info = {
             "id": doc_id,
+            "user_id": request.user_id,
+            "workspace_id": workspace_id,
             "filename": original_filename,
-            "stored_filename": stored_filename,
-            "file_path": file_path,
+            "storage_key": storage_key,
+            "storage_bucket": storage_bucket,
             "num_pages": pdf_result["total_pages"],
             "num_chunks": len(chunks),
             "file_size_bytes": pdf_result["file_size"],
             "status": "processed",
             "upload_time": datetime.now().isoformat()
         }
+
         document_registry.add_document(doc_info)
 
         return jsonify({
@@ -184,25 +596,31 @@ def upload_document():
                 "id": doc_id,
                 "filename": original_filename,
                 "pages": pdf_result["total_pages"],
-                "chunks": len(chunks)
+                "chunks": len(chunks),
+                "storage": "s3"
             }
         })
 
     except Exception as e:
-        # Clean up on error
-        if 'file_path' in locals() and os.path.exists(file_path):
-            os.remove(file_path)
+        # Clean up temp file on error
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/documents/<doc_id>', methods=['DELETE'])
+@auth_required
 def delete_document(doc_id):
-    """Delete a document and its chunks."""
+    """Delete a document from vector store, S3/local storage, and registry."""
     try:
         # Get document info
         doc = document_registry.get_document(doc_id)
 
         if not doc:
+            return jsonify({"error": "Document not found"}), 404
+
+        # Verify document belongs to user
+        if doc.get('user_id') != request.user_id:
             return jsonify({"error": "Document not found"}), 404
 
         # Delete from vector store
@@ -211,9 +629,9 @@ def delete_document(doc_id):
         # Invalidate BM25 cache for hybrid search
         invalidate_bm25_cache()
 
-        # Delete file
-        if "file_path" in doc and os.path.exists(doc["file_path"]):
-            os.remove(doc["file_path"])
+        # Delete from S3
+        if doc.get('storage_key'):
+            storage_service.delete_file(doc['storage_key'])
 
         # Delete from registry
         document_registry.delete_document(doc_id)
@@ -228,12 +646,14 @@ def delete_document(doc_id):
 
 
 @app.route('/api/chat', methods=['POST'])
+@auth_required
 def chat():
     """
     Chat with the documents.
 
     Expects JSON:
         - question: User question
+        - workspace_id: Workspace to search in
         - use_search: Enable web search (optional)
         - use_thinking: Enable thinking mode (optional)
     """
@@ -241,21 +661,37 @@ def chat():
 
     data = request.json
     question = data.get('question', '').strip()
+    workspace_id = data.get('workspace_id')
     use_search = data.get('use_search', False)
     use_thinking = data.get('use_thinking', False)
 
     if not question:
         return jsonify({"error": "Question is required"}), 400
 
-    # Check if we have any documents
-    if vector_store.count() == 0:
+    if not workspace_id:
+        return jsonify({"error": "Workspace ID is required"}), 400
+
+    # Verify workspace belongs to user
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({"error": "Workspace not found"}), 404
+
+    # Check if we have any documents in this workspace
+    user_docs = document_registry.list_documents(
+        user_id=request.user_id,
+        workspace_id=workspace_id
+    )
+    if not user_docs:
         return jsonify({
             "error": "No documents uploaded. Please upload some PDFs first."
         }), 400
 
     try:
-        # Retrieve relevant chunks
-        retrieval_result = retrieve(vector_store, embedding_service, question, llm_manager)
+        # Retrieve relevant chunks filtered by user and workspace
+        retrieval_result = retrieve(
+            vector_store, embedding_service, question, llm_manager,
+            user_id=request.user_id, workspace_id=workspace_id
+        )
 
         # Generate answer with optional features
         answer_result = generation_service.generate_answer(
@@ -288,12 +724,14 @@ def chat():
 
 
 @app.route('/api/chat/stream', methods=['POST'])
+@auth_required
 def chat_stream():
     """
     Stream chat response using Server-Sent Events.
 
     Expects JSON:
         - question: User question
+        - workspace_id: Workspace to search in
         - use_search: Enable web search (optional)
         - use_thinking: Enable thinking mode (optional)
 
@@ -306,22 +744,41 @@ def chat_stream():
 
     data = request.json
     question = data.get('question', '').strip()
+    workspace_id = data.get('workspace_id')
     use_search = data.get('use_search', False)
     use_thinking = data.get('use_thinking', False)
 
     if not question:
         return jsonify({"error": "Question is required"}), 400
 
-    # Check if we have any documents
-    if vector_store.count() == 0:
+    if not workspace_id:
+        return jsonify({"error": "Workspace ID is required"}), 400
+
+    # Verify workspace belongs to user
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({"error": "Workspace not found"}), 404
+
+    # Check if we have any documents in this workspace
+    user_docs = document_registry.list_documents(
+        user_id=request.user_id,
+        workspace_id=workspace_id
+    )
+    if not user_docs:
         return jsonify({
             "error": "No documents uploaded. Please upload some PDFs first."
         }), 400
 
+    # Capture user_id for the closure
+    user_id = request.user_id
+
     def generate():
         try:
-            # Retrieve relevant chunks
-            retrieval_result = retrieve(vector_store, embedding_service, question, llm_manager)
+            # Retrieve relevant chunks filtered by user and workspace
+            retrieval_result = retrieve(
+                vector_store, embedding_service, question, llm_manager,
+                user_id=user_id, workspace_id=workspace_id
+            )
 
             # Stream answer
             full_answer = ""
@@ -417,39 +874,6 @@ def generate_image():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/clear', methods=['POST'])
-def clear_all():
-    """Clear all documents and chat history."""
-    global chat_history
-
-    try:
-        # Clear vector store
-        vector_store.clear_all()
-
-        # Invalidate BM25 cache for hybrid search
-        invalidate_bm25_cache()
-
-        # Clear document registry
-        document_registry.clear_all()
-
-        # Clear uploaded files
-        for filename in os.listdir(UPLOADS_PATH):
-            file_path = os.path.join(UPLOADS_PATH, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
-        # Clear chat history
-        chat_history = []
-
-        return jsonify({
-            "success": True,
-            "message": "All data cleared successfully"
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route('/api/chat/clear', methods=['POST'])
 def clear_chat():
     """Clear only chat history."""
@@ -462,16 +886,23 @@ def clear_chat():
 
 
 @app.route('/api/stats', methods=['GET'])
+@auth_required
 def get_stats():
-    """Get system statistics."""
-    documents = document_registry.list_documents()
+    """Get statistics for user's workspace."""
+    workspace_id = request.args.get('workspace_id')
+
+    # Filter documents by user and workspace
+    documents = document_registry.list_documents(
+        user_id=request.user_id,
+        workspace_id=workspace_id
+    )
 
     total_pages = sum(d.get("num_pages", 0) for d in documents)
     total_size = sum(d.get("file_size_bytes", 0) for d in documents)
 
     return jsonify({
         "total_documents": len(documents),
-        "total_chunks": vector_store.count(),
+        "total_chunks": sum(d.get("num_chunks", 0) for d in documents),
         "total_pages": total_pages,
         "total_size_mb": round(total_size / (1024 * 1024), 2),
         "chat_history_length": len(chat_history)
@@ -529,6 +960,39 @@ def internal_error(error):
 
 # ===================
 # RUN
+# ===================
+
+
+# ===================
+# AUTH PAGE ROUTES
+# ===================
+
+@app.route('/signin')
+def signin_page():
+    """Render sign in page."""
+    return render_template('signin.html')
+
+
+@app.route('/signup')
+def signup_page():
+    """Render sign up page."""
+    return render_template('signup.html')
+
+
+@app.route('/forgotpassword')
+def forgotpassword_page():
+    """Render forgot password page."""
+    return render_template('forgotpassword.html')
+
+
+@app.route('/resetpassword')
+def resetpassword_page():
+    """Render reset password page."""
+    return render_template('resetpassword.html')
+
+
+# ===================
+# RUN APP
 # ===================
 
 if __name__ == '__main__':

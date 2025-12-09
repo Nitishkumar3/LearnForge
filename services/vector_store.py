@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CHROMA_DB_PATH = os.path.join(DATA_DIR, "chroma_db")
 DOCUMENTS_REGISTRY = os.path.join(DATA_DIR, "documents.json")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
+COLLECTION_NAME = "documents"
 DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "default")
 DEFAULT_WORKSPACE_ID = os.getenv("DEFAULT_WORKSPACE_ID", "default")
 
@@ -83,7 +83,7 @@ class VectorStore:
         Args:
             query_embedding: Query vector
             n_results: Number of results to return
-            filters: Optional metadata filters (e.g., {"user_id": "user123"})
+            filters: Optional metadata filters (e.g., {"user_id": "user123", "workspace_id": "ws123"})
 
         Returns:
             Dict with 'documents', 'metadatas', 'distances', 'ids'
@@ -93,9 +93,16 @@ class VectorStore:
             "n_results": n_results
         }
 
-        # Add filters if provided (for future multi-user support)
+        # Add filters if provided - handle multiple filters with $and
         if filters:
-            query_params["where"] = filters
+            if len(filters) == 1:
+                # Single filter, use directly
+                query_params["where"] = filters
+            else:
+                # Multiple filters, use $and
+                query_params["where"] = {
+                    "$and": [{k: v} for k, v in filters.items()]
+                }
 
         results = self.collection.query(**query_params)
 

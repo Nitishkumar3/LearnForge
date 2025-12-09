@@ -45,50 +45,37 @@ def allowed_file(filename):
 # ===================
 # IMPORTS (after config so paths are ready)
 # ===================
-from services.vector_store import VectorStore
-from services.embedding import EmbeddingService
+from services.startup import run_startup_checks
+from services import vector_store
+from services import embedding
 from services.retrieval import retrieve, invalidate_bm25_cache
-from services.generation import GenerationService
-from services.llm_providers import get_llm_manager
+from services import generation
+from services import llm_providers as llm
 from services.database import init_db
 from services import database as db
-from services.auth import AuthService, auth_required
-from services.email import EmailService
-from services.storage import StorageService
-from processors.pdf_processor import PDFProcessor
-from utils.chunking import TextChunker
+from services import auth
+from services.auth import auth_required
+from services import email
+from services import storage
+from processors import pdf_processor
+from utils import chunking
+
+# ===================
+# STARTUP HEALTH CHECKS
+# ===================
+import os as _os
+if _os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+    if not run_startup_checks():
+        import sys
+        sys.exit(1)
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['UPLOAD_FOLDER'] = UPLOADS_PATH
 
-# Initialize persistent services
-vector_store = VectorStore()
-pdf_processor = PDFProcessor()
-text_chunker = TextChunker()
-
-# Initialize services (all config loaded from .env)
-embedding_service = EmbeddingService()
-generation_service = GenerationService()
-llm_manager = get_llm_manager()
-
 # Initialize PostgreSQL database (creates tables if not exist)
 init_db()
-
-# Initialize auth and email services
-jwt_secret = os.getenv('JWT_SECRET_KEY')
-auth_service = AuthService(secret_key=jwt_secret)
-email_service = EmailService()
-
-# Initialize S3 storage service (required)
-storage_service = StorageService()
-print("[STORAGE] S3/R2 storage initialized successfully")
-
-# Store in app config for access in auth_required decorator
-app.config['AUTH_SERVICE'] = auth_service
-app.config['EMAIL_SERVICE'] = email_service
-app.config['STORAGE_SERVICE'] = storage_service
 
 # Chat history (in-memory for simplicity, could be persisted)
 chat_history = []
@@ -138,12 +125,12 @@ def signup():
         return jsonify({'error': 'Email already registered'}), 400
 
     # Create user
-    verification_token = auth_service.generate_verification_token()
+    verification_token = auth.generate_verification_token()
 
     user = db.create_user(
         name=data['name'],
         email=data['email'].lower(),
-        password_hash=auth_service.hash_password(data['password']),
+        password_hash=auth.hash_password(data['password']),
         verification_token=verification_token
     )
 
@@ -155,7 +142,7 @@ def signup():
     )
 
     # Send verification email
-    email_service.send_verification_email(
+    email.send_verification_email(
         to_email=user['email'],
         name=user['name'],
         token=verification_token
@@ -185,14 +172,14 @@ def signin():
     if not user:
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    if not auth_service.verify_password(data['password'], user['password_hash']):
+    if not auth.verify_password(data['password'], user['password_hash']):
         return jsonify({'error': 'Invalid email or password'}), 401
 
     if not user['email_verified']:
         return jsonify({'error': 'Please verify your email first'}), 401
 
     # Generate token
-    token = auth_service.generate_token(str(user['id']))
+    token = auth.generate_token(str(user['id']))
 
     return jsonify({
         'success': True,
@@ -225,12 +212,12 @@ def verify_email(token):
 def forgot_password():
     """Request password reset."""
     data = request.json
-    email = data.get('email', '').lower()
+    user_email = data.get('email', '').lower()
 
-    if not email:
+    if not user_email:
         return jsonify({'error': 'Email is required'}), 400
 
-    user = db.get_user_by_email(email)
+    user = db.get_user_by_email(user_email)
 
     # Always return success to prevent email enumeration
     if not user:
@@ -240,13 +227,13 @@ def forgot_password():
         })
 
     # Generate reset token
-    reset_token = auth_service.generate_reset_token()
+    reset_token = auth.generate_reset_token()
     expires = datetime.utcnow() + timedelta(hours=1)
 
     db.set_reset_token(str(user['id']), reset_token, expires)
 
     # Send reset email
-    email_service.send_password_reset_email(
+    email.send_password_reset_email(
         to_email=user['email'],
         name=user['name'],
         token=reset_token
@@ -286,7 +273,7 @@ def reset_password():
         if expires.replace(tzinfo=None) < datetime.utcnow():
             return jsonify({'error': 'Reset link has expired'}), 400
 
-    db.update_password(str(user['id']), auth_service.hash_password(data['password']))
+    db.update_password(str(user['id']), auth.hash_password(data['password']))
 
     return jsonify({
         'success': True,
@@ -436,7 +423,7 @@ def delete_workspace_route(workspace_id):
     # Delete S3 folder for this workspace (all files under user_id/workspace_id/)
     try:
         folder_prefix = f"{request.user_id}/{workspace_id}/"
-        storage_service.delete_folder(folder_prefix)
+        storage.delete_folder(folder_prefix)
     except Exception as e:
         print(f"Error deleting S3 folder: {e}")
 
@@ -550,7 +537,7 @@ def upload_document():
         pdf_result = pdf_processor.process(temp_file_path)
 
         # Chunk the text with metadata (include user_id and workspace_id)
-        chunks = text_chunker.chunk_text(
+        chunks = chunking.chunk_text(
             text=pdf_result["text"],
             document_id=doc_id,
             document_name=original_filename,
@@ -569,7 +556,7 @@ def upload_document():
 
         # Generate embeddings using local server
         chunk_texts = [c["text"] for c in chunks]
-        embeddings = embedding_service.embed_texts(chunk_texts)
+        embeddings = embedding.embed_texts(chunk_texts)
 
         # Prepare metadata for storage
         metadatas = [c["metadata"] for c in chunks]
@@ -586,16 +573,16 @@ def upload_document():
         invalidate_bm25_cache()
 
         # Upload to S3 (required)
-        storage_key = storage_service.generate_key(
+        storage_key = storage.generate_key(
             user_id=request.user_id,
             workspace_id=workspace_id,
             filename=original_filename,
             doc_id=doc_id
         )
-        storage_bucket = storage_service.bucket_name
+        storage_bucket = storage.BUCKET_NAME
 
         # Upload file to S3
-        storage_service.upload_file(
+        storage.upload_file(
             key=storage_key,
             file_path=temp_file_path,
             content_type='application/pdf'
@@ -660,7 +647,7 @@ def delete_document(doc_id):
 
         # Delete from S3
         if doc.get('storage_key'):
-            storage_service.delete_file(doc['storage_key'])
+            storage.delete_file(doc['storage_key'])
 
         # Delete from database (returns deleted doc for confirmation)
         db.delete_document(doc_id, request.user_id)
@@ -715,12 +702,12 @@ def chat():
     try:
         # Retrieve relevant chunks filtered by user and workspace
         retrieval_result = retrieve(
-            vector_store, embedding_service, question, llm_manager,
+            question,
             user_id=request.user_id, workspace_id=workspace_id
         )
 
         # Generate answer with optional features
-        answer_result = generation_service.generate_answer(
+        answer_result = generation.generate_answer(
             query=question,
             chunks=retrieval_result["chunks"],
             metadatas=retrieval_result["metadatas"],
@@ -799,7 +786,7 @@ def chat_stream():
         try:
             # Retrieve relevant chunks filtered by user and workspace
             retrieval_result = retrieve(
-                vector_store, embedding_service, question, llm_manager,
+                question,
                 user_id=user_id, workspace_id=workspace_id
             )
 
@@ -807,7 +794,7 @@ def chat_stream():
             full_answer = ""
             sources = []
 
-            for event in generation_service.generate_answer_stream(
+            for event in generation.generate_answer_stream(
                 query=question,
                 chunks=retrieval_result["chunks"],
                 metadatas=retrieval_result["metadatas"],
@@ -879,11 +866,11 @@ def generate_image():
 
     try:
         # Check if current model supports image generation
-        current_model = llm_manager.get_current_model()
+        current_model = llm.get_current_model()
         if current_model.get("type") != "image":
             return jsonify({"error": f"Current model '{current_model['name']}' does not support image generation"}), 400
 
-        result = llm_manager.generate_image(prompt, aspect_ratio=aspect_ratio)
+        result = llm.generate_image(prompt, aspect_ratio=aspect_ratio)
 
         return jsonify({
             "success": True,
@@ -936,8 +923,8 @@ def get_stats():
 def list_models():
     """List all available LLM models."""
     return jsonify({
-        "models": llm_manager.list_models(),
-        "current": llm_manager.get_current_model()
+        "models": llm.list_models(),
+        "current": llm.get_current_model()
     })
 
 
@@ -950,11 +937,11 @@ def switch_model():
     if not model_name:
         return jsonify({"error": "Model name required"}), 400
 
-    if llm_manager.set_model(model_name):
+    if llm.set_model(model_name):
         return jsonify({
             "success": True,
             "message": f"Switched to {model_name}",
-            "current": llm_manager.get_current_model()
+            "current": llm.get_current_model()
         })
     else:
         return jsonify({"error": f"Unknown model: {model_name}"}), 400
@@ -1019,15 +1006,6 @@ def resetpassword_page():
 # ===================
 
 if __name__ == '__main__':
-    print("\n" + "="*50)
-    print("Core RAG System")
-    print("="*50)
-    print(f"Data directory: {DATA_DIR}")
-    print(f"ChromaDB path: {CHROMA_DB_PATH}")
-    print(f"Embedding server: {EMBEDDING_SERVER_URL}")
-    print(f"Total chunks in vector store: {vector_store.count()}")
-    print("="*50 + "\n")
-
     app.run(
         host=FLASK_HOST,
         port=FLASK_PORT,

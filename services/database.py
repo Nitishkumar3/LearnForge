@@ -83,7 +83,6 @@ def init_db():
     try:
         cur.execute(schema)
         connection.commit()
-        print("Database initialized successfully")
     finally:
         cur.close()
 

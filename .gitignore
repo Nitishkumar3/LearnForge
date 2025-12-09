@@ -3,6 +3,7 @@ data/
 cookie.txt
 action-plan.md
 todo.md
+design-guide.md
 
 # Virtual environment
 .venv

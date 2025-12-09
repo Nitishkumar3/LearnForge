@@ -323,7 +323,14 @@ def nova_generate_image(provider, model_id, prompt, aspect_ratio):
         }
 
         response = client.post(f"{provider['base_url']}/api/generateImage", headers=headers, json=payload)
-        data = response.json()
+
+        if response.status_code != 200:
+            raise ValueError(f"Image generation failed: HTTP {response.status_code}")
+
+        try:
+            data = response.json()
+        except Exception:
+            raise ValueError("Image generation failed: Invalid response from server. Cookies may have expired - update cookie.txt")
 
         if "result" not in data or "data" not in data["result"]:
             raise ValueError(f"Unexpected response: {data}")

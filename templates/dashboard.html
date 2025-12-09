@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,43 +11,99 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled>
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <!-- Geist Font + Lora Font for chat -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Initialize theme before page renders to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(savedTheme);
+        })();
+    </script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
                     },
                     colors: {
-                        primary: {
-                            50: '#EEF2FF',
-                            100: '#E0E7FF',
-                            200: '#C7D2FE',
-                            300: '#A5B4FC',
-                            400: '#818CF8',
-                            500: '#6366F1',
-                            600: '#4F46E5',
-                            700: '#4338CA',
-                            800: '#3730A3',
-                            900: '#312E81',
-                        }
-                    }
+                        // ChatGPT-style colors
+                        // Light mode
+                        'light-bg': '#FFFFFF',
+                        'light-sidebar': '#F9F9F9',
+                        'light-hover': '#ECECEC',
+                        'light-border': '#E5E5E5',
+                        'light-text': '#0D0D0D',
+                        'light-text-secondary': '#666666',
+                        'light-text-muted': '#999999',
+                        // Dark mode
+                        'dark-bg': '#212121',
+                        'dark-sidebar': '#171717',
+                        'dark-hover': '#2F2F2F',
+                        'dark-border': '#3E3E3E',
+                        'dark-text': '#ECECEC',
+                        'dark-text-secondary': '#B4B4B4',
+                        'dark-text-muted': '#8E8E8E',
+                        // Functional accents
+                        'accent-success': '#10B981',
+                        'accent-warning': '#F59E0B',
+                        'accent-error': '#EF4444',
+                    },
+                    transitionTimingFunction: {
+                        'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
                 }
             }
         }
     </script>
     <style>
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
+        /* CSS Variables for theme-aware gradients */
+        :root {
+            --input-bg: #FFFFFF;
         }
-        .chat-container {
-            height: calc(100vh - 280px);
-            min-height: 400px;
+        .dark {
+            --input-bg: #212121;
+        }
+
+        body {
+            font-family: 'Geist', sans-serif;
+            font-optical-sizing: auto;
+        }
+
+        /* Theme transition */
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* Scrollbar - Light mode */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Scrollbar - Dark mode */
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* Citation badges */
@@ -59,7 +115,7 @@
             height: 18px;
             font-size: 10px;
             font-weight: 600;
-            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            background: #0D0D0D;
             color: white;
             border-radius: 4px;
             margin: 0 2px;
@@ -67,9 +123,12 @@
             vertical-align: super;
             transition: all 0.2s;
         }
+        .dark .citation {
+            background: #ECECEC;
+            color: #0D0D0D;
+        }
         .citation:hover {
             transform: scale(1.1);
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
         }
 
         /* Source pills */
@@ -78,16 +137,23 @@
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
+            background: #F9F9F9;
+            border: 1px solid #E5E5E5;
             border-radius: 20px;
             font-size: 12px;
-            color: #475569;
+            color: #666666;
             transition: all 0.2s;
         }
+        .dark .source-pill {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+            color: #B4B4B4;
+        }
         .source-pill:hover {
-            background: #F1F5F9;
-            border-color: #CBD5E1;
+            background: #ECECEC;
+        }
+        .dark .source-pill:hover {
+            background: #3E3E3E;
         }
         .source-number {
             display: inline-flex;
@@ -97,51 +163,74 @@
             height: 18px;
             font-size: 10px;
             font-weight: 600;
-            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            background: #0D0D0D;
             color: white;
             border-radius: 4px;
+        }
+        .dark .source-number {
+            background: #ECECEC;
+            color: #0D0D0D;
         }
 
         /* ========================================
            ANSWER TEXT - Full Markdown Styling
-           ChatGPT/Claude/Perplexity inspired
+           Light/Dark mode support
            ======================================== */
         .answer-text {
+            font-family: 'Lora', serif;
             font-size: 15px;
             line-height: 1.7;
-            color: #1E293B;
+            color: #0D0D0D;
+        }
+        .dark .answer-text {
+            color: #ECECEC;
         }
 
         /* Headings */
         .answer-text h1 {
             font-size: 1.5rem;
-            font-weight: 700;
-            color: #0F172A;
+            font-weight: 600;
+            color: #0D0D0D;
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid #E2E8F0;
+            border-bottom: 1px solid #E5E5E5;
+            letter-spacing: -0.02em;
+        }
+        .dark .answer-text h1 {
+            color: #ECECEC;
+            border-bottom-color: #3E3E3E;
         }
         .answer-text h2 {
             font-size: 1.25rem;
             font-weight: 600;
-            color: #0F172A;
+            color: #0D0D0D;
             margin-top: 1.5rem;
             margin-bottom: 0.625rem;
+            letter-spacing: -0.02em;
+        }
+        .dark .answer-text h2 {
+            color: #ECECEC;
         }
         .answer-text h3 {
             font-size: 1.1rem;
-            font-weight: 600;
-            color: #1E293B;
+            font-weight: 500;
+            color: #0D0D0D;
             margin-top: 1.25rem;
             margin-bottom: 0.5rem;
         }
+        .dark .answer-text h3 {
+            color: #ECECEC;
+        }
         .answer-text h4 {
             font-size: 1rem;
-            font-weight: 600;
-            color: #334155;
+            font-weight: 500;
+            color: #333333;
             margin-top: 1rem;
             margin-bottom: 0.5rem;
+        }
+        .dark .answer-text h4 {
+            color: #B4B4B4;
         }
         .answer-text h1:first-child,
         .answer-text h2:first-child,
@@ -152,6 +241,10 @@
         /* Paragraphs */
         .answer-text p {
             margin-bottom: 1rem;
+            color: #0D0D0D;
+        }
+        .dark .answer-text p {
+            color: #ECECEC;
         }
         .answer-text p:last-child {
             margin-bottom: 0;
@@ -160,7 +253,10 @@
         /* Bold & Italic */
         .answer-text strong {
             font-weight: 600;
-            color: #0F172A;
+            color: #0D0D0D;
+        }
+        .dark .answer-text strong {
+            color: #FFFFFF;
         }
         .answer-text em {
             font-style: italic;
@@ -180,6 +276,10 @@
         .answer-text li {
             margin-bottom: 0.5rem;
             line-height: 1.7;
+            color: #0D0D0D;
+        }
+        .dark .answer-text li {
+            color: #ECECEC;
         }
         .answer-text li:last-child {
             margin-bottom: 0;
@@ -198,41 +298,55 @@
 
         /* Inline code */
         .answer-text code {
-            background: #F1F5F9;
+            background: #F9F9F9;
             padding: 0.2rem 0.4rem;
             border-radius: 0.25rem;
             font-size: 0.875em;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            color: #D946EF;
-            border: 1px solid #E2E8F0;
+            color: #0D0D0D;
+            border: 1px solid #E5E5E5;
+        }
+        .dark .answer-text code {
+            background: #2F2F2F;
+            color: #ECECEC;
+            border-color: #3E3E3E;
         }
 
         /* Code blocks */
         .answer-text pre {
-            background: #1E293B;
-            border-radius: 0.5rem;
+            background: #0D0D0D;
+            border-radius: 0.75rem;
             padding: 1rem;
             margin: 1rem 0;
             overflow-x: auto;
-            border: 1px solid #334155;
+            border: 1px solid #3E3E3E;
+        }
+        .dark .answer-text pre {
+            background: #0D0D0D;
+            border-color: #3E3E3E;
         }
         .answer-text pre code {
             background: transparent;
             padding: 0;
             border: none;
-            color: #E2E8F0;
+            color: #E5E5E5;
             font-size: 0.875rem;
             line-height: 1.6;
         }
 
         /* Blockquotes */
         .answer-text blockquote {
-            border-left: 4px solid #6366F1;
-            background: #F8FAFC;
+            border-left: 3px solid #0D0D0D;
+            background: #F9F9F9;
             margin: 1rem 0;
             padding: 0.75rem 1rem;
-            border-radius: 0 0.375rem 0.375rem 0;
-            color: #475569;
+            border-radius: 0 0.5rem 0.5rem 0;
+            color: #666666;
+        }
+        .dark .answer-text blockquote {
+            border-left-color: #ECECEC;
+            background: #2F2F2F;
+            color: #B4B4B4;
         }
         .answer-text blockquote p {
             margin-bottom: 0.5rem;
@@ -243,22 +357,26 @@
 
         /* Links */
         .answer-text a {
-            color: #6366F1;
-            text-decoration: none;
-            font-weight: 500;
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.2s;
+            color: #0D0D0D;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .dark .answer-text a {
+            color: #ECECEC;
         }
         .answer-text a:hover {
-            border-bottom-color: #6366F1;
+            opacity: 0.7;
         }
 
         /* Horizontal rule */
         .answer-text hr {
             border: none;
             height: 1px;
-            background: #E2E8F0;
+            background: #E5E5E5;
             margin: 1.5rem 0;
+        }
+        .dark .answer-text hr {
+            background: #3E3E3E;
         }
 
         /* Tables */
@@ -269,20 +387,32 @@
             font-size: 0.875rem;
         }
         .answer-text th {
-            background: #F8FAFC;
+            background: #F9F9F9;
             font-weight: 600;
             text-align: left;
             padding: 0.75rem;
-            border: 1px solid #E2E8F0;
-            color: #0F172A;
+            border: 1px solid #E5E5E5;
+            color: #0D0D0D;
+        }
+        .dark .answer-text th {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+            color: #ECECEC;
         }
         .answer-text td {
             padding: 0.75rem;
-            border: 1px solid #E2E8F0;
-            color: #334155;
+            border: 1px solid #E5E5E5;
+            color: #666666;
+        }
+        .dark .answer-text td {
+            border-color: #3E3E3E;
+            color: #B4B4B4;
         }
         .answer-text tr:nth-child(even) {
-            background: #F8FAFC;
+            background: #F9F9F9;
+        }
+        .dark .answer-text tr:nth-child(even) {
+            background: #2F2F2F;
         }
 
         /* Images */
@@ -307,36 +437,15 @@
             margin-top: 1rem;
         }
 
-        /* Scrollbar styling */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #F1F5F9;
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #CBD5E1;
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94A3B8;
-        }
-
         /* Document card */
         .doc-card {
             transition: all 0.2s;
         }
         .doc-card:hover {
-            background: #F8FAFC;
+            background: #ECECEC;
         }
-
-        /* Gradient text */
-        .gradient-text {
-            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .dark .doc-card:hover {
+            background: #2F2F2F;
         }
 
         /* Typing indicator */
@@ -355,7 +464,6 @@
         /* Streaming cursor */
         .typing-cursor {
             animation: blink 1s infinite;
-            color: #6366F1;
             font-weight: normal;
         }
 
@@ -368,47 +476,201 @@
             /* Normal whitespace handling - HTML tags control spacing */
         }
 
-        /* Upload zone animation */
-        .upload-zone {
-            transition: all 0.3s;
+        /* Chat history item */
+        .chat-item {
+            transition: background-color 0.15s;
         }
-        .upload-zone.dragover {
-            border-color: #6366F1;
-            background: #EEF2FF;
-            transform: scale(1.02);
+        .chat-item:hover .group-hover\:flex {
+            display: flex;
         }
 
-        /* Feature buttons (Search, Think) */
+        /* Upload zone animation */
+        .upload-zone {
+            transition: all 0.2s;
+        }
+        .upload-zone.dragover {
+            border-color: #0D0D0D;
+            background: #F9F9F9;
+        }
+        .dark .upload-zone.dragover {
+            border-color: #ECECEC;
+            background: #2F2F2F;
+        }
+
+        /* Feature buttons (Search, Think) - Old style kept for compatibility */
         .feature-btn {
-            background: #F1F5F9;
-            color: #64748B;
-            border: 1px solid #E2E8F0;
+            background: #F9F9F9;
+            color: #666666;
+            border: 1px solid #E5E5E5;
+        }
+        .dark .feature-btn {
+            background: #2F2F2F;
+            color: #B4B4B4;
+            border-color: #3E3E3E;
         }
         .feature-btn:hover {
-            background: #E2E8F0;
-            color: #475569;
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #E5E5E5;
+        }
+        .dark .feature-btn:hover {
+            background: #3E3E3E;
+            color: #ECECEC;
+            border-color: #4E4E4E;
         }
         .feature-btn.active {
-            background: #6366F1;
+            background: #0D0D0D;
             color: white;
-            border-color: #6366F1;
+            border-color: #0D0D0D;
+        }
+        .dark .feature-btn.active {
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #ECECEC;
         }
         .feature-btn.active:hover {
-            background: #4F46E5;
+            background: #333333;
+        }
+        .dark .feature-btn.active:hover {
+            background: #D5D5D5;
         }
         .feature-btn.active.purple {
-            background: #8B5CF6;
-            border-color: #8B5CF6;
+            background: #333333;
+            border-color: #333333;
+        }
+
+        /* Toolbar buttons for rectangular input */
+        .toolbar-btn {
+            background: transparent;
+            color: #666666;
+            border: 1px solid #E5E5E5;
+        }
+        .dark .toolbar-btn {
+            color: #B4B4B4;
+            border-color: #424242;
+        }
+        .toolbar-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #0D0D0D;
+            border-color: #CDCDCD;
+        }
+        .dark .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ECECEC;
+            border-color: #5A5A5A;
+        }
+        .toolbar-btn.active {
+            background: #0D0D0D;
+            color: #FFFFFF;
+            border-color: #0D0D0D;
+        }
+        .dark .toolbar-btn.active {
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #ECECEC;
+        }
+        .toolbar-btn.active:hover {
+            opacity: 0.9;
+        }
+        .dark .feature-btn.active.purple {
+            background: #ECECEC;
+            border-color: #ECECEC;
         }
         .feature-btn.active.purple:hover {
-            background: #7C3AED;
+            background: #444444;
+        }
+        .dark .feature-btn.active.purple:hover {
+            background: #D5D5D5;
         }
         .feature-btn.always-on {
-            background: #6366F1;
+            background: #0D0D0D;
             color: white;
-            border-color: #6366F1;
+            border-color: #0D0D0D;
             opacity: 0.7;
             cursor: default;
+        }
+        .dark .feature-btn.always-on {
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #ECECEC;
+        }
+
+        /* Model dropdown styles */
+        .model-dropdown-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .model-dropdown-item:hover {
+            background: #F4F4F4;
+        }
+        .dark .model-dropdown-item:hover {
+            background: #2F2F2F;
+        }
+        .model-dropdown-item.selected {
+            background: #F4F4F4;
+        }
+        .dark .model-dropdown-item.selected {
+            background: #2F2F2F;
+        }
+        .model-dropdown-item .model-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .model-dropdown-item .model-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #0D0D0D;
+        }
+        .dark .model-dropdown-item .model-name {
+            color: #ECECEC;
+        }
+        .model-dropdown-item .model-desc {
+            font-size: 11px;
+            color: #666666;
+        }
+        .dark .model-dropdown-item .model-desc {
+            color: #8E8E8E;
+        }
+        .model-dropdown-item .check-icon {
+            color: #0D0D0D;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .dark .model-dropdown-item .check-icon {
+            color: #ECECEC;
+        }
+        .model-dropdown-item.selected .check-icon {
+            opacity: 1;
+        }
+        #modelDropdownArrow.open {
+            transform: rotate(180deg);
+        }
+
+        /* Toast animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeOutDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
         }
 
         /* Thinking section (collapsible) */
@@ -420,20 +682,30 @@
             align-items: center;
             gap: 6px;
             padding: 8px 12px;
-            background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
-            border: 1px solid #D8B4FE;
+            background: #F9F9F9;
+            border: 1px solid #E5E5E5;
             border-radius: 8px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
-            color: #7C3AED;
-            transition: all 0.2s;
+            color: #666666;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dark .thinking-toggle {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+            color: #B4B4B4;
         }
         .thinking-toggle:hover {
-            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+            background: #ECECEC;
+            border-color: #E5E5E5;
+        }
+        .dark .thinking-toggle:hover {
+            background: #3E3E3E;
+            border-color: #4E4E4E;
         }
         .thinking-toggle svg {
-            transition: transform 0.2s;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .thinking-toggle.open svg {
             transform: rotate(90deg);
@@ -442,14 +714,19 @@
             display: none;
             margin-top: 8px;
             padding: 12px;
-            background: #FAFAF9;
-            border: 1px solid #E7E5E4;
+            background: #F9F9F9;
+            border: 1px solid #E5E5E5;
             border-radius: 8px;
             font-size: 13px;
             line-height: 1.6;
-            color: #57534E;
+            color: #666666;
             max-height: 300px;
             overflow-y: auto;
+        }
+        .dark .thinking-content {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+            color: #B4B4B4;
         }
         .thinking-content.open {
             display: block;
@@ -462,7 +739,10 @@
         /* Markdown styling for thinking content */
         .thinking-content strong {
             font-weight: 600;
-            color: #44403C;
+            color: #0D0D0D;
+        }
+        .dark .thinking-content strong {
+            color: #ECECEC;
         }
         .thinking-content em {
             font-style: italic;
@@ -484,24 +764,43 @@
             align-items: center;
             gap: 2px;
             padding: 6px 10px;
-            background: #F1F5F9;
-            border: 1px solid #E2E8F0;
+            background: #F9F9F9;
+            border: 1px solid #E5E5E5;
             border-radius: 6px;
-            color: #64748B;
+            color: #666666;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dark .aspect-btn {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+            color: #B4B4B4;
         }
         .aspect-btn:hover {
-            background: #E2E8F0;
-            color: #475569;
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #E5E5E5;
+        }
+        .dark .aspect-btn:hover {
+            background: #3E3E3E;
+            color: #ECECEC;
+            border-color: #4E4E4E;
         }
         .aspect-btn.active {
-            background: #8B5CF6;
-            border-color: #8B5CF6;
+            background: #0D0D0D;
+            border-color: #0D0D0D;
             color: white;
         }
+        .dark .aspect-btn.active {
+            background: #ECECEC;
+            border-color: #ECECEC;
+            color: #0D0D0D;
+        }
         .aspect-btn.active:hover {
-            background: #7C3AED;
+            background: #333333;
+        }
+        .dark .aspect-btn.active:hover {
+            background: #D5D5D5;
         }
         .aspect-label {
             font-size: 9px;
@@ -513,7 +812,10 @@
         .generated-image {
             max-width: 100%;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .dark .generated-image {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
         .image-container {
             position: relative;
@@ -524,62 +826,101 @@
             top: 8px;
             right: 8px;
             padding: 6px 10px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
-            color: #475569;
+            color: #666666;
             cursor: pointer;
-            transition: all 0.2s;
-            border: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #E5E5E5;
+        }
+        .dark .image-download-btn {
+            background: rgba(47, 47, 47, 0.95);
+            border-color: #3E3E3E;
+            color: #B4B4B4;
         }
         .image-download-btn:hover {
             background: white;
-            color: #1E293B;
+            color: #0D0D0D;
+            border-color: #E5E5E5;
+        }
+        .dark .image-download-btn:hover {
+            background: #3E3E3E;
+            color: #ECECEC;
+            border-color: #4E4E4E;
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+        .theme-toggle:hover {
+            background: #ECECEC;
+        }
+        .dark .theme-toggle:hover {
+            background: #2F2F2F;
+        }
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+            color: #666666;
+        }
+        .dark .theme-toggle svg {
+            color: #B4B4B4;
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-light-bg dark:bg-dark-bg h-screen overflow-hidden flex flex-col">
     <!-- Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+    <header class="bg-light-bg dark:bg-dark-sidebar border-b border-light-border dark:border-dark-border z-50 flex-shrink-0">
+        <div class="px-4 sm:px-6">
+            <div class="flex items-center justify-between h-14">
                 <div class="flex items-center gap-4">
                     <!-- Logo -->
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-9 h-9 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center">
+                            <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-lg font-semibold text-slate-900">LearnForge</h1>
-                            <p class="text-xs text-slate-500">Smart Document Assistant</p>
+                            <h1 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">LearnForge</h1>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Smart Document Assistant</p>
                         </div>
                     </div>
 
                     <!-- Workspace Switcher -->
                     <div class="relative ml-4">
                         <button id="workspaceSwitcher" onclick="toggleWorkspaceDropdown()"
-                                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200 border border-light-border dark:border-dark-border">
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
-                            <span id="currentWorkspaceName" class="text-sm font-medium text-gray-700 max-w-32 truncate">Loading...</span>
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            <span id="currentWorkspaceName" class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary max-w-32 truncate">Loading...</span>
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
 
                         <!-- Workspace Dropdown -->
-                        <div id="workspaceDropdownContainer" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                            <div class="p-2 max-h-64 overflow-y-auto" id="workspaceDropdown">
+                        <div id="workspaceDropdownContainer" class="hidden absolute left-0 mt-2 w-64 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar" id="workspaceDropdown">
                                 <!-- Workspaces populated by JS -->
                             </div>
-                            <div class="border-t p-2">
-                                <button onclick="openCreateWorkspaceModal()" class="w-full flex items-center gap-2 p-2 text-primary-600 hover:bg-primary-50 rounded-lg text-sm font-medium">
+                            <div class="border-t border-light-border dark:border-dark-border p-2">
+                                <button onclick="openCreateWorkspaceModal()" class="w-full flex items-center gap-2 p-2 text-light-text dark:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg text-sm font-medium transition-colors duration-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
                                     </svg>
                                     New Workspace
                                 </button>
@@ -589,25 +930,37 @@
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="theme-toggle" title="Toggle theme">
+                        <!-- Sun icon (shown in dark mode) -->
+                        <svg class="hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <!-- Moon icon (shown in light mode) -->
+                        <svg class="block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+
                     <!-- User Menu -->
                     <div class="relative">
                         <button id="userMenuButton" onclick="toggleUserDropdown()"
-                                class="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center">
-                                <span id="userInitial" class="text-sm font-semibold text-white">U</span>
+                                class="flex items-center gap-2 p-1 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
+                            <div class="w-8 h-8 rounded-full bg-light-text dark:bg-dark-text flex items-center justify-center">
+                                <span id="userInitial" class="text-sm font-semibold text-light-bg dark:text-dark-bg">U</span>
                             </div>
                         </button>
 
                         <!-- User Dropdown -->
-                        <div id="userDropdownContainer" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                            <div class="p-3 border-b border-gray-100">
-                                <p id="userName" class="text-sm font-medium text-gray-900">User</p>
-                                <p id="userEmail" class="text-xs text-gray-500">user@email.com</p>
+                        <div id="userDropdownContainer" class="hidden absolute right-0 mt-2 w-56 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-3 border-b border-light-border dark:border-dark-border">
+                                <p id="userName" class="text-sm font-medium text-light-text dark:text-dark-text">User</p>
+                                <p id="userEmail" class="text-xs text-light-text-muted dark:text-dark-text-muted">user@email.com</p>
                             </div>
                             <div class="p-2">
-                                <button onclick="Auth.logout()" class="w-full flex items-center gap-2 p-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium">
+                                <button onclick="Auth.logout()" class="w-full flex items-center gap-2 p-2 text-accent-error hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors duration-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                     </svg>
                                     Sign Out
                                 </button>
@@ -619,156 +972,136 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Sidebar -->
-            <aside class="lg:col-span-3 space-y-6">
-                <!-- Upload Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100">
-                        <h2 class="font-semibold text-slate-900">Documents</h2>
+    <!-- Main Layout: Sidebar + Content -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <!-- Left Sidebar -->
+        <aside class="w-80 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-shrink-0 flex flex-col overflow-hidden">
+            <!-- New Chat Button -->
+            <div class="p-4">
+                <button onclick="createNewChat()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-light-bg dark:text-dark-bg bg-light-text dark:bg-dark-text hover:opacity-90 rounded-lg transition-all duration-200 ease-smooth">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Chat
+                </button>
+            </div>
+
+            <!-- Chat History - Internal Scroll Only -->
+            <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <p class="px-4 py-1.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted">Your chats</p>
+                <div class="flex-1 overflow-y-auto custom-scrollbar px-2">
+                    <div id="chatHistoryList" class="pb-2">
+                        <div class="px-2 py-6 text-sm text-light-text-muted dark:text-dark-text-muted text-center">No chats yet</div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="p-4">
-                        <div
-                            id="dropZone"
-                            class="upload-zone border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50"
-                            ondrop="handleDrop(event)"
-                            ondragover="handleDragOver(event)"
-                            ondragleave="handleDragLeave(event)"
-                            onclick="document.getElementById('fileInput').click()"
-                        >
-                            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                </svg>
-                            </div>
-                            <p class="text-sm font-medium text-slate-700">Drop PDFs here</p>
-                            <p class="text-xs text-slate-500 mt-1">or click to browse</p>
-                        </div>
-                        <input type="file" id="fileInput" accept=".pdf" multiple class="hidden" onchange="handleFileSelect(event)">
-
-                        <!-- Upload Progress -->
-                        <div id="uploadProgress" class="hidden mt-4">
-                            <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-lg">
-                                <div class="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
-                                <span id="uploadStatus" class="text-sm text-primary-700">Processing...</span>
-                            </div>
-                        </div>
+            <!-- Documents Section - Fixed at Bottom of Sidebar -->
+            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span class="text-[11px] font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">Documents</span>
                     </div>
-
-                    <!-- Documents List -->
-                    <div id="documentsList" class="border-t border-slate-100 max-h-64 overflow-y-auto custom-scrollbar">
-                        <div class="p-4 text-center text-sm text-slate-500">
-                            No documents yet
-                        </div>
+                    <span id="docCount" class="text-[11px] font-medium text-light-text-muted dark:text-dark-text-muted bg-light-hover dark:bg-dark-hover px-2 py-0.5 rounded-full">0</span>
+                </div>
+                <div
+                    id="dropZone"
+                    class="upload-zone border border-dashed border-light-border dark:border-dark-border rounded-xl p-3 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted hover:bg-light-hover dark:hover:bg-dark-hover transition-all duration-200"
+                    ondrop="handleDrop(event)"
+                    ondragover="handleDragOver(event)"
+                    ondragleave="handleDragLeave(event)"
+                    onclick="document.getElementById('fileInput').click()"
+                >
+                    <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
                     </div>
+                    <p class="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary">Drop PDFs here</p>
+                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">or click to browse</p>
+                </div>
+                <input type="file" id="fileInput" accept=".pdf" multiple class="hidden" onchange="handleFileSelect(event)">
 
-                    <!-- Stats -->
-                    <div id="statsSection" class="hidden border-t border-slate-100 p-4">
-                        <div class="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                                <div id="statDocs" class="text-lg font-semibold text-slate-900">0</div>
-                                <div class="text-xs text-slate-500">Docs</div>
-                            </div>
-                            <div>
-                                <div id="statPages" class="text-lg font-semibold text-slate-900">0</div>
-                                <div class="text-xs text-slate-500">Pages</div>
-                            </div>
-                            <div>
-                                <div id="statChunks" class="text-lg font-semibold text-slate-900">0</div>
-                                <div class="text-xs text-slate-500">Chunks</div>
-                            </div>
-                        </div>
+                <!-- Upload Progress -->
+                <div id="uploadProgress" class="hidden mt-2">
+                    <div class="flex items-center gap-2 p-2 bg-light-hover dark:bg-dark-hover rounded-lg border border-light-border dark:border-dark-border">
+                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-light-text dark:border-dark-text border-t-transparent flex-shrink-0"></div>
+                        <span id="uploadStatus" class="text-xs text-light-text-secondary dark:text-dark-text-secondary font-medium truncate">Processing...</span>
                     </div>
                 </div>
 
-                <!-- Tips Card -->
-                <div class="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-4 text-white">
-                    <h3 class="font-semibold mb-2">Pro Tips</h3>
-                    <ul class="text-sm text-primary-100 space-y-2">
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-300">•</span>
-                            <span>Ask specific questions for better answers</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-300">•</span>
-                            <span>Upload multiple docs to search across all</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-300">•</span>
-                            <span>Citations [1] link to source documents</span>
-                        </li>
-                    </ul>
+                <!-- Documents List - Internal Scroll -->
+                <div id="documentsList" class="mt-2 max-h-28 overflow-y-auto custom-scrollbar space-y-1">
                 </div>
-            </aside>
+            </div>
+        </aside>
 
-            <!-- Main Chat Area -->
-            <div class="lg:col-span-9">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full">
-                    <!-- Chat Header -->
-                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                        <div class="flex items-center gap-3">
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span class="font-medium text-slate-900">Chat</span>
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-light-bg dark:bg-dark-bg overflow-hidden min-h-0 relative">
+            <!-- Hidden element to store current chat title (used by JS) -->
+            <span id="currentChatTitle" class="hidden">New Chat</span>
+
+            <!-- Messages - Scrollable area (pb-24 to account for input box overlay) -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto px-6 py-6 pb-28 custom-scrollbar min-h-0">
+                <div class="max-w-3xl mx-auto">
+                    <div class="flex flex-col items-center justify-center h-full text-center py-20">
+                        <div class="w-16 h-16 rounded-2xl bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
                         </div>
-                        <button
-                            onclick="clearChat()"
-                            class="text-sm text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                            Clear conversation
-                        </button>
+                        <h3 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight mb-1">Start a conversation</h3>
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted max-w-sm leading-relaxed">Upload documents and ask questions. I'll find answers with inline citations.</p>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Messages -->
-                    <div id="chatMessages" class="chat-container flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
-                        <div class="flex flex-col items-center justify-center h-full text-center">
-                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-4">
-                                <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-semibold text-slate-900 mb-1">Start a conversation</h3>
-                            <p class="text-sm text-slate-500 max-w-sm">Upload documents and ask questions. I'll find answers with inline citations.</p>
-                        </div>
-                    </div>
+            <!-- Floating Scroll Navigation Buttons -->
+            <div class="absolute bottom-40 right-6 flex flex-col gap-2 z-20">
+                <button id="scrollToTopBtn" onclick="scrollToTop()" class="hidden w-9 h-9 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary rounded-xl flex items-center justify-center transition-all duration-200" title="Scroll to top">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                    </svg>
+                </button>
+                <button id="scrollToBottomBtn" onclick="scrollToBottom()" class="hidden w-9 h-9 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary rounded-xl flex items-center justify-center transition-all duration-200" title="Scroll to bottom">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
 
-                    <!-- Input Area -->
-                    <div class="px-6 py-4 border-t border-slate-100">
-                        <!-- Input Row -->
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="flex-1 relative">
-                                <input
-                                    type="text"
-                                    id="questionInput"
-                                    placeholder="Ask anything about your documents..."
-                                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                                    onkeypress="if(event.key === 'Enter') sendQuestion()"
-                                >
-                            </div>
-                            <button
-                                onclick="sendQuestion()"
-                                id="sendButton"
-                                class="px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/25"
-                            >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                                </svg>
-                            </button>
+            <!-- Input Area - Fixed at bottom (ChatGPT style - transparent background) -->
+            <div class="absolute bottom-0 left-0 right-0 pb-4 pointer-events-none" style="background: linear-gradient(to top, var(--input-bg) 60%, transparent 100%);">
+                <div class="max-w-3xl mx-auto px-4 pointer-events-auto">
+                    <!-- Main Input Container - Rectangular with border only -->
+                    <div class="relative flex flex-col bg-[#F4F4F4] dark:bg-[#2F2F2F] border border-[#E5E5E5] dark:border-[#424242] rounded-2xl focus-within:border-[#CDCDCD] dark:focus-within:border-[#5A5A5A] transition-colors overflow-hidden shadow-sm">
+                        <!-- Textarea area -->
+                        <div class="px-4 pt-3 pb-2">
+                            <textarea
+                                id="questionInput"
+                                placeholder="Ask anything"
+                                rows="1"
+                                class="w-full bg-transparent border-0 text-[15px] text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none resize-none leading-relaxed"
+                                style="min-height: 24px; max-height: 200px;"
+                            ></textarea>
                         </div>
 
-                        <!-- Controls Row -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+                        <!-- Bottom toolbar -->
+                        <div class="flex items-center justify-between px-3 pb-3 pt-1">
+                            <!-- Left side: Feature buttons -->
+                            <div class="flex items-center gap-1">
                                 <!-- Search Button -->
                                 <button
                                     id="searchToggleBtn"
                                     onclick="toggleSearch()"
-                                    class="hidden feature-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                    class="hidden toolbar-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
                                     title="Web Search"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                     </svg>
                                     <span>Search</span>
                                 </button>
@@ -777,17 +1110,17 @@
                                 <button
                                     id="thinkingToggleBtn"
                                     onclick="toggleThinking()"
-                                    class="hidden feature-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                    class="hidden toolbar-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
                                     title="Extended Thinking"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                                     </svg>
                                     <span>Think</span>
                                 </button>
 
                                 <!-- Aspect Ratio Selector (for image models) -->
-                                <div id="aspectRatioSelector" class="hidden flex items-center gap-1 flex-wrap">
+                                <div id="aspectRatioSelector" class="hidden flex items-center gap-1">
                                     <button onclick="setAspectRatio('1:1')" class="aspect-btn active" data-ratio="1:1" title="Square (1:1)">
                                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect x="5" y="5" width="14" height="14" rx="1"/>
@@ -818,35 +1151,53 @@
                                         </svg>
                                         <span class="aspect-label">3:4</span>
                                     </button>
-                                    <button onclick="setAspectRatio('3:2')" class="aspect-btn" data-ratio="3:2" title="Photo (3:2)">
-                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="6" width="18" height="12" rx="1"/>
-                                        </svg>
-                                        <span class="aspect-label">3:2</span>
-                                    </button>
-                                    <button onclick="setAspectRatio('2:3')" class="aspect-btn" data-ratio="2:3" title="Portrait (2:3)">
-                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="6" y="3" width="12" height="18" rx="1"/>
-                                        </svg>
-                                        <span class="aspect-label">2:3</span>
-                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Model Selector -->
-                            <select
-                                id="modelSelector"
-                                onchange="switchModel(this.value)"
-                                class="text-xs bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer font-medium"
-                            >
-                                <option value="">Loading...</option>
-                            </select>
+                            <!-- Right side: Model selector + Send button -->
+                            <div class="flex items-center gap-2">
+                                <!-- Custom Model Selector Dropdown -->
+                                <div class="relative" id="modelSelectorContainer">
+                                    <button
+                                        id="modelSelectorBtn"
+                                        onclick="toggleModelDropdown()"
+                                        class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text transition-colors duration-200 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover"
+                                    >
+                                        <span id="selectedModelName">Loading...</span>
+                                        <svg class="w-3.5 h-3.5 transition-transform duration-200" id="modelDropdownArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+
+                                </div>
+
+                                <!-- Send button -->
+                                <button
+                                    onclick="sendQuestion()"
+                                    id="sendButton"
+                                    class="w-8 h-8 flex items-center justify-center bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
+
+            <!-- Model Dropdown Menu (positioned fixed to avoid overflow issues) -->
+            <div
+                id="modelDropdownMenu"
+                class="hidden fixed w-64 bg-light-bg dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl shadow-lg overflow-hidden z-[100]"
+            >
+                <div class="py-1 max-h-80 overflow-y-auto custom-scrollbar" id="modelDropdownList">
+                    <!-- Models will be populated here -->
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
         // ===================
@@ -902,6 +1253,8 @@
         let selectedAspectRatio = '1:1';
         let currentWorkspace = null;
         let workspaces = [];
+        let currentConversation = null;
+        let conversations = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -929,7 +1282,120 @@
             loadDocuments();
             loadStats();
             loadModels();
+            loadConversations();
+
+            // Setup scroll listener for chat messages
+            setupScrollListener();
+
+            // Setup textarea auto-resize
+            setupTextareaAutoResize();
         });
+
+        // Scroll navigation functions
+        function setupScrollListener() {
+            const chatMessages = document.getElementById('chatMessages');
+            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+            const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+            chatMessages.addEventListener('scroll', () => {
+                const scrollTop = chatMessages.scrollTop;
+                const scrollHeight = chatMessages.scrollHeight;
+                const clientHeight = chatMessages.clientHeight;
+                const isAtTop = scrollTop < 50;
+                const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+                // Show/hide scroll to top button
+                if (isAtTop) {
+                    scrollToTopBtn.classList.add('hidden');
+                } else {
+                    scrollToTopBtn.classList.remove('hidden');
+                }
+
+                // Show/hide scroll to bottom button
+                if (isAtBottom) {
+                    scrollToBottomBtn.classList.add('hidden');
+                } else {
+                    scrollToBottomBtn.classList.remove('hidden');
+                }
+            });
+        }
+
+        function scrollToTop() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Textarea auto-resize functionality
+        function setupTextareaAutoResize() {
+            const textarea = document.getElementById('questionInput');
+            const maxHeight = 200; // Maximum height before scrolling
+
+            function autoResize() {
+                // Reset height to auto to get the correct scrollHeight
+                textarea.style.height = 'auto';
+                // Set height based on content, but cap at maxHeight
+                const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+                textarea.style.height = newHeight + 'px';
+                // Enable/disable overflow based on content
+                textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+            }
+
+            // Auto-resize on input
+            textarea.addEventListener('input', autoResize);
+
+            // Handle Enter key for sending (Shift+Enter for new line)
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendQuestion();
+                }
+            });
+
+            // Initial sizing
+            autoResize();
+        }
+
+        // Theme toggle function
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.classList.remove('light', 'dark');
+            html.classList.add(newTheme);
+            localStorage.setItem('learnforge_theme', newTheme);
+
+            // Update highlight.js theme
+            const lightStyle = document.getElementById('hljs-light');
+            const darkStyle = document.getElementById('hljs-dark');
+            if (newTheme === 'dark') {
+                lightStyle.disabled = true;
+                darkStyle.disabled = false;
+            } else {
+                lightStyle.disabled = false;
+                darkStyle.disabled = true;
+            }
+        }
+
+        // Initialize theme on load
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
+            const lightStyle = document.getElementById('hljs-light');
+            const darkStyle = document.getElementById('hljs-dark');
+            if (savedTheme === 'dark') {
+                lightStyle.disabled = true;
+                darkStyle.disabled = false;
+            } else {
+                lightStyle.disabled = false;
+                darkStyle.disabled = true;
+            }
+        }
+        initializeTheme();
 
         async function loadUserAndWorkspaces() {
             try {
@@ -992,18 +1458,18 @@
 
             if (wsDropdownEl) {
                 wsDropdownEl.innerHTML = workspaces.map(ws => `
-                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer group ${ws.id === currentWorkspace?.id ? 'bg-primary-50' : ''}"
+                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover cursor-pointer group ${ws.id === currentWorkspace?.id ? 'bg-light-hover dark:bg-dark-hover' : ''}"
                          onclick="switchWorkspace('${ws.id}')">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
-                            ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-primary-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<div class="w-4"></div>'}
-                            <span class="text-sm truncate ${ws.id === currentWorkspace?.id ? 'font-medium text-primary-600' : 'text-gray-700'}">${escapeHtml(ws.name)}</span>
+                            ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-light-text dark:text-dark-text flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<div class="w-4"></div>'}
+                            <span class="text-sm truncate ${ws.id === currentWorkspace?.id ? 'font-medium text-light-text dark:text-dark-text' : 'text-light-text-secondary dark:text-dark-text-secondary'}">${escapeHtml(ws.name)}</span>
                         </div>
                         <button onclick="openWorkspaceSettingsModal('${ws.id}', event)"
-                                class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                                 title="Workspace settings">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                         </button>
                     </div>
@@ -1027,12 +1493,16 @@
             const wsButton = document.getElementById('workspaceSwitcher');
             const userDropdown = document.getElementById('userDropdownContainer');
             const userButton = document.getElementById('userMenuButton');
+            const modelDropdown = document.getElementById('modelSelectorContainer');
 
             if (wsDropdown && !wsDropdown.contains(e.target) && !wsButton?.contains(e.target)) {
                 wsDropdown.classList.add('hidden');
             }
             if (userDropdown && !userDropdown.contains(e.target) && !userButton?.contains(e.target)) {
                 userDropdown.classList.add('hidden');
+            }
+            if (modelDropdown && !modelDropdown.contains(e.target)) {
+                closeModelDropdown();
             }
         });
 
@@ -1044,13 +1514,185 @@
                 updateWorkspaceDisplay();
                 toggleWorkspaceDropdown();
 
-                // Reload documents for new workspace
+                // Reload documents and conversations for new workspace
                 loadDocuments();
                 loadStats();
-                clearChat();
+                loadConversations();
+                currentConversation = null;
+                showWelcomeMessage();
 
                 showToast(`Switched to ${workspace.name}`, 'success');
             }
+        }
+
+        // ===================
+        // CONVERSATION FUNCTIONS
+        // ===================
+
+        async function loadConversations() {
+            if (!currentWorkspace) return;
+
+            try {
+                const response = await fetch(`/api/conversations?workspace_id=${currentWorkspace.id}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                const data = await response.json();
+                conversations = data.conversations || [];
+                renderConversationList();
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+            }
+        }
+
+        function renderConversationList() {
+            const listEl = document.getElementById('chatHistoryList');
+            if (!conversations.length) {
+                listEl.innerHTML = '<div class="px-3 py-8 text-sm text-light-text-muted dark:text-dark-text-muted text-center">No chats yet</div>';
+                return;
+            }
+
+            listEl.innerHTML = conversations.map(conv => `
+                <div class="chat-item group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-150 ${currentConversation?.id === conv.id ? 'bg-light-hover dark:bg-dark-hover' : 'hover:bg-light-hover dark:hover:bg-dark-hover'}"
+                     onclick="loadConversation('${conv.id}')">
+                    <span class="text-[13px] truncate flex-1 ${currentConversation?.id === conv.id ? 'text-light-text dark:text-dark-text font-medium' : 'text-light-text dark:text-dark-text'}">${escapeHtml(conv.title)}</span>
+                    <div class="hidden group-hover:flex items-center flex-shrink-0">
+                        <button onclick="editConversationTitle('${conv.id}', event)" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded transition-colors" title="Rename">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                        </button>
+                        <button onclick="deleteConversation('${conv.id}', event)" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-accent-error rounded transition-colors" title="Delete">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createNewChat() {
+            if (!currentWorkspace) {
+                showToast('Select a workspace first', 'error');
+                return;
+            }
+
+            // Just reset UI - don't create in DB yet
+            currentConversation = null;
+            renderConversationList();
+            showWelcomeMessage();
+            document.getElementById('currentChatTitle').textContent = 'New Chat';
+        }
+
+        async function loadConversation(conversationId) {
+            try {
+                const response = await fetch(`/api/conversations/${conversationId}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    showToast('Failed to load conversation', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                currentConversation = data.conversation;
+                document.getElementById('currentChatTitle').textContent = currentConversation.title;
+                renderConversationList();
+
+                // Render messages
+                const messagesDiv = document.getElementById('chatMessages');
+                if (!data.messages || !data.messages.length) {
+                    showWelcomeMessage();
+                    return;
+                }
+
+                messagesDiv.innerHTML = '';
+                for (const msg of data.messages) {
+                    if (msg.role === 'user') {
+                        addUserMessage(msg.content);
+                    } else if (msg.role === 'assistant') {
+                        // Check for image attachments
+                        const attachments = msg.attachments || [];
+                        const imageAttachment = attachments.find(a => a.type === 'image');
+                        if (imageAttachment) {
+                            addImageMessage(imageAttachment.base64, imageAttachment.mime_type, imageAttachment.prompt || msg.content);
+                        } else {
+                            addAssistantMessage(msg.content, msg.sources || []);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
+        }
+
+        async function editConversationTitle(conversationId, event) {
+            event.stopPropagation();
+            const conv = conversations.find(c => c.id === conversationId);
+            if (!conv) return;
+
+            const newTitle = prompt('Rename chat:', conv.title);
+            if (!newTitle || newTitle === conv.title) return;
+
+            try {
+                await fetch(`/api/conversations/${conversationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ title: newTitle })
+                });
+
+                conv.title = newTitle;
+                if (currentConversation?.id === conversationId) {
+                    currentConversation.title = newTitle;
+                    document.getElementById('currentChatTitle').textContent = newTitle;
+                }
+                renderConversationList();
+            } catch (error) {
+                showToast('Failed to rename', 'error');
+            }
+        }
+
+        async function deleteConversation(conversationId, event) {
+            event.stopPropagation();
+            if (!confirm('Delete this chat?')) return;
+
+            try {
+                await fetch(`/api/conversations/${conversationId}`, {
+                    method: 'DELETE',
+                    headers: Auth.getAuthHeaders()
+                });
+
+                conversations = conversations.filter(c => c.id !== conversationId);
+                if (currentConversation?.id === conversationId) {
+                    currentConversation = null;
+                    showWelcomeMessage();
+                    document.getElementById('currentChatTitle').textContent = 'New Chat';
+                }
+                renderConversationList();
+                showToast('Chat deleted', 'success');
+            } catch (error) {
+                showToast('Failed to delete', 'error');
+            }
+        }
+
+        function showWelcomeMessage() {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="max-w-3xl mx-auto">
+                    <div class="flex flex-col items-center justify-center h-full text-center py-20">
+                        <div class="w-16 h-16 rounded-2xl bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight mb-1">Start a conversation</h3>
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted max-w-sm leading-relaxed">Upload documents and ask questions. I'll find answers with inline citations.</p>
+                    </div>
+                </div>
+            `;
         }
 
 
@@ -1079,24 +1721,81 @@
         }
 
         // Models
+        let allModels = [];
+
         async function loadModels() {
             try {
                 const response = await fetch('/api/models');
                 const data = await response.json();
-                const selector = document.getElementById('modelSelector');
+                allModels = data.models;
 
-                selector.innerHTML = data.models.map(model =>
-                    `<option value="${escapeHtml(model.name)}" ${model.is_current ? 'selected' : ''}>
-                        ${escapeHtml(model.name)}
-                    </option>`
-                ).join('');
+                // Update the dropdown list
+                renderModelDropdown();
 
                 // Store current model and update toggles
                 currentModel = data.current;
+                updateSelectedModelDisplay();
                 updateFeatureToggles();
             } catch (error) {
                 console.error('Error loading models:', error);
             }
+        }
+
+        function renderModelDropdown() {
+            const dropdownList = document.getElementById('modelDropdownList');
+            dropdownList.innerHTML = allModels.map(model => `
+                <div class="model-dropdown-item ${model.is_current ? 'selected' : ''}" onclick="selectModel('${escapeHtml(model.name)}')">
+                    <div class="model-info">
+                        <span class="model-name">${escapeHtml(model.name)}</span>
+                        <span class="model-desc">${escapeHtml(model.description)}</span>
+                    </div>
+                    <svg class="check-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            `).join('');
+        }
+
+        function updateSelectedModelDisplay() {
+            const selectedName = document.getElementById('selectedModelName');
+            if (currentModel) {
+                selectedName.textContent = currentModel.name;
+            }
+        }
+
+        function toggleModelDropdown() {
+            const menu = document.getElementById('modelDropdownMenu');
+            const arrow = document.getElementById('modelDropdownArrow');
+            const btn = document.getElementById('modelSelectorBtn');
+            const isHidden = menu.classList.contains('hidden');
+
+            if (isHidden) {
+                // Position the dropdown above the button
+                const btnRect = btn.getBoundingClientRect();
+                menu.style.bottom = (window.innerHeight - btnRect.top + 8) + 'px';
+                menu.style.right = (window.innerWidth - btnRect.right) + 'px';
+
+                menu.classList.remove('hidden');
+                arrow.classList.add('open');
+            } else {
+                menu.classList.add('hidden');
+                arrow.classList.remove('open');
+            }
+        }
+
+        function closeModelDropdown() {
+            const menu = document.getElementById('modelDropdownMenu');
+            const arrow = document.getElementById('modelDropdownArrow');
+            menu.classList.add('hidden');
+            arrow.classList.remove('open');
+        }
+
+        async function selectModel(modelName) {
+            closeModelDropdown();
+            await switchModel(modelName);
+            // Update the dropdown to show new selection
+            allModels = allModels.map(m => ({...m, is_current: m.name === modelName}));
+            renderModelDropdown();
         }
 
         function updateFeatureToggles() {
@@ -1117,12 +1816,12 @@
                 // Show aspect ratio selector
                 aspectRatioSelector.classList.remove('hidden');
                 // Update placeholder
-                questionInput.placeholder = 'Describe the image you want to generate...';
+                questionInput.placeholder = 'Describe the image...';
             } else {
                 // Hide aspect ratio selector for non-image models
                 aspectRatioSelector.classList.add('hidden');
                 // Update placeholder
-                questionInput.placeholder = 'Ask anything about your documents...';
+                questionInput.placeholder = 'Ask anything';
 
                 // Search button
                 if (currentModel.supports_search) {
@@ -1168,6 +1867,7 @@
                 if (response.ok) {
                     showToast(`Switched to ${modelName}`, 'success');
                     currentModel = result.current;
+                    updateSelectedModelDisplay();
                     updateFeatureToggles();
                 } else {
                     showToast(result.error, 'error');
@@ -1182,11 +1882,15 @@
         // Helpers
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-slate-800';
-            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+            // Dark style toast for all types
+            toast.className = `fixed bottom-4 right-4 bg-[#0D0D0D] dark:bg-[#ECECEC] text-white dark:text-[#0D0D0D] px-4 py-3 rounded-xl shadow-lg z-50 text-sm font-medium transition-all duration-300`;
+            toast.style.animation = 'fadeInUp 0.3s ease-out';
             toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOutDown 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 2700);
         }
 
         // File Upload
@@ -1264,28 +1968,26 @@
                 });
                 const data = await response.json();
                 const listDiv = document.getElementById('documentsList');
+                const docCountEl = document.getElementById('docCount');
+
+                if (docCountEl) docCountEl.textContent = data.documents.length;
 
                 if (data.documents.length === 0) {
-                    listDiv.innerHTML = '<div class="p-4 text-center text-sm text-slate-500">No documents yet</div>';
+                    listDiv.innerHTML = '';
                     return;
                 }
 
                 listDiv.innerHTML = data.documents.map(doc => `
-                    <div class="doc-card flex items-center justify-between px-4 py-3 border-b border-slate-50 last:border-0">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                </svg>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-slate-900 truncate">${doc.filename}</p>
-                                <p class="text-xs text-slate-500">${doc.num_pages} pages</p>
-                            </div>
+                    <div class="doc-card group flex items-center gap-2 p-2 rounded-lg bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted transition-colors">
+                        <div class="w-6 h-6 rounded bg-red-50 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3.5 h-3.5 text-red-500 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                            </svg>
                         </div>
-                        <button onclick="deleteDocument('${doc.id}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary truncate flex-1 min-w-0">${escapeHtml(doc.filename)}</span>
+                        <button onclick="deleteDocument('${doc.id}')" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-red-500 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
@@ -1313,26 +2015,7 @@
         }
 
         async function loadStats() {
-            if (!currentWorkspace) return;
-
-            try {
-                const response = await fetch(`/api/stats?workspace_id=${currentWorkspace.id}`, {
-                    headers: Auth.getAuthHeaders()
-                });
-                const stats = await response.json();
-                const statsSection = document.getElementById('statsSection');
-
-                if (stats.total_documents > 0) {
-                    statsSection.classList.remove('hidden');
-                    document.getElementById('statDocs').textContent = stats.total_documents;
-                    document.getElementById('statChunks').textContent = stats.total_chunks;
-                    document.getElementById('statPages').textContent = stats.total_pages;
-                } else {
-                    statsSection.classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
+            // Stats are now shown via document count in loadDocuments
         }
 
         // Chat
@@ -1348,6 +2031,9 @@
             if (!question) return;
 
             questionInput.value = '';
+            // Reset textarea height after clearing
+            questionInput.style.height = 'auto';
+            questionInput.style.overflowY = 'hidden';
             isProcessing = true;
             document.getElementById('sendButton').disabled = true;
 
@@ -1357,11 +2043,35 @@
                 return;
             }
 
+            // Create conversation if not exists
+            if (!currentConversation) {
+                try {
+                    const createResp = await fetch('/api/conversations', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeaders()
+                        },
+                        body: JSON.stringify({ workspace_id: currentWorkspace.id })
+                    });
+                    const createData = await createResp.json();
+                    currentConversation = createData.conversation;
+                    conversations.unshift(currentConversation);
+                    renderConversationList();
+                } catch (e) {
+                    showToast('Failed to create conversation', 'error');
+                    isProcessing = false;
+                    document.getElementById('sendButton').disabled = false;
+                    return;
+                }
+            }
+
             addUserMessage(question);
             const messageId = addStreamingMessage();
+            const isFirstMessage = document.getElementById('chatMessages').querySelectorAll('.flex.justify-end').length === 1;
 
             try {
-                const response = await fetch('/api/chat/stream', {
+                const response = await fetch(`/api/conversations/${currentConversation.id}/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1369,7 +2079,6 @@
                     },
                     body: JSON.stringify({
                         question,
-                        workspace_id: currentWorkspace.id,
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled
                     })
@@ -1431,17 +2140,70 @@
 
             isProcessing = false;
             document.getElementById('sendButton').disabled = false;
+
+            // Generate title for first message
+            if (isFirstMessage && currentConversation) {
+                generateChatTitle(currentConversation.id);
+            }
+        }
+
+        async function generateChatTitle(conversationId) {
+            try {
+                const response = await fetch(`/api/conversations/${conversationId}/title`, {
+                    method: 'POST',
+                    headers: Auth.getAuthHeaders()
+                });
+                const data = await response.json();
+                if (data.title) {
+                    const conv = conversations.find(c => c.id === conversationId);
+                    if (conv) conv.title = data.title;
+                    if (currentConversation?.id === conversationId) {
+                        currentConversation.title = data.title;
+                        document.getElementById('currentChatTitle').textContent = data.title;
+                    }
+                    renderConversationList();
+                }
+            } catch (error) {
+                console.error('Error generating title:', error);
+            }
         }
 
         // Image generation
         async function generateImage(prompt) {
+            // Create conversation if not exists
+            if (!currentConversation) {
+                try {
+                    const createResp = await fetch('/api/conversations', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeaders()
+                        },
+                        body: JSON.stringify({ workspace_id: currentWorkspace.id })
+                    });
+                    const createData = await createResp.json();
+                    currentConversation = createData.conversation;
+                    conversations.unshift(currentConversation);
+                    renderConversationList();
+                } catch (e) {
+                    showToast('Failed to create conversation', 'error');
+                    isProcessing = false;
+                    document.getElementById('sendButton').disabled = false;
+                    return;
+                }
+            }
+
             addUserMessage(prompt);
             const loadingId = addImageLoadingMessage();
+            const isFirstMessage = document.getElementById('chatMessages').querySelectorAll('.flex.justify-end').length === 1;
 
             try {
-                const response = await fetch('/api/generate-image', {
+                const response = await fetch(`/api/conversations/${currentConversation.id}/image`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
                     body: JSON.stringify({
                         prompt: prompt,
                         aspect_ratio: selectedAspectRatio
@@ -1463,6 +2225,11 @@
 
             isProcessing = false;
             document.getElementById('sendButton').disabled = false;
+
+            // Generate title for first message
+            if (isFirstMessage && currentConversation) {
+                generateChatTitle(currentConversation.id);
+            }
         }
 
         function addImageLoadingMessage() {
@@ -1475,12 +2242,10 @@
             }
 
             const html = `
-                <div id="${id}" class="flex justify-start mb-4">
-                    <div class="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
-                            <span class="text-sm text-slate-600">Generating image...</span>
-                        </div>
+                <div id="${id}" class="max-w-3xl mx-auto mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="animate-spin rounded-full h-5 w-5 border-2 border-light-text dark:border-dark-text border-t-transparent"></div>
+                        <span class="text-[15px] text-light-text-secondary dark:text-dark-text-secondary">Generating image...</span>
                     </div>
                 </div>
             `;
@@ -1494,17 +2259,15 @@
             const imageId = 'img-' + Date.now();
 
             const html = `
-                <div class="flex justify-start mb-4">
-                    <div class="max-w-[85%] bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
-                        <div class="image-container">
-                            <img id="${imageId}" src="data:${mimeType};base64,${base64}" alt="${escapeHtml(prompt)}" class="generated-image">
-                            <button onclick="downloadImage('${imageId}', '${escapeHtml(prompt).replace(/'/g, "\\'")}')" class="image-download-btn">
-                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                                Download
-                            </button>
-                        </div>
+                <div class="max-w-3xl mx-auto mb-6">
+                    <div class="image-container">
+                        <img id="${imageId}" src="data:${mimeType};base64,${base64}" alt="${escapeHtml(prompt)}" class="generated-image">
+                        <button onclick="downloadImage('${imageId}', '${escapeHtml(prompt).replace(/'/g, "\\'")}')" class="image-download-btn">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download
+                        </button>
                     </div>
                 </div>
             `;
@@ -1534,28 +2297,26 @@
             }
 
             const html = `
-                <div id="${messageId}" class="flex justify-start mb-4">
-                    <div class="max-w-[85%] bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
-                        <div class="thinking-section hidden" data-thinking="">
-                            <div class="thinking-toggle open" onclick="toggleThinkingSection(this)">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                </svg>
-                                <span class="thinking-label">Thinking...</span>
-                            </div>
-                            <div class="thinking-content thinking-streaming open">
-                                <div class="thinking-text"></div>
-                            </div>
+                <div id="${messageId}" class="max-w-3xl mx-auto mb-6">
+                    <div class="thinking-section hidden" data-thinking="">
+                        <div class="thinking-toggle open" onclick="toggleThinkingSection(this)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                            <span class="thinking-label">Thinking...</span>
                         </div>
-                        <div class="answer-text streaming-content">
-                            <div class="flex items-center gap-1 py-1">
-                                <div class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></div>
-                                <div class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></div>
-                                <div class="typing-dot w-2 h-2 bg-primary-400 rounded-full"></div>
-                            </div>
+                        <div class="thinking-content thinking-streaming open">
+                            <div class="thinking-text"></div>
+                        </div>
+                    </div>
+                    <div class="answer-text streaming-content">
+                        <div class="flex items-center gap-1 py-1">
+                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
+                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
+                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
                         </div>
                     </div>
                 </div>
@@ -1690,8 +2451,8 @@
             let sourcesHtml = '';
             if (msgSources.length > 0) {
                 sourcesHtml = `
-                    <div class="mt-4 pt-4 border-t border-slate-100">
-                        <p class="text-xs font-medium text-slate-500 mb-2">Sources</p>
+                    <div class="mt-4 pt-4 border-t border-light-border dark:border-dark-border">
+                        <p class="text-xs font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Sources</p>
                         <div class="flex flex-wrap gap-2">
                             ${msgSources.map((src, idx) => `
                                 <span class="source-pill">
@@ -1704,9 +2465,8 @@
                 `;
             }
 
-            // Update message content
-            const container = messageEl.querySelector('.bg-white');
-            container.innerHTML = `
+            // Update message content directly on the messageEl (no bubble container)
+            messageEl.innerHTML = `
                 ${thinkingHtml}
                 <div class="answer-text">${formattedAnswer}</div>
                 ${sourcesHtml}
@@ -1728,9 +2488,11 @@
             }
 
             const html = `
-                <div class="flex justify-end mb-4">
-                    <div class="max-w-[70%] bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3 rounded-2xl rounded-br-md shadow-lg">
-                        <p class="text-sm">${escapeHtml(text)}</p>
+                <div class="max-w-3xl mx-auto mb-6">
+                    <div class="flex justify-end">
+                        <div class="max-w-[70%] bg-[#F4F4F4] dark:bg-[#2F2F2F] text-light-text dark:text-dark-text px-4 py-3 rounded-xl">
+                            <p class="text-[15px] leading-relaxed" style="font-family: 'Geist', sans-serif;">${escapeHtml(text)}</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1743,13 +2505,11 @@
             const id = 'loading-' + Date.now();
 
             const html = `
-                <div id="${id}" class="flex justify-start mb-4">
-                    <div class="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-md">
-                        <div class="flex items-center gap-1">
-                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
-                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
-                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></div>
-                        </div>
+                <div id="${id}" class="max-w-3xl mx-auto mb-6">
+                    <div class="flex items-center gap-1 py-1">
+                        <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
+                        <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
+                        <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
                     </div>
                 </div>
             `;
@@ -1776,8 +2536,8 @@
             let sourcesHtml = '';
             if (msgSources.length > 0) {
                 sourcesHtml = `
-                    <div class="mt-4 pt-4 border-t border-slate-100">
-                        <p class="text-xs font-medium text-slate-500 mb-2">Sources</p>
+                    <div class="mt-4 pt-4 border-t border-light-border dark:border-dark-border">
+                        <p class="text-xs font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Sources</p>
                         <div class="flex flex-wrap gap-2">
                             ${msgSources.map((src, idx) => `
                                 <span class="source-pill">
@@ -1791,11 +2551,9 @@
             }
 
             const html = `
-                <div id="${messageId}" class="flex justify-start mb-4">
-                    <div class="max-w-[85%] bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-bl-md shadow-sm">
-                        <div class="answer-text">${formattedAnswer}</div>
-                        ${sourcesHtml}
-                    </div>
+                <div id="${messageId}" class="max-w-3xl mx-auto mb-6">
+                    <div class="answer-text">${formattedAnswer}</div>
+                    ${sourcesHtml}
                 </div>
             `;
 
@@ -1813,10 +2571,8 @@
         function addErrorMessage(error) {
             const messagesDiv = document.getElementById('chatMessages');
             const html = `
-                <div class="flex justify-start mb-4">
-                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl rounded-bl-md">
-                        <p class="text-sm">${escapeHtml(error)}</p>
-                    </div>
+                <div class="max-w-3xl mx-auto mb-6">
+                    <p class="text-[15px] text-red-600 dark:text-red-400">${escapeHtml(error)}</p>
                 </div>
             `;
             messagesDiv.insertAdjacentHTML('beforeend', html);
@@ -1958,27 +2714,6 @@
             return div.innerHTML;
         }
 
-        async function clearChat() {
-            try {
-                await fetch('/api/chat/clear', {
-                    method: 'POST',
-                    headers: Auth.getAuthHeaders()
-                });
-                document.getElementById('chatMessages').innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-center">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mb-4">
-                            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-semibold text-slate-900 mb-1">Start a conversation</h3>
-                        <p class="text-sm text-slate-500 max-w-sm">Upload documents and ask questions. I'll find answers with inline citations.</p>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error clearing chat:', error);
-            }
-        }
 
     </script>
 
@@ -1989,28 +2724,28 @@
             <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCreateWorkspaceModal()"></div>
 
             <!-- Modal -->
-            <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 z-10">
+            <div class="relative bg-surface rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-black/[0.08]">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-slate-900">Create Workspace</h3>
-                    <button onclick="closeCreateWorkspaceModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <h3 class="text-lg font-semibold text-text-primary tracking-tight">Create Workspace</h3>
+                    <button onclick="closeCreateWorkspaceModal()" class="p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-surface-hover transition-colors duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
 
                 <div class="mb-4">
-                    <label for="newWorkspaceName" class="block text-sm font-medium text-slate-700 mb-1">Workspace Name</label>
+                    <label for="newWorkspaceName" class="block text-sm font-medium text-text-secondary mb-1">Workspace Name</label>
                     <input type="text" id="newWorkspaceName" placeholder="e.g., Machine Learning, Physics 101"
-                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           class="w-full px-4 py-2.5 border border-black/[0.08] rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-black/[0.20] transition-colors duration-200"
                            onkeypress="if(event.key === 'Enter') submitCreateWorkspace()">
                 </div>
 
                 <div class="flex gap-3">
-                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors">
+                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-black/[0.08] text-text-secondary rounded-xl hover:bg-surface-hover font-medium transition-colors duration-200">
                         Cancel
                     </button>
-                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors">
+                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-dark text-white rounded-xl hover:bg-[#333333] font-medium transition-colors duration-200">
                         Create
                     </button>
                 </div>
@@ -2025,12 +2760,12 @@
             <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeWorkspaceSettingsModal()"></div>
 
             <!-- Modal -->
-            <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 z-10">
+            <div class="relative bg-surface rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-black/[0.08]">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-slate-900">Workspace Settings</h3>
-                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <h3 class="text-lg font-semibold text-text-primary tracking-tight">Workspace Settings</h3>
+                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-surface-hover transition-colors duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
@@ -2038,30 +2773,30 @@
                 <input type="hidden" id="settingsWorkspaceId">
 
                 <div class="mb-4">
-                    <label for="editWorkspaceName" class="block text-sm font-medium text-slate-700 mb-1">Workspace Name</label>
+                    <label for="editWorkspaceName" class="block text-sm font-medium text-text-secondary mb-1">Workspace Name</label>
                     <input type="text" id="editWorkspaceName" placeholder="Workspace name"
-                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           class="w-full px-4 py-2.5 border border-black/[0.08] rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-black/[0.20] transition-colors duration-200"
                            onkeypress="if(event.key === 'Enter') submitRenameWorkspace()">
                 </div>
 
                 <div class="flex gap-3 mb-4">
-                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors">
+                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-black/[0.08] text-text-secondary rounded-xl hover:bg-surface-hover font-medium transition-colors duration-200">
                         Cancel
                     </button>
-                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors">
+                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-dark text-white rounded-xl hover:bg-[#333333] font-medium transition-colors duration-200">
                         Save
                     </button>
                 </div>
 
-                <div class="border-t border-slate-200 pt-4">
-                    <p class="text-sm text-slate-500 mb-3">Danger Zone</p>
-                    <button onclick="confirmDeleteWorkspace()" class="w-full px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-100 font-medium transition-colors flex items-center justify-center gap-2">
+                <div class="border-t border-black/[0.08] pt-4">
+                    <p class="text-sm text-text-muted mb-3">Danger Zone</p>
+                    <button onclick="confirmDeleteWorkspace()" class="w-full px-4 py-2.5 bg-red-50 text-accent-error border border-red-200 rounded-xl hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                         Delete Workspace
                     </button>
-                    <p class="text-xs text-slate-400 mt-2 text-center">This will permanently delete all documents in this workspace.</p>
+                    <p class="text-xs text-text-muted mt-2 text-center">This will permanently delete all documents in this workspace.</p>
                 </div>
             </div>
         </div>
@@ -2206,7 +2941,9 @@
                         Auth.setCurrentWorkspace(currentWorkspace);
                         loadDocuments();
                         loadStats();
-                        clearChat();
+                        loadConversations();
+                        currentConversation = null;
+                        showWelcomeMessage();
                     }
 
                     updateWorkspaceDisplay();

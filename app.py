@@ -69,16 +69,15 @@ if _os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         import sys
         sys.exit(1)
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize Flask app with static folder
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.config['UPLOAD_FOLDER'] = UPLOADS_PATH
 
 # Initialize PostgreSQL database (creates tables if not exist)
 init_db()
 
-# Chat history (in-memory for simplicity, could be persisted)
-chat_history = []
+# Current conversation tracking (per request - real history is in DB)
 
 
 # ===================
@@ -437,6 +436,273 @@ def delete_workspace_route(workspace_id):
 
 
 # ===================
+# CONVERSATION ROUTES
+# ===================
+
+@app.route('/api/conversations', methods=['GET'])
+@auth_required
+def list_conversations():
+    """List conversations for a workspace."""
+    workspace_id = request.args.get('workspace_id')
+    if not workspace_id:
+        return jsonify({'error': 'workspace_id required'}), 400
+
+    conversations = db.list_conversations(request.user_id, workspace_id)
+    return jsonify({
+        'conversations': [{
+            'id': str(c['id']),
+            'title': c['title'],
+            'updated_at': c['updated_at'].isoformat() if c['updated_at'] else None
+        } for c in (conversations or [])]
+    })
+
+
+@app.route('/api/conversations', methods=['POST'])
+@auth_required
+def create_conversation():
+    """Create a new conversation."""
+    data = request.json
+    workspace_id = data.get('workspace_id')
+
+    if not workspace_id:
+        return jsonify({'error': 'workspace_id required'}), 400
+
+    conversation = db.create_conversation(request.user_id, workspace_id)
+    return jsonify({
+        'conversation': {
+            'id': str(conversation['id']),
+            'title': conversation['title']
+        }
+    })
+
+
+@app.route('/api/conversations/<conversation_id>', methods=['GET'])
+@auth_required
+def get_conversation(conversation_id):
+    """Get conversation with messages."""
+    conversation = db.get_conversation(conversation_id, request.user_id)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    messages = db.get_messages(conversation_id)
+    return jsonify({
+        'conversation': {
+            'id': str(conversation['id']),
+            'title': conversation['title']
+        },
+        'messages': [{
+            'id': str(m['id']),
+            'role': m['role'],
+            'content': m['content'],
+            'sources': m['sources'] or [],
+            'attachments': m['attachments'] or [],
+            'thinking': m['thinking'],
+            'created_at': m['created_at'].isoformat() if m['created_at'] else None
+        } for m in (messages or [])]
+    })
+
+
+@app.route('/api/conversations/<conversation_id>', methods=['PUT'])
+@auth_required
+def update_conversation(conversation_id):
+    """Update conversation title."""
+    data = request.json
+    title = data.get('title')
+
+    if not title:
+        return jsonify({'error': 'title required'}), 400
+
+    conversation = db.update_conversation(conversation_id, request.user_id, title=title)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    return jsonify({'success': True})
+
+
+@app.route('/api/conversations/<conversation_id>', methods=['DELETE'])
+@auth_required
+def delete_conversation_route(conversation_id):
+    """Delete a conversation."""
+    db.delete_conversation(conversation_id, request.user_id)
+    return jsonify({'success': True})
+
+
+@app.route('/api/conversations/<conversation_id>/chat', methods=['POST'])
+@auth_required
+def conversation_chat(conversation_id):
+    """Send message in a conversation (streaming)."""
+    conversation = db.get_conversation(conversation_id, request.user_id)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.json
+    question = data.get('question', '').strip()
+    use_search = data.get('use_search', False)
+    use_thinking = data.get('use_thinking', False)
+
+    if not question:
+        return jsonify({'error': 'Question is required'}), 400
+
+    workspace_id = str(conversation['workspace_id'])
+    user_id = request.user_id
+
+    # Check documents
+    user_docs = db.get_documents_by_workspace(workspace_id, user_id)
+    if not user_docs:
+        return jsonify({'error': 'No documents uploaded'}), 400
+
+    # Save user message
+    db.add_message(conversation_id, 'user', question)
+
+    def generate():
+        try:
+            # Get recent messages for context
+            recent = db.get_recent_messages(conversation_id, limit=10)
+            chat_history = [{'question': m['content'], 'answer': ''} for m in recent if m['role'] == 'user']
+
+            # Retrieve chunks
+            retrieval_result = retrieve(question, user_id=user_id, workspace_id=workspace_id)
+
+            full_answer = ""
+            full_thinking = ""
+            sources = []
+
+            for event in generation.generate_answer_stream(
+                query=question,
+                chunks=retrieval_result["chunks"],
+                metadatas=retrieval_result["metadatas"],
+                chat_history=chat_history,
+                use_search=use_search,
+                use_thinking=use_thinking
+            ):
+                if event["type"] == "thinking":
+                    full_thinking += event.get("content", "")
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "chunk":
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "done":
+                    full_answer = event.get("content", "")
+                    sources = event.get("sources", [])
+                    yield f"data: {json.dumps(event)}\n\n"
+                elif event["type"] == "error":
+                    yield f"data: {json.dumps(event)}\n\n"
+                    return
+
+            # Save assistant message
+            if full_answer:
+                db.add_message(
+                    conversation_id, 'assistant', full_answer,
+                    sources=sources, thinking=full_thinking or None
+                )
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
+
+@app.route('/api/conversations/<conversation_id>/title', methods=['POST'])
+@auth_required
+def generate_conversation_title(conversation_id):
+    """Generate title for conversation using AI based on Q&A context."""
+    conversation = db.get_conversation(conversation_id, request.user_id)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    messages = db.get_messages(conversation_id, limit=2)
+    if not messages:
+        return jsonify({'error': 'No messages'}), 400
+
+    # Get first user question and assistant answer
+    user_msg = next((m['content'] for m in messages if m['role'] == 'user'), None)
+    assistant_msg = next((m['content'] for m in messages if m['role'] == 'assistant'), None)
+
+    if not user_msg:
+        return jsonify({'error': 'No user message'}), 400
+
+    # Generate title using both question and answer for context
+    try:
+        context = f"Question: {user_msg[:150]}"
+        if assistant_msg:
+            context += f"\n\nAnswer summary: {assistant_msg[:300]}"
+
+        prompt = f"Create a 3-5 word title for this conversation. Plain text only, no quotes, no punctuation at start/end.\n\n{context}"
+
+        # Use Mistral for title generation (works for both text and image conversations)
+        from mistralai import Mistral
+        import os
+        mistral = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+        response = mistral.chat.complete(
+            model="mistral-medium-latest",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        title = response.choices[0].message.content
+
+        if not title:
+            title = user_msg[:40]
+        # Clean up: remove quotes, markdown, extra punctuation
+        title = title.strip().strip('"').strip("'").strip('*').strip(':').strip('-')
+        title = title.replace('**', '').replace('*', '').replace('"', '').replace("'", "")
+        title = title.split('\n')[0].strip()[:40]
+
+        db.update_conversation(conversation_id, request.user_id, title=title)
+        return jsonify({'title': title})
+    except Exception as e:
+        print(f"Error generating title: {e}")
+        return jsonify({'title': user_msg[:40] + '...' if len(user_msg) > 40 else user_msg})
+
+
+@app.route('/api/conversations/<conversation_id>/image', methods=['POST'])
+@auth_required
+def conversation_image(conversation_id):
+    """Generate image and save to conversation."""
+    conversation = db.get_conversation(conversation_id, request.user_id)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.json
+    prompt = data.get('prompt', '').strip()
+    aspect_ratio = data.get('aspect_ratio', '1:1')
+
+    if not prompt:
+        return jsonify({'error': 'Prompt is required'}), 400
+
+    # Save user message
+    db.add_message(conversation_id, 'user', prompt)
+
+    # Check if current model supports image generation
+    current_model = llm.get_current_model()
+    if current_model.get('type') != 'image':
+        return jsonify({'error': f"Current model '{current_model['name']}' does not support image generation"}), 400
+
+    try:
+        result = llm.generate_image(prompt, aspect_ratio=aspect_ratio)
+
+        # Save assistant message with image attachment
+        db.add_message(
+            conversation_id, 'assistant', f'Generated image: {prompt}',
+            attachments=[{
+                'type': 'image',
+                'base64': result['image_base64'],
+                'mime_type': result['mime_type'],
+                'prompt': prompt,
+                'aspect_ratio': aspect_ratio
+            }]
+        )
+
+        return jsonify({
+            'success': True,
+            'image_base64': result['image_base64'],
+            'mime_type': result['mime_type'],
+            'prompt': prompt,
+            'aspect_ratio': aspect_ratio
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ===================
 # DOCUMENT ROUTES
 # ===================
 
@@ -498,8 +764,6 @@ def upload_document():
         4. Delete temp file
         5. Store metadata in registry
     """
-    global chat_history
-
     # Validate request
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -661,184 +925,6 @@ def delete_document(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/chat', methods=['POST'])
-@auth_required
-def chat():
-    """
-    Chat with the documents.
-
-    Expects JSON:
-        - question: User question
-        - workspace_id: Workspace to search in
-        - use_search: Enable web search (optional)
-        - use_thinking: Enable thinking mode (optional)
-    """
-    global chat_history
-
-    data = request.json
-    question = data.get('question', '').strip()
-    workspace_id = data.get('workspace_id')
-    use_search = data.get('use_search', False)
-    use_thinking = data.get('use_thinking', False)
-
-    if not question:
-        return jsonify({"error": "Question is required"}), 400
-
-    if not workspace_id:
-        return jsonify({"error": "Workspace ID is required"}), 400
-
-    # Verify workspace belongs to user
-    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
-    if not workspace:
-        return jsonify({"error": "Workspace not found"}), 404
-
-    # Check if we have any documents in this workspace
-    user_docs = db.get_documents_by_workspace(workspace_id, request.user_id)
-    if not user_docs:
-        return jsonify({
-            "error": "No documents uploaded. Please upload some PDFs first."
-        }), 400
-
-    try:
-        # Retrieve relevant chunks filtered by user and workspace
-        retrieval_result = retrieve(
-            question,
-            user_id=request.user_id, workspace_id=workspace_id
-        )
-
-        # Generate answer with optional features
-        answer_result = generation.generate_answer(
-            query=question,
-            chunks=retrieval_result["chunks"],
-            metadatas=retrieval_result["metadatas"],
-            chat_history=chat_history,
-            use_search=use_search,
-            use_thinking=use_thinking
-        )
-
-        # Update chat history
-        chat_history.append({
-            "question": question,
-            "answer": answer_result["answer"]
-        })
-
-        # Keep only last 20 exchanges
-        if len(chat_history) > 20:
-            chat_history = chat_history[-20:]
-
-        return jsonify({
-            "answer": answer_result["answer"],
-            "sources": answer_result["sources"],
-            "chunks_used": answer_result["chunks_used"]
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/chat/stream', methods=['POST'])
-@auth_required
-def chat_stream():
-    """
-    Stream chat response using Server-Sent Events.
-
-    Expects JSON:
-        - question: User question
-        - workspace_id: Workspace to search in
-        - use_search: Enable web search (optional)
-        - use_thinking: Enable thinking mode (optional)
-
-    Returns SSE stream with events:
-        - data: {"type": "chunk", "content": "..."} for text chunks
-        - data: {"type": "done", "content": "...", "sources": [...]} when complete
-        - data: {"type": "error", "message": "..."} on error
-    """
-    global chat_history
-
-    data = request.json
-    question = data.get('question', '').strip()
-    workspace_id = data.get('workspace_id')
-    use_search = data.get('use_search', False)
-    use_thinking = data.get('use_thinking', False)
-
-    if not question:
-        return jsonify({"error": "Question is required"}), 400
-
-    if not workspace_id:
-        return jsonify({"error": "Workspace ID is required"}), 400
-
-    # Verify workspace belongs to user
-    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
-    if not workspace:
-        return jsonify({"error": "Workspace not found"}), 404
-
-    # Check if we have any documents in this workspace
-    user_docs = db.get_documents_by_workspace(workspace_id, request.user_id)
-    if not user_docs:
-        return jsonify({
-            "error": "No documents uploaded. Please upload some PDFs first."
-        }), 400
-
-    # Capture user_id for the closure
-    user_id = request.user_id
-
-    def generate():
-        try:
-            # Retrieve relevant chunks filtered by user and workspace
-            retrieval_result = retrieve(
-                question,
-                user_id=user_id, workspace_id=workspace_id
-            )
-
-            # Stream answer
-            full_answer = ""
-            sources = []
-
-            for event in generation.generate_answer_stream(
-                query=question,
-                chunks=retrieval_result["chunks"],
-                metadatas=retrieval_result["metadatas"],
-                chat_history=chat_history,
-                use_search=use_search,
-                use_thinking=use_thinking
-            ):
-                if event["type"] == "thinking":
-                    yield f"data: {json.dumps(event)}\n\n"
-                elif event["type"] == "chunk":
-                    yield f"data: {json.dumps(event)}\n\n"
-                elif event["type"] == "done":
-                    full_answer = event.get("content", "")
-                    sources = event.get("sources", [])
-                    yield f"data: {json.dumps(event)}\n\n"
-                elif event["type"] == "error":
-                    yield f"data: {json.dumps(event)}\n\n"
-                    return
-
-            # Update chat history after streaming complete
-            if full_answer:
-                chat_history.append({
-                    "question": question,
-                    "answer": full_answer
-                })
-
-                # Keep only last 20 exchanges
-                if len(chat_history) > 20:
-                    chat_history[:] = chat_history[-20:]
-
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-
-    return Response(
-        generate(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no'
-        }
-    )
-
-
 @app.route('/api/generate-image', methods=['POST'])
 def generate_image():
     """
@@ -884,24 +970,12 @@ def generate_image():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/chat/clear', methods=['POST'])
-def clear_chat():
-    """Clear only chat history."""
-    global chat_history
-    chat_history = []
-    return jsonify({
-        "success": True,
-        "message": "Chat history cleared"
-    })
-
-
 @app.route('/api/stats', methods=['GET'])
 @auth_required
 def get_stats():
     """Get statistics for user's workspace."""
     workspace_id = request.args.get('workspace_id')
 
-    # Filter documents by user and workspace
     if workspace_id:
         documents = db.get_documents_by_workspace(workspace_id, request.user_id)
     else:
@@ -914,8 +988,7 @@ def get_stats():
         "total_documents": len(documents),
         "total_chunks": sum(d.get("num_chunks", 0) or 0 for d in documents),
         "total_pages": total_pages,
-        "total_size_mb": round(total_size / (1024 * 1024), 2),
-        "chat_history_length": len(chat_history)
+        "total_size_mb": round(total_size / (1024 * 1024), 2)
     })
 
 

@@ -1,7 +1,3 @@
--- LearnForge Database Schema (PostgreSQL)
--- Version: 1.0
--- Run: psql -U learnforgeuser -d learnforgedb -f schema.sql
-
 -- =============================================
 -- USERS TABLE
 -- =============================================

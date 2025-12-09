@@ -45,7 +45,7 @@ def allowed_file(filename):
 # ===================
 # IMPORTS (after config so paths are ready)
 # ===================
-from services.vector_store import VectorStore, DocumentRegistry
+from services.vector_store import VectorStore
 from services.embedding import EmbeddingService
 from services.retrieval import retrieve, invalidate_bm25_cache
 from services.generation import GenerationService
@@ -65,7 +65,6 @@ app.config['UPLOAD_FOLDER'] = UPLOADS_PATH
 
 # Initialize persistent services
 vector_store = VectorStore()
-document_registry = DocumentRegistry()
 pdf_processor = PDFProcessor()
 text_chunker = TextChunker()
 
@@ -408,7 +407,7 @@ def update_workspace_route(workspace_id):
 @app.route('/api/workspaces/<workspace_id>', methods=['DELETE'])
 @auth_required
 def delete_workspace_route(workspace_id):
-    """Delete a workspace and all its documents."""
+    """Delete a workspace and all its documents, S3 files, and vector embeddings."""
     # Check workspace exists and belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
 
@@ -420,10 +419,29 @@ def delete_workspace_route(workspace_id):
     if len(all_workspaces) <= 1:
         return jsonify({'error': 'Cannot delete your only workspace'}), 400
 
-    # Delete workspace (cascades to documents in DB)
-    db.delete_workspace(workspace_id, request.user_id)
+    # Get all documents in this workspace before deletion
+    documents = db.get_documents_by_workspace(workspace_id, request.user_id)
 
-    # TODO: Also delete from vector store and file storage when those are integrated
+    # Delete vector embeddings for each document
+    for doc in documents:
+        try:
+            # ChromaDB stores chunks with document_id in metadata
+            vector_store.delete_document(doc['filename'])
+        except Exception as e:
+            print(f"Error deleting vectors for doc {doc['id']}: {e}")
+
+    # Invalidate BM25 cache since documents are being removed
+    invalidate_bm25_cache()
+
+    # Delete S3 folder for this workspace (all files under user_id/workspace_id/)
+    try:
+        folder_prefix = f"{request.user_id}/{workspace_id}/"
+        storage_service.delete_folder(folder_prefix)
+    except Exception as e:
+        print(f"Error deleting S3 folder: {e}")
+
+    # Delete workspace from DB (cascades to documents table)
+    db.delete_workspace(workspace_id, request.user_id)
 
     return jsonify({
         'success': True,
@@ -446,16 +464,32 @@ def list_documents():
         workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
         if not workspace:
             return jsonify({"error": "Workspace not found"}), 404
+        # Get documents for specific workspace
+        documents = db.get_documents_by_workspace(workspace_id, request.user_id)
+    else:
+        # Get all documents for user
+        documents = db.get_documents_by_user(request.user_id)
 
-    # Filter documents by user and workspace
-    documents = document_registry.list_documents(
-        user_id=request.user_id,
-        workspace_id=workspace_id
-    )
+    # Format documents for response (convert datetime, uuid to strings)
+    formatted_docs = []
+    for doc in documents:
+        formatted_docs.append({
+            "id": str(doc['id']),
+            "user_id": str(doc['user_id']),
+            "workspace_id": str(doc['workspace_id']),
+            "filename": doc['original_filename'],
+            "storage_key": doc['storage_key'],
+            "storage_bucket": doc['storage_bucket'],
+            "num_pages": doc['num_pages'],
+            "num_chunks": doc['num_chunks'],
+            "file_size_bytes": doc['file_size_bytes'],
+            "status": doc['status'],
+            "upload_time": doc['created_at'].isoformat() if doc['created_at'] else None
+        })
 
     return jsonify({
-        "documents": documents,
-        "total": len(documents),
+        "documents": formatted_docs,
+        "total": len(formatted_docs),
         "total_chunks": vector_store.count()
     })
 
@@ -572,28 +606,26 @@ def upload_document():
             os.remove(temp_file_path)
         temp_file_path = None
 
-        # Register document with user_id, workspace_id, and storage info
-        doc_info = {
-            "id": doc_id,
-            "user_id": request.user_id,
-            "workspace_id": workspace_id,
-            "filename": original_filename,
-            "storage_key": storage_key,
-            "storage_bucket": storage_bucket,
-            "num_pages": pdf_result["total_pages"],
-            "num_chunks": len(chunks),
-            "file_size_bytes": pdf_result["file_size"],
-            "status": "processed",
-            "upload_time": datetime.now().isoformat()
-        }
-
-        document_registry.add_document(doc_info)
+        # Register document in PostgreSQL
+        doc = db.create_document(
+            workspace_id=workspace_id,
+            user_id=request.user_id,
+            filename=doc_id,  # Internal filename with doc_id
+            original_filename=original_filename,
+            file_type='pdf',
+            file_size_bytes=pdf_result["file_size"],
+            storage_key=storage_key,
+            storage_bucket=storage_bucket,
+            num_pages=pdf_result["total_pages"],
+            num_chunks=len(chunks),
+            status='processed'
+        )
 
         return jsonify({
             "success": True,
             "message": f"Document '{original_filename}' processed successfully!",
             "document": {
-                "id": doc_id,
+                "id": str(doc['id']),
                 "filename": original_filename,
                 "pages": pdf_result["total_pages"],
                 "chunks": len(chunks),
@@ -611,20 +643,17 @@ def upload_document():
 @app.route('/api/documents/<doc_id>', methods=['DELETE'])
 @auth_required
 def delete_document(doc_id):
-    """Delete a document from vector store, S3/local storage, and registry."""
+    """Delete a document from vector store, S3/local storage, and database."""
     try:
-        # Get document info
-        doc = document_registry.get_document(doc_id)
+        # Get document info (with ownership check)
+        doc = db.get_document_by_id_and_user(doc_id, request.user_id)
 
         if not doc:
             return jsonify({"error": "Document not found"}), 404
 
-        # Verify document belongs to user
-        if doc.get('user_id') != request.user_id:
-            return jsonify({"error": "Document not found"}), 404
-
-        # Delete from vector store
-        vector_store.delete_document(doc_id)
+        # Delete from vector store (using the internal filename which contains doc_id pattern)
+        # ChromaDB chunks are stored with document_id in metadata
+        vector_store.delete_document(doc['filename'])
 
         # Invalidate BM25 cache for hybrid search
         invalidate_bm25_cache()
@@ -633,12 +662,12 @@ def delete_document(doc_id):
         if doc.get('storage_key'):
             storage_service.delete_file(doc['storage_key'])
 
-        # Delete from registry
-        document_registry.delete_document(doc_id)
+        # Delete from database (returns deleted doc for confirmation)
+        db.delete_document(doc_id, request.user_id)
 
         return jsonify({
             "success": True,
-            "message": f"Document '{doc.get('filename', doc_id)}' deleted"
+            "message": f"Document '{doc.get('original_filename', doc_id)}' deleted"
         })
 
     except Exception as e:
@@ -677,10 +706,7 @@ def chat():
         return jsonify({"error": "Workspace not found"}), 404
 
     # Check if we have any documents in this workspace
-    user_docs = document_registry.list_documents(
-        user_id=request.user_id,
-        workspace_id=workspace_id
-    )
+    user_docs = db.get_documents_by_workspace(workspace_id, request.user_id)
     if not user_docs:
         return jsonify({
             "error": "No documents uploaded. Please upload some PDFs first."
@@ -760,10 +786,7 @@ def chat_stream():
         return jsonify({"error": "Workspace not found"}), 404
 
     # Check if we have any documents in this workspace
-    user_docs = document_registry.list_documents(
-        user_id=request.user_id,
-        workspace_id=workspace_id
-    )
+    user_docs = db.get_documents_by_workspace(workspace_id, request.user_id)
     if not user_docs:
         return jsonify({
             "error": "No documents uploaded. Please upload some PDFs first."
@@ -892,17 +915,17 @@ def get_stats():
     workspace_id = request.args.get('workspace_id')
 
     # Filter documents by user and workspace
-    documents = document_registry.list_documents(
-        user_id=request.user_id,
-        workspace_id=workspace_id
-    )
+    if workspace_id:
+        documents = db.get_documents_by_workspace(workspace_id, request.user_id)
+    else:
+        documents = db.get_documents_by_user(request.user_id)
 
-    total_pages = sum(d.get("num_pages", 0) for d in documents)
-    total_size = sum(d.get("file_size_bytes", 0) for d in documents)
+    total_pages = sum(d.get("num_pages", 0) or 0 for d in documents)
+    total_size = sum(d.get("file_size_bytes", 0) or 0 for d in documents)
 
     return jsonify({
         "total_documents": len(documents),
-        "total_chunks": sum(d.get("num_chunks", 0) for d in documents),
+        "total_chunks": sum(d.get("num_chunks", 0) or 0 for d in documents),
         "total_pages": total_pages,
         "total_size_mb": round(total_size / (1024 * 1024), 2),
         "chat_history_length": len(chat_history)
@@ -1002,8 +1025,7 @@ if __name__ == '__main__':
     print(f"Data directory: {DATA_DIR}")
     print(f"ChromaDB path: {CHROMA_DB_PATH}")
     print(f"Embedding server: {EMBEDDING_SERVER_URL}")
-    print(f"Documents: {len(document_registry.list_documents())}")
-    print(f"Total chunks: {vector_store.count()}")
+    print(f"Total chunks in vector store: {vector_store.count()}")
     print("="*50 + "\n")
 
     app.run(

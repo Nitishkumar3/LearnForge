@@ -238,16 +238,19 @@ def delete_workspace(workspace_id, user_id):
 # =============================================
 
 def create_document(workspace_id, user_id, filename, original_filename,
-                    file_type, file_size_bytes, storage_key, storage_bucket):
+                    file_type, file_size_bytes, storage_key, storage_bucket,
+                    num_pages=None, num_chunks=None, status='pending'):
     """Insert new document and return it."""
     return execute_query(
         """INSERT INTO documents
            (workspace_id, user_id, filename, original_filename,
-            file_type, file_size_bytes, storage_key, storage_bucket)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            file_type, file_size_bytes, storage_key, storage_bucket,
+            num_pages, num_chunks, status)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
            RETURNING *""",
         (workspace_id, user_id, filename, original_filename,
-         file_type, file_size_bytes, storage_key, storage_bucket),
+         file_type, file_size_bytes, storage_key, storage_bucket,
+         num_pages, num_chunks, status),
         fetch_one=True
     )
 

@@ -86,8 +86,7 @@ MODELS = {
 }
 
 # Default model
-DEFAULT_MODEL = "Gemini 2.5 Flash"
-
+DEFAULT_MODEL = "Mistral Medium"
 
 # ===================
 # PROVIDER CLIENTS

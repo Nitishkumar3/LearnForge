@@ -577,7 +577,7 @@
                                 <!-- Workspaces populated by JS -->
                             </div>
                             <div class="border-t p-2">
-                                <button onclick="createWorkspace()" class="w-full flex items-center gap-2 p-2 text-primary-600 hover:bg-primary-50 rounded-lg text-sm font-medium">
+                                <button onclick="openCreateWorkspaceModal()" class="w-full flex items-center gap-2 p-2 text-primary-600 hover:bg-primary-50 rounded-lg text-sm font-medium">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                     </svg>
@@ -992,10 +992,20 @@
 
             if (wsDropdownEl) {
                 wsDropdownEl.innerHTML = workspaces.map(ws => `
-                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer ${ws.id === currentWorkspace?.id ? 'bg-primary-50' : ''}"
+                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer group ${ws.id === currentWorkspace?.id ? 'bg-primary-50' : ''}"
                          onclick="switchWorkspace('${ws.id}')">
-                        <span class="text-sm ${ws.id === currentWorkspace?.id ? 'font-medium text-primary-600' : 'text-gray-700'}">${escapeHtml(ws.name)}</span>
-                        ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : ''}
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-primary-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<div class="w-4"></div>'}
+                            <span class="text-sm truncate ${ws.id === currentWorkspace?.id ? 'font-medium text-primary-600' : 'text-gray-700'}">${escapeHtml(ws.name)}</span>
+                        </div>
+                        <button onclick="openWorkspaceSettingsModal('${ws.id}', event)"
+                                class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                title="Workspace settings">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </button>
                     </div>
                 `).join('');
             }
@@ -1043,33 +1053,6 @@
             }
         }
 
-        async function createWorkspace() {
-            const name = prompt('Enter workspace name:');
-            if (!name || !name.trim()) return;
-
-            try {
-                const response = await fetch('/api/workspaces', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...Auth.getAuthHeaders()
-                    },
-                    body: JSON.stringify({ name: name.trim() })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    workspaces.push(data.workspace);
-                    await switchWorkspace(data.workspace.id);
-                    showToast('Workspace created', 'success');
-                } else {
-                    const error = await response.json();
-                    showToast(error.error || 'Failed to create workspace', 'error');
-                }
-            } catch (error) {
-                showToast('Failed to create workspace', 'error');
-            }
-        }
 
         // Feature toggle functions
         function toggleSearch() {
@@ -1997,6 +1980,246 @@
             }
         }
 
+    </script>
+
+    <!-- Create Workspace Modal -->
+    <div id="createWorkspaceModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCreateWorkspaceModal()"></div>
+
+            <!-- Modal -->
+            <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-900">Create Workspace</h3>
+                    <button onclick="closeCreateWorkspaceModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <label for="newWorkspaceName" class="block text-sm font-medium text-slate-700 mb-1">Workspace Name</label>
+                    <input type="text" id="newWorkspaceName" placeholder="e.g., Machine Learning, Physics 101"
+                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           onkeypress="if(event.key === 'Enter') submitCreateWorkspace()">
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors">
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workspace Settings Modal -->
+    <div id="workspaceSettingsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeWorkspaceSettingsModal()"></div>
+
+            <!-- Modal -->
+            <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-900">Workspace Settings</h3>
+                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <input type="hidden" id="settingsWorkspaceId">
+
+                <div class="mb-4">
+                    <label for="editWorkspaceName" class="block text-sm font-medium text-slate-700 mb-1">Workspace Name</label>
+                    <input type="text" id="editWorkspaceName" placeholder="Workspace name"
+                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           onkeypress="if(event.key === 'Enter') submitRenameWorkspace()">
+                </div>
+
+                <div class="flex gap-3 mb-4">
+                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+
+                <div class="border-t border-slate-200 pt-4">
+                    <p class="text-sm text-slate-500 mb-3">Danger Zone</p>
+                    <button onclick="confirmDeleteWorkspace()" class="w-full px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-100 font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Delete Workspace
+                    </button>
+                    <p class="text-xs text-slate-400 mt-2 text-center">This will permanently delete all documents in this workspace.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // WORKSPACE MODAL FUNCTIONS
+        // ========================
+
+        function openCreateWorkspaceModal() {
+            document.getElementById('createWorkspaceModal').classList.remove('hidden');
+            document.getElementById('newWorkspaceName').value = '';
+            document.getElementById('newWorkspaceName').focus();
+            // Close workspace dropdown
+            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
+        }
+
+        function closeCreateWorkspaceModal() {
+            document.getElementById('createWorkspaceModal').classList.add('hidden');
+        }
+
+        async function submitCreateWorkspace() {
+            const name = document.getElementById('newWorkspaceName').value.trim();
+            if (!name) {
+                showToast('Please enter a workspace name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/workspaces', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ name })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    workspaces.push(data.workspace);
+                    closeCreateWorkspaceModal();
+                    await switchWorkspace(data.workspace.id);
+                    showToast('Workspace created', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to create workspace', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to create workspace', 'error');
+            }
+        }
+
+        function openWorkspaceSettingsModal(workspaceId, event) {
+            event.stopPropagation(); // Prevent switching workspace
+
+            const workspace = workspaces.find(w => w.id === workspaceId);
+            if (!workspace) return;
+
+            document.getElementById('settingsWorkspaceId').value = workspaceId;
+            document.getElementById('editWorkspaceName').value = workspace.name;
+            document.getElementById('workspaceSettingsModal').classList.remove('hidden');
+            document.getElementById('editWorkspaceName').focus();
+            // Close workspace dropdown
+            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
+        }
+
+        function closeWorkspaceSettingsModal() {
+            document.getElementById('workspaceSettingsModal').classList.add('hidden');
+        }
+
+        async function submitRenameWorkspace() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const newName = document.getElementById('editWorkspaceName').value.trim();
+
+            if (!newName) {
+                showToast('Please enter a workspace name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+
+                if (response.ok) {
+                    // Update local state
+                    const wsIndex = workspaces.findIndex(w => w.id === workspaceId);
+                    if (wsIndex !== -1) {
+                        workspaces[wsIndex].name = newName;
+                    }
+                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
+                        currentWorkspace.name = newName;
+                        Auth.setCurrentWorkspace(currentWorkspace);
+                    }
+                    updateWorkspaceDisplay();
+                    closeWorkspaceSettingsModal();
+                    showToast('Workspace renamed', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to rename workspace', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to rename workspace', 'error');
+            }
+        }
+
+        async function confirmDeleteWorkspace() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const workspace = workspaces.find(w => w.id === workspaceId);
+
+            if (!workspace) return;
+
+            if (workspaces.length <= 1) {
+                showToast('Cannot delete the only workspace', 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete "${workspace.name}"? This will permanently delete all documents in this workspace.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}`, {
+                    method: 'DELETE',
+                    headers: Auth.getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    // Remove from local state
+                    workspaces = workspaces.filter(w => w.id !== workspaceId);
+
+                    // If deleted current workspace, switch to another
+                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
+                        currentWorkspace = workspaces[0];
+                        Auth.setCurrentWorkspace(currentWorkspace);
+                        loadDocuments();
+                        loadStats();
+                        clearChat();
+                    }
+
+                    updateWorkspaceDisplay();
+                    closeWorkspaceSettingsModal();
+                    showToast('Workspace deleted', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to delete workspace', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete workspace', 'error');
+            }
+        }
     </script>
 </body>
 </html>

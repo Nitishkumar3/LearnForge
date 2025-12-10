@@ -393,7 +393,7 @@ def update_workspace_route(workspace_id):
 @app.route('/api/workspaces/<workspace_id>', methods=['DELETE'])
 @auth_required
 def delete_workspace_route(workspace_id):
-    """Delete a workspace and all its documents, S3 files, and vector embeddings."""
+    """Delete a workspace and all its documents, conversations, S3 files, and vector embeddings."""
     # Check workspace exists and belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
 
@@ -405,33 +405,41 @@ def delete_workspace_route(workspace_id):
     if len(all_workspaces) <= 1:
         return jsonify({'error': 'Cannot delete your only workspace'}), 400
 
-    # Get all documents in this workspace before deletion
+    # Delete all documents (S3 + ChromaDB + DB)
     documents = db.get_documents_by_workspace(workspace_id, request.user_id)
-
-    # Delete vector embeddings for each document
     for doc in documents:
         try:
-            # ChromaDB stores chunks with document_id in metadata
             vector_store.delete_document(doc['filename'])
         except Exception as e:
             print(f"Error deleting vectors for doc {doc['id']}: {e}")
 
-    # Invalidate BM25 cache since documents are being removed
     invalidate_bm25_cache()
 
-    # Delete S3 folder for this workspace (all files under user_id/workspace_id/)
+    # Delete all conversations and their S3 images
+    conversations = db.get_workspace_conversations(workspace_id, request.user_id)
+    for conv in conversations:
+        s3_keys = db.get_conversation_image_s3_keys(conv['id'])
+        for key in s3_keys:
+            try:
+                storage.delete_file(key)
+            except Exception as e:
+                print(f"Failed to delete S3 image {key}: {e}")
+
+    # Delete entire S3 folder for this workspace (documents + any remaining files)
     try:
         folder_prefix = f"{request.user_id}/{workspace_id}/"
         storage.delete_folder(folder_prefix)
     except Exception as e:
         print(f"Error deleting S3 folder: {e}")
 
-    # Delete workspace from DB (cascades to documents table)
+    # Delete workspace from DB (cascades to documents and conversations)
     db.delete_workspace(workspace_id, request.user_id)
 
     return jsonify({
         'success': True,
-        'message': 'Workspace deleted'
+        'message': 'Workspace deleted',
+        'deleted_documents': len(documents),
+        'deleted_conversations': len(conversations)
     })
 
 
@@ -485,12 +493,11 @@ def get_conversation(conversation_id):
         return jsonify({'error': 'Conversation not found'}), 404
 
     messages = db.get_messages(conversation_id)
-    return jsonify({
-        'conversation': {
-            'id': str(conversation['id']),
-            'title': conversation['title']
-        },
-        'messages': [{
+
+    # Process messages - s3_key is used by frontend to construct proxy URL
+    processed_messages = []
+    for m in (messages or []):
+        msg_data = {
             'id': str(m['id']),
             'role': m['role'],
             'content': m['content'],
@@ -498,7 +505,15 @@ def get_conversation(conversation_id):
             'attachments': m['attachments'] or [],
             'thinking': m['thinking'],
             'created_at': m['created_at'].isoformat() if m['created_at'] else None
-        } for m in (messages or [])]
+        }
+        processed_messages.append(msg_data)
+
+    return jsonify({
+        'conversation': {
+            'id': str(conversation['id']),
+            'title': conversation['title']
+        },
+        'messages': processed_messages
     })
 
 
@@ -522,9 +537,139 @@ def update_conversation(conversation_id):
 @app.route('/api/conversations/<conversation_id>', methods=['DELETE'])
 @auth_required
 def delete_conversation_route(conversation_id):
-    """Delete a conversation."""
+    """Delete a conversation and its S3 images."""
+    from services import storage
+
+    # First, get S3 keys for any images in this conversation
+    s3_keys = db.get_conversation_image_s3_keys(conversation_id)
+
+    # Delete from database
     db.delete_conversation(conversation_id, request.user_id)
-    return jsonify({'success': True})
+
+    # Delete images from S3
+    for key in s3_keys:
+        try:
+            storage.delete_file(key)
+        except Exception as e:
+            print(f"Failed to delete S3 file {key}: {e}")
+
+    return jsonify({'success': True, 'deleted_images': len(s3_keys)})
+
+
+@app.route('/api/workspaces/<workspace_id>/conversations', methods=['DELETE'])
+@auth_required
+def delete_workspace_conversations(workspace_id):
+    """Delete all conversations in a workspace and their S3 images."""
+    from services import storage
+
+    # Get all conversations in this workspace
+    conversations = db.get_workspace_conversations(workspace_id, request.user_id)
+
+    if not conversations:
+        return jsonify({'success': True, 'deleted_count': 0, 'deleted_images': 0})
+
+    # Collect all S3 keys from all conversations
+    all_s3_keys = []
+    for conv in conversations:
+        s3_keys = db.get_conversation_image_s3_keys(conv['id'])
+        all_s3_keys.extend(s3_keys)
+
+    # Delete all conversations from database (cascade deletes messages)
+    deleted_count = len(conversations)
+    db.delete_workspace_conversations(workspace_id, request.user_id)
+
+    # Delete all images from S3
+    for key in all_s3_keys:
+        try:
+            storage.delete_file(key)
+        except Exception as e:
+            print(f"Failed to delete S3 file {key}: {e}")
+
+    return jsonify({
+        'success': True,
+        'deleted_count': deleted_count,
+        'deleted_images': len(all_s3_keys)
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/documents', methods=['DELETE'])
+@auth_required
+def delete_workspace_documents(workspace_id):
+    """Delete all documents in a workspace from S3, ChromaDB, and database."""
+    # Get all documents in this workspace
+    documents = db.get_documents_by_workspace(workspace_id, request.user_id)
+
+    if not documents:
+        return jsonify({'success': True, 'deleted_count': 0})
+
+    deleted_count = len(documents)
+
+    # Delete from vector store (ChromaDB)
+    for doc in documents:
+        try:
+            vector_store.delete_document(doc['filename'])
+        except Exception as e:
+            print(f"Error deleting vectors for doc {doc['id']}: {e}")
+
+    # Invalidate BM25 cache
+    invalidate_bm25_cache()
+
+    # Delete from S3 - delete the documents folder for this workspace
+    try:
+        folder_prefix = f"{request.user_id}/{workspace_id}/"
+        # Only delete document files, not the generatedimages folder
+        for doc in documents:
+            if doc.get('storage_key'):
+                storage.delete_file(doc['storage_key'])
+    except Exception as e:
+        print(f"Error deleting S3 files: {e}")
+
+    # Delete from database
+    db.delete_workspace_documents(workspace_id, request.user_id)
+
+    return jsonify({
+        'success': True,
+        'deleted_count': deleted_count
+    })
+
+
+@app.route('/api/conversations/<conversation_id>/truncate', methods=['POST'])
+@auth_required
+def truncate_conversation(conversation_id):
+    """Truncate conversation messages for regeneration."""
+    conversation = db.get_conversation(conversation_id, request.user_id)
+    if not conversation:
+        return jsonify({'error': 'Conversation not found'}), 404
+
+    data = request.json
+    keep_until_user_message = data.get('keep_until_user_message', '')
+    delete_user_message = data.get('delete_user_message', False)
+
+    if not keep_until_user_message:
+        return jsonify({'error': 'Missing keep_until_user_message'}), 400
+
+    # Get all messages and find where to truncate
+    messages = db.get_conversation_messages(conversation_id)
+
+    # Find the last user message matching the content
+    truncate_index = -1
+    for i, msg in enumerate(messages):
+        if msg['role'] == 'user' and msg['content'].strip() == keep_until_user_message.strip():
+            truncate_index = i
+
+    if truncate_index == -1:
+        return jsonify({'error': 'User message not found'}), 404
+
+    # If delete_user_message is True, also delete the user message itself (for edit)
+    # Otherwise, keep up to and including the user message (for regenerate)
+    if delete_user_message:
+        messages_to_keep = messages[:truncate_index]  # Delete user message and everything after
+    else:
+        messages_to_keep = messages[:truncate_index + 1]  # Keep up to and including the user message
+
+    db.truncate_conversation_messages(conversation_id, len(messages_to_keep))
+
+    return jsonify({'success': True, 'kept_messages': len(messages_to_keep)})
 
 
 @app.route('/api/conversations/<conversation_id>/chat', methods=['POST'])
@@ -539,6 +684,7 @@ def conversation_chat(conversation_id):
     question = data.get('question', '').strip()
     use_search = data.get('use_search', False)
     use_thinking = data.get('use_thinking', False)
+    is_regenerate = data.get('regenerate', False)
 
     if not question:
         return jsonify({'error': 'Question is required'}), 400
@@ -551,8 +697,9 @@ def conversation_chat(conversation_id):
     if not user_docs:
         return jsonify({'error': 'No documents uploaded'}), 400
 
-    # Save user message
-    db.add_message(conversation_id, 'user', question)
+    # Save user message (skip if regenerating - user message already exists)
+    if not is_regenerate:
+        db.add_message(conversation_id, 'user', question)
 
     def generate():
         try:
@@ -652,6 +799,95 @@ def generate_conversation_title(conversation_id):
         return jsonify({'title': user_msg[:40] + '...' if len(user_msg) > 40 else user_msg})
 
 
+def get_user_from_token_or_query():
+    """Get user_id from Authorization header or query param token."""
+    from services.auth import decode_token
+    token = None
+
+    # Try Authorization header first
+    if 'Authorization' in request.headers:
+        auth_header = request.headers['Authorization']
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+
+    # Fallback to query parameter (for direct browser requests)
+    if not token:
+        token = request.args.get('token')
+
+    if not token:
+        return None
+
+    try:
+        payload = decode_token(token)
+        return payload['user_id']
+    except:
+        return None
+
+
+@app.route('/api/images/<path:s3_key>', methods=['GET'])
+def serve_image(s3_key):
+    """Serve an image from S3 (proxy to avoid CORS issues)."""
+    import io
+    from flask import send_file
+
+    user_id = get_user_from_token_or_query()
+    if not user_id:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    # Security check: ensure the s3_key belongs to this user
+    if not s3_key.startswith(f"{user_id}/"):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        # Download from S3 to memory
+        file_obj = io.BytesIO()
+        storage.download_fileobj(s3_key, file_obj)
+        file_obj.seek(0)
+
+        # Determine mime type from extension
+        mime_type = 'image/png' if s3_key.endswith('.png') else 'image/jpeg'
+
+        return send_file(file_obj, mimetype=mime_type)
+    except Exception as e:
+        print(f"Error serving image {s3_key}: {e}")
+        return jsonify({'error': 'Image not found'}), 404
+
+
+@app.route('/api/images/<path:s3_key>/download', methods=['GET'])
+def download_image(s3_key):
+    """Download an image from S3 with Content-Disposition header."""
+    import io
+    from flask import send_file
+
+    user_id = get_user_from_token_or_query()
+    if not user_id:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    # Security check: ensure the s3_key belongs to this user
+    if not s3_key.startswith(f"{user_id}/"):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        # Download from S3 to memory
+        file_obj = io.BytesIO()
+        storage.download_fileobj(s3_key, file_obj)
+        file_obj.seek(0)
+
+        # Determine mime type and filename from key
+        mime_type = 'image/png' if s3_key.endswith('.png') else 'image/jpeg'
+        filename = s3_key.split('/')[-1]
+
+        return send_file(
+            file_obj,
+            mimetype=mime_type,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        print(f"Error downloading image {s3_key}: {e}")
+        return jsonify({'error': 'Image not found'}), 404
+
+
 @app.route('/api/conversations/<conversation_id>/image', methods=['POST'])
 @auth_required
 def conversation_image(conversation_id):
@@ -678,12 +914,32 @@ def conversation_image(conversation_id):
     try:
         result = llm.generate_image(prompt, aspect_ratio=aspect_ratio)
 
-        # Save assistant message with image attachment
+        # Upload image to S3 instead of storing base64 in DB
+        import base64
+        import uuid
+        from services import storage
+
+        image_bytes = base64.b64decode(result['image_base64'])
+        image_id = f"img_{uuid.uuid4().hex[:12]}"
+        extension = 'png' if 'png' in result['mime_type'] else 'jpg'
+
+        # Generate S3 key: user_id/workspace_id/generatedimages/image_id.ext
+        s3_key = storage.generate_image_key(
+            request.user_id,
+            conversation['workspace_id'],
+            image_id,
+            extension
+        )
+
+        # Upload to S3
+        storage.upload_image_bytes(s3_key, image_bytes, result['mime_type'])
+
+        # Save assistant message with S3 reference (not base64)
         db.add_message(
             conversation_id, 'assistant', f'Generated image: {prompt}',
             attachments=[{
                 'type': 'image',
-                'base64': result['image_base64'],
+                's3_key': s3_key,
                 'mime_type': result['mime_type'],
                 'prompt': prompt,
                 'aspect_ratio': aspect_ratio
@@ -692,7 +948,7 @@ def conversation_image(conversation_id):
 
         return jsonify({
             'success': True,
-            'image_base64': result['image_base64'],
+            's3_key': s3_key,
             'mime_type': result['mime_type'],
             'prompt': prompt,
             'aspect_ratio': aspect_ratio

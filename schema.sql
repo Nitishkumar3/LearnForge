@@ -59,39 +59,6 @@ CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 
 -- =============================================
--- QUIZZES TABLE
--- =============================================
-CREATE TABLE IF NOT EXISTS quizzes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    quiz_type TEXT NOT NULL CHECK (quiz_type IN ('mcq', 'subjective')),
-    topic TEXT,
-    questions JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_quizzes_user_id ON quizzes(user_id);
-CREATE INDEX IF NOT EXISTS idx_quizzes_workspace_id ON quizzes(workspace_id);
-
--- =============================================
--- QUIZ ATTEMPTS TABLE
--- =============================================
-CREATE TABLE IF NOT EXISTS quiz_attempts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    quiz_id UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    answers JSONB NOT NULL,
-    results JSONB NOT NULL,
-    score REAL NOT NULL,
-    max_score REAL NOT NULL,
-    completed_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_quiz_attempts_quiz_id ON quiz_attempts(quiz_id);
-CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_id ON quiz_attempts(user_id);
-
--- =============================================
 -- CONVERSATIONS TABLE (ChatGPT-style)
 -- =============================================
 CREATE TABLE IF NOT EXISTS conversations (

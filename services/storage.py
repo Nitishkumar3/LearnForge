@@ -110,3 +110,31 @@ def get_file_size(key):
         if e.response['Error']['Code'] == '404':
             return None
         raise
+
+
+def generate_image_key(user_id, workspace_id, image_id, extension='png'):
+    """Generate S3 key for generated images."""
+    return f"{user_id}/{workspace_id}/generatedimages/{image_id}.{extension}"
+
+
+def upload_image_bytes(key, image_bytes, content_type='image/png'):
+    """Upload image bytes directly to S3."""
+    import io
+    file_obj = io.BytesIO(image_bytes)
+    get_client().upload_fileobj(
+        file_obj,
+        BUCKET_NAME,
+        key,
+        ExtraArgs={'ContentType': content_type}
+    )
+    return True
+
+
+def get_public_url(key):
+    """Get public URL for a file (if bucket is public) or generate presigned URL."""
+    # Try to generate a long-lived presigned URL (7 days max)
+    return get_client().generate_presigned_url(
+        'get_object',
+        Params={'Bucket': BUCKET_NAME, 'Key': key},
+        ExpiresIn=604800  # 7 days
+    )

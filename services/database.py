@@ -408,6 +408,49 @@ def delete_conversation(conversation_id, user_id):
     )
 
 
+def get_conversation_image_s3_keys(conversation_id):
+    """Get all S3 keys for images in a conversation's messages."""
+    messages = execute_query(
+        "SELECT attachments FROM messages WHERE conversation_id = %s AND attachments IS NOT NULL",
+        (conversation_id,),
+        fetch_all=True
+    ) or []
+
+    s3_keys = []
+    for msg in messages:
+        attachments = msg.get('attachments') or []
+        for att in attachments:
+            if att.get('type') == 'image' and att.get('s3_key'):
+                s3_keys.append(att['s3_key'])
+    return s3_keys
+
+
+def get_workspace_conversations(workspace_id, user_id):
+    """Get all conversations in a workspace for a user."""
+    return execute_query(
+        "SELECT id FROM conversations WHERE workspace_id = %s AND user_id = %s",
+        (workspace_id, user_id),
+        fetch_all=True
+    ) or []
+
+
+def delete_workspace_conversations(workspace_id, user_id):
+    """Delete all conversations in a workspace. Returns count of deleted conversations."""
+    result = execute_query(
+        "DELETE FROM conversations WHERE workspace_id = %s AND user_id = %s",
+        (workspace_id, user_id)
+    )
+    return result if result else 0
+
+
+def delete_workspace_documents(workspace_id, user_id):
+    """Delete all documents in a workspace."""
+    return execute_query(
+        "DELETE FROM documents WHERE workspace_id = %s AND user_id = %s",
+        (workspace_id, user_id)
+    )
+
+
 # =============================================
 # MESSAGE QUERIES
 # =============================================
@@ -452,3 +495,41 @@ def get_recent_messages(conversation_id, limit=10):
     )
     # Reverse to get chronological order
     return messages[::-1] if messages else []
+
+
+def get_conversation_messages(conversation_id):
+    """Get all messages in a conversation ordered by creation time."""
+    return execute_query(
+        """SELECT id, role, content, created_at FROM messages
+           WHERE conversation_id = %s
+           ORDER BY created_at ASC""",
+        (conversation_id,),
+        fetch_all=True
+    ) or []
+
+
+def truncate_conversation_messages(conversation_id, keep_count):
+    """Delete messages after a certain point in the conversation."""
+    # Get all message IDs in order
+    messages = execute_query(
+        """SELECT id FROM messages
+           WHERE conversation_id = %s
+           ORDER BY created_at ASC""",
+        (conversation_id,),
+        fetch_all=True
+    )
+
+    if not messages or keep_count >= len(messages):
+        return 0
+
+    # Get IDs of messages to delete
+    message_ids_to_delete = [msg['id'] for msg in messages[keep_count:]]
+
+    if message_ids_to_delete:
+        placeholders = ','.join(['%s'] * len(message_ids_to_delete))
+        execute_query(
+            f"DELETE FROM messages WHERE id IN ({placeholders})",
+            tuple(message_ids_to_delete)
+        )
+
+    return len(message_ids_to_delete)

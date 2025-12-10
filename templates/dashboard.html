@@ -14,10 +14,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled>
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
-    <!-- Geist Font + Lora Font for chat -->
+    <!-- Google Sans Flex Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
     <script>
         // Initialize theme before page renders to prevent flash
         (function() {
@@ -74,7 +74,7 @@
         }
 
         body {
-            font-family: 'Geist', sans-serif;
+            font-family: 'Google Sans Flex', sans-serif;
             font-optical-sizing: auto;
         }
 
@@ -177,7 +177,7 @@
            Light/Dark mode support
            ======================================== */
         .answer-text {
-            font-family: 'Lora', serif;
+            font-family: 'Google Sans Flex', sans-serif;
             font-size: 15px;
             line-height: 1.7;
             color: #0D0D0D;
@@ -313,17 +313,71 @@
         }
 
         /* Code blocks */
+        .answer-text .code-block-wrapper {
+            position: relative;
+            margin: 1rem 0;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid #3E3E3E;
+        }
+        .answer-text .code-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #3E3E3E;
+        }
+        .answer-text .code-block-lang {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #9CA3AF;
+            text-transform: lowercase;
+            font-family: 'Google Sans Flex', sans-serif;
+        }
+        .answer-text .code-copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            color: #9CA3AF;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.15s ease;
+            font-family: 'Google Sans Flex', sans-serif;
+        }
+        .answer-text .code-copy-btn:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .answer-text .code-copy-btn.copied {
+            color: #10B981;
+        }
+        .answer-text .code-copy-btn svg {
+            width: 14px;
+            height: 14px;
+        }
         .answer-text pre {
             background: #0D0D0D;
-            border-radius: 0.75rem;
             padding: 1rem;
-            margin: 1rem 0;
+            margin: 0;
             overflow-x: auto;
-            border: 1px solid #3E3E3E;
+        }
+        .answer-text .code-block-wrapper + .code-block-wrapper {
+            margin-top: 1rem;
+        }
+        .dark .answer-text .code-block-wrapper {
+            border-color: #3E3E3E;
+        }
+        .dark .answer-text .code-block-header {
+            background: #1a1a1a;
+            border-bottom-color: #3E3E3E;
         }
         .dark .answer-text pre {
             background: #0D0D0D;
-            border-color: #3E3E3E;
         }
         .answer-text pre code {
             background: transparent;
@@ -366,6 +420,195 @@
         }
         .answer-text a:hover {
             opacity: 0.7;
+        }
+
+        /* Message Action Buttons */
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .assistant-message:hover .message-actions,
+        .message-actions.visible {
+            opacity: 1;
+        }
+        .message-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 0.5rem;
+            border: none;
+            background: transparent;
+            color: #8E8E8E;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .message-action-btn:hover {
+            background: #F4F4F4;
+            color: #0D0D0D;
+        }
+        .dark .message-action-btn:hover {
+            background: #2F2F2F;
+            color: #ECECEC;
+        }
+        .message-action-btn.active {
+            color: #10B981;
+        }
+        .message-action-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        .message-action-btn.speaking {
+            color: #3B82F6;
+            animation: pulse-speak 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-speak {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* User message actions */
+        .user-message-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .user-message-wrapper:hover .user-message-actions {
+            opacity: 1;
+        }
+        .user-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 0.375rem;
+            border: none;
+            background: transparent;
+            color: #8E8E8E;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .user-action-btn:hover {
+            background: #E5E5E5;
+            color: #0D0D0D;
+        }
+        .dark .user-action-btn:hover {
+            background: #3E3E3E;
+            color: #ECECEC;
+        }
+        .user-action-btn.active {
+            color: #10B981;
+        }
+        .user-action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Edit message modal */
+        .edit-message-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .edit-message-container {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #E5E5E5;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        }
+        .dark .edit-message-container {
+            background: #2F2F2F;
+            border-color: #3E3E3E;
+        }
+        .edit-message-textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #0D0D0D;
+            padding: 1rem;
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            resize: none;
+            min-height: 150px;
+            max-height: 400px;
+            font-family: 'Google Sans Flex', sans-serif;
+        }
+        .dark .edit-message-textarea {
+            color: #ECECEC;
+        }
+        .edit-message-textarea:focus {
+            outline: none;
+        }
+        .edit-message-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #E5E5E5;
+        }
+        .dark .edit-message-footer {
+            border-top-color: #3E3E3E;
+        }
+        .edit-cancel-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background: transparent;
+            color: #0D0D0D;
+            border: 1px solid #E5E5E5;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .dark .edit-cancel-btn {
+            color: #ECECEC;
+            border-color: #3E3E3E;
+        }
+        .edit-cancel-btn:hover {
+            background: #F4F4F4;
+        }
+        .dark .edit-cancel-btn:hover {
+            background: #3E3E3E;
+        }
+        .edit-send-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background: #0D0D0D;
+            color: #FFFFFF;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .dark .edit-send-btn {
+            background: #ECECEC;
+            color: #0D0D0D;
+        }
+        .edit-send-btn:hover {
+            background: #2F2F2F;
+        }
+        .dark .edit-send-btn:hover {
+            background: #FFFFFF;
         }
 
         /* Horizontal rule */
@@ -461,19 +704,119 @@
             30% { transform: translateY(-4px); }
         }
 
+        /* Response generation loading */
+        .response-loading {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .response-loading-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 0.5rem;
+            background: #0D0D0D;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .dark .response-loading-icon {
+            background: #ECECEC;
+        }
+        .response-loading-icon svg {
+            width: 16px;
+            height: 16px;
+            color: white;
+            animation: spin 1.5s linear infinite;
+        }
+        .dark .response-loading-icon svg {
+            color: #0D0D0D;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .response-loading-content {
+            flex: 1;
+        }
+        .response-loading-text {
+            font-size: 0.9375rem;
+            color: #0D0D0D;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .dark .response-loading-text {
+            color: #ECECEC;
+        }
+        .response-loading-shimmer {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .response-loading-shimmer .shimmer {
+            height: 12px;
+            border-radius: 6px;
+        }
+        .response-loading-shimmer .shimmer:nth-child(1) { width: 90%; }
+        .response-loading-shimmer .shimmer:nth-child(2) { width: 75%; }
+        .response-loading-shimmer .shimmer:nth-child(3) { width: 60%; }
+
         /* Streaming cursor */
         .typing-cursor {
-            animation: blink 1s infinite;
-            font-weight: normal;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #0D0D0D;
+            border-radius: 50%;
+            margin-left: 4px;
+            vertical-align: middle;
+            animation: cursor-pulse 1.5s ease-in-out infinite;
+        }
+        .dark .typing-cursor {
+            background: #ECECEC;
         }
 
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
+        @keyframes cursor-pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.85);
+            }
         }
 
         .streaming-content {
             /* Normal whitespace handling - HTML tags control spacing */
+        }
+
+        /* Shimmer loading effect */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        .shimmer {
+            background: linear-gradient(90deg,
+                #E5E5E5 25%,
+                #F5F5F5 50%,
+                #E5E5E5 75%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 0.375rem;
+        }
+        .dark .shimmer {
+            background: linear-gradient(90deg,
+                #3E3E3E 25%,
+                #4A4A4A 50%,
+                #3E3E3E 75%
+            );
+            background-size: 200% 100%;
         }
 
         /* Chat history item */
@@ -851,6 +1194,81 @@
             border-color: #4E4E4E;
         }
 
+        /* Image loading shimmer */
+        .image-loading-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #F4F4F4;
+        }
+        .dark .image-loading-container {
+            background: #2F2F2F;
+        }
+        .image-loading-shimmer {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: image-shimmer 1.5s ease-in-out infinite;
+        }
+        .dark .image-loading-shimmer {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.08) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+        }
+        @keyframes image-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .image-loading-content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .image-loading-icon {
+            width: 48px;
+            height: 48px;
+            color: #8E8E8E;
+        }
+        .dark .image-loading-icon {
+            color: #6E6E6E;
+        }
+        .image-loading-text {
+            font-size: 14px;
+            color: #8E8E8E;
+            font-weight: 500;
+        }
+        .dark .image-loading-text {
+            color: #6E6E6E;
+        }
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #D1D1D1;
+            border-top-color: #8E8E8E;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .dark .image-loading-spinner {
+            border-color: #4E4E4E;
+            border-top-color: #8E8E8E;
+        }
+
         /* Theme toggle button */
         .theme-toggle {
             width: 32px;
@@ -906,7 +1324,9 @@
                             <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
-                            <span id="currentWorkspaceName" class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary max-w-32 truncate">Loading...</span>
+                            <span id="currentWorkspaceName" class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary max-w-32 truncate">
+                                <span class="shimmer inline-block h-4 w-20 align-middle"></span>
+                            </span>
                             <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
                             </svg>
@@ -915,7 +1335,12 @@
                         <!-- Workspace Dropdown -->
                         <div id="workspaceDropdownContainer" class="hidden absolute left-0 mt-2 w-64 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
                             <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar" id="workspaceDropdown">
-                                <!-- Workspaces populated by JS -->
+                                <!-- Shimmer loading skeleton -->
+                                <div class="shimmer-skeleton space-y-2">
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
                             </div>
                             <div class="border-t border-light-border dark:border-dark-border p-2">
                                 <button onclick="openCreateWorkspaceModal()" class="w-full flex items-center gap-2 p-2 text-light-text dark:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg text-sm font-medium transition-colors duration-200">
@@ -991,7 +1416,14 @@
                 <p class="px-4 py-1.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted">Your chats</p>
                 <div class="flex-1 overflow-y-auto custom-scrollbar px-2">
                     <div id="chatHistoryList" class="pb-2">
-                        <div class="px-2 py-6 text-sm text-light-text-muted dark:text-dark-text-muted text-center">No chats yet</div>
+                        <!-- Shimmer loading skeleton -->
+                        <div class="shimmer-skeleton space-y-2 px-2">
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1035,6 +1467,11 @@
 
                 <!-- Documents List - Internal Scroll -->
                 <div id="documentsList" class="mt-2 max-h-28 overflow-y-auto custom-scrollbar space-y-1">
+                    <!-- Shimmer loading skeleton -->
+                    <div class="shimmer-skeleton space-y-1">
+                        <div class="shimmer h-9 w-full rounded-lg"></div>
+                        <div class="shimmer h-9 w-full rounded-lg"></div>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -1044,8 +1481,8 @@
             <!-- Hidden element to store current chat title (used by JS) -->
             <span id="currentChatTitle" class="hidden">New Chat</span>
 
-            <!-- Messages - Scrollable area (pb-24 to account for input box overlay) -->
-            <div id="chatMessages" class="flex-1 overflow-y-auto px-6 py-6 pb-28 custom-scrollbar min-h-0">
+            <!-- Messages - Scrollable area (pb-48 for extra scroll space like ChatGPT) -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto px-6 py-6 pb-48 custom-scrollbar min-h-0">
                 <div class="max-w-3xl mx-auto">
                     <div class="flex flex-col items-center justify-center h-full text-center py-20">
                         <div class="w-16 h-16 rounded-2xl bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border flex items-center justify-center mb-4">
@@ -1163,7 +1600,7 @@
                                         onclick="toggleModelDropdown()"
                                         class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text transition-colors duration-200 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover"
                                     >
-                                        <span id="selectedModelName">Loading...</span>
+                                        <span id="selectedModelName"><span class="shimmer inline-block h-3 w-24 align-middle"></span></span>
                                         <svg class="w-3.5 h-3.5 transition-transform duration-200" id="modelDropdownArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                         </svg>
@@ -1193,7 +1630,13 @@
                 class="hidden fixed w-64 bg-light-bg dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl shadow-lg overflow-hidden z-[100]"
             >
                 <div class="py-1 max-h-80 overflow-y-auto custom-scrollbar" id="modelDropdownList">
-                    <!-- Models will be populated here -->
+                    <!-- Shimmer loading skeleton -->
+                    <div class="shimmer-skeleton p-2 space-y-2">
+                        <div class="shimmer h-12 w-full rounded-lg"></div>
+                        <div class="shimmer h-12 w-full rounded-lg"></div>
+                        <div class="shimmer h-12 w-full rounded-lg"></div>
+                        <div class="shimmer h-12 w-full rounded-lg"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -1529,8 +1972,23 @@
         // CONVERSATION FUNCTIONS
         // ===================
 
+        function showChatHistoryShimmer() {
+            const listEl = document.getElementById('chatHistoryList');
+            listEl.innerHTML = `
+                <div class="shimmer-skeleton space-y-2 px-2">
+                    <div class="shimmer h-8 w-full"></div>
+                    <div class="shimmer h-8 w-full"></div>
+                    <div class="shimmer h-8 w-full"></div>
+                    <div class="shimmer h-8 w-full"></div>
+                    <div class="shimmer h-8 w-full"></div>
+                </div>
+            `;
+        }
+
         async function loadConversations() {
             if (!currentWorkspace) return;
+
+            showChatHistoryShimmer();
 
             try {
                 const response = await fetch(`/api/conversations?workspace_id=${currentWorkspace.id}`, {
@@ -1541,6 +1999,7 @@
                 renderConversationList();
             } catch (error) {
                 console.error('Error loading conversations:', error);
+                renderConversationList(); // Show empty state on error
             }
         }
 
@@ -1584,7 +2043,44 @@
             document.getElementById('currentChatTitle').textContent = 'New Chat';
         }
 
+        function showChatLoadingShimmer() {
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML = `
+                <div class="max-w-3xl mx-auto py-8 space-y-6">
+                    <!-- User message shimmer -->
+                    <div class="flex justify-end">
+                        <div class="shimmer h-12 w-[60%] rounded-xl"></div>
+                    </div>
+                    <!-- Assistant message shimmer -->
+                    <div class="flex justify-start">
+                        <div class="space-y-2 w-[80%]">
+                            <div class="shimmer h-4 w-full rounded"></div>
+                            <div class="shimmer h-4 w-[95%] rounded"></div>
+                            <div class="shimmer h-4 w-[85%] rounded"></div>
+                            <div class="shimmer h-4 w-[90%] rounded"></div>
+                        </div>
+                    </div>
+                    <!-- User message shimmer -->
+                    <div class="flex justify-end">
+                        <div class="shimmer h-10 w-[50%] rounded-xl"></div>
+                    </div>
+                    <!-- Assistant message shimmer -->
+                    <div class="flex justify-start">
+                        <div class="space-y-2 w-[75%]">
+                            <div class="shimmer h-4 w-full rounded"></div>
+                            <div class="shimmer h-4 w-[90%] rounded"></div>
+                            <div class="shimmer h-4 w-[80%] rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         async function loadConversation(conversationId) {
+            // Show shimmer loading state
+            showChatLoadingShimmer();
+            document.getElementById('currentChatTitle').textContent = 'Loading...';
+
             try {
                 const response = await fetch(`/api/conversations/${conversationId}`, {
                     headers: Auth.getAuthHeaders()
@@ -1592,6 +2088,7 @@
 
                 if (!response.ok) {
                     showToast('Failed to load conversation', 'error');
+                    showWelcomeMessage();
                     return;
                 }
 
@@ -1615,8 +2112,8 @@
                         // Check for image attachments
                         const attachments = msg.attachments || [];
                         const imageAttachment = attachments.find(a => a.type === 'image');
-                        if (imageAttachment) {
-                            addImageMessage(imageAttachment.base64, imageAttachment.mime_type, imageAttachment.prompt || msg.content);
+                        if (imageAttachment && imageAttachment.s3_key) {
+                            addImageMessage(imageAttachment.s3_key, imageAttachment.mime_type, imageAttachment.prompt || msg.content);
                         } else {
                             addAssistantMessage(msg.content, msg.sources || []);
                         }
@@ -1624,6 +2121,7 @@
                 }
             } catch (error) {
                 console.error('Error loading conversation:', error);
+                showWelcomeMessage();
             }
         }
 
@@ -1723,7 +2221,21 @@
         // Models
         let allModels = [];
 
+        function showModelDropdownShimmer() {
+            const dropdownList = document.getElementById('modelDropdownList');
+            dropdownList.innerHTML = `
+                <div class="shimmer-skeleton p-2 space-y-2">
+                    <div class="shimmer h-12 w-full rounded-lg"></div>
+                    <div class="shimmer h-12 w-full rounded-lg"></div>
+                    <div class="shimmer h-12 w-full rounded-lg"></div>
+                    <div class="shimmer h-12 w-full rounded-lg"></div>
+                </div>
+            `;
+        }
+
         async function loadModels() {
+            showModelDropdownShimmer();
+
             try {
                 const response = await fetch('/api/models');
                 const data = await response.json();
@@ -1959,8 +2471,20 @@
         }
 
         // Documents
+        function showDocumentsShimmer() {
+            const listDiv = document.getElementById('documentsList');
+            listDiv.innerHTML = `
+                <div class="shimmer-skeleton space-y-1">
+                    <div class="shimmer h-9 w-full rounded-lg"></div>
+                    <div class="shimmer h-9 w-full rounded-lg"></div>
+                </div>
+            `;
+        }
+
         async function loadDocuments() {
             if (!currentWorkspace) return;
+
+            showDocumentsShimmer();
 
             try {
                 const response = await fetch(`/api/documents?workspace_id=${currentWorkspace.id}`, {
@@ -1994,6 +2518,7 @@
                 `).join('');
             } catch (error) {
                 console.error('Error loading documents:', error);
+                document.getElementById('documentsList').innerHTML = '';
             }
         }
 
@@ -2216,7 +2741,8 @@
                 if (!response.ok) {
                     addErrorMessage(result.error);
                 } else {
-                    addImageMessage(result.image_base64, result.mime_type, prompt);
+                    // Use proxy URL for image display
+                    addImageMessage(result.s3_key, result.mime_type, prompt);
                 }
             } catch (error) {
                 removeMessage(loadingId);
@@ -2243,9 +2769,15 @@
 
             const html = `
                 <div id="${id}" class="max-w-3xl mx-auto mb-6">
-                    <div class="flex items-center gap-3">
-                        <div class="animate-spin rounded-full h-5 w-5 border-2 border-light-text dark:border-dark-text border-t-transparent"></div>
-                        <span class="text-[15px] text-light-text-secondary dark:text-dark-text-secondary">Generating image...</span>
+                    <div class="image-loading-container">
+                        <div class="image-loading-shimmer"></div>
+                        <div class="image-loading-content">
+                            <svg class="image-loading-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="image-loading-text">Generating image...</span>
+                            <div class="image-loading-spinner"></div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2254,33 +2786,33 @@
             return id;
         }
 
-        function addImageMessage(base64, mimeType, prompt) {
+        function addImageMessage(s3Key, mimeType, prompt) {
             const messagesDiv = document.getElementById('chatMessages');
             const imageId = 'img-' + Date.now();
+
+            // Get auth token for image URLs
+            const token = Auth.getToken();
+            const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+
+            // Use proxy URL to serve image (avoids CORS issues)
+            const imageUrl = `/api/images/${s3Key}${tokenParam}`;
+            const downloadUrl = `/api/images/${s3Key}/download${tokenParam}`;
 
             const html = `
                 <div class="max-w-3xl mx-auto mb-6">
                     <div class="image-container">
-                        <img id="${imageId}" src="data:${mimeType};base64,${base64}" alt="${escapeHtml(prompt)}" class="generated-image">
-                        <button onclick="downloadImage('${imageId}', '${escapeHtml(prompt).replace(/'/g, "\\'")}')" class="image-download-btn">
+                        <img id="${imageId}" src="${imageUrl}" alt="${escapeHtml(prompt)}" class="generated-image">
+                        <a href="${downloadUrl}" class="image-download-btn" download>
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
                             Download
-                        </button>
+                        </a>
                     </div>
                 </div>
             `;
             messagesDiv.insertAdjacentHTML('beforeend', html);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function downloadImage(imageId, filename) {
-            const img = document.getElementById(imageId);
-            const link = document.createElement('a');
-            link.href = img.src;
-            link.download = filename.substring(0, 50).replace(/[^a-z0-9]/gi, '_') + '.jpg';
-            link.click();
         }
 
         function removeMessage(id) {
@@ -2313,10 +2845,20 @@
                         </div>
                     </div>
                     <div class="answer-text streaming-content">
-                        <div class="flex items-center gap-1 py-1">
-                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
-                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
-                            <div class="typing-dot w-2 h-2 bg-light-text-muted dark:bg-dark-text-muted rounded-full"></div>
+                        <div class="response-loading">
+                            <div class="response-loading-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </div>
+                            <div class="response-loading-content">
+                                <div class="response-loading-text">Generating response...</div>
+                                <div class="response-loading-shimmer">
+                                    <div class="shimmer"></div>
+                                    <div class="shimmer"></div>
+                                    <div class="shimmer"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2381,8 +2923,11 @@
                     // Use formatAnswerWithCitations for consistent styling (citations become badges)
                     let html = formatAnswerWithCitations(pendingText, []);
 
+                    // Pre-process HTML to add code block wrappers before inserting into DOM
+                    html = preprocessCodeBlocks(html);
+
                     // Add typing cursor at the end
-                    contentEl.innerHTML = html + '<span class="typing-cursor">▊</span>';
+                    contentEl.innerHTML = html + '<span class="typing-cursor"></span>';
 
                     // Try to render LaTeX progressively (may fail on incomplete expressions)
                     try {
@@ -2392,12 +2937,61 @@
                     }
                 } catch (e) {
                     // Fallback to escaped text if parsing fails
-                    contentEl.innerHTML = escapeHtml(pendingText) + '<span class="typing-cursor">▊</span>';
+                    contentEl.innerHTML = escapeHtml(pendingText) + '<span class="typing-cursor"></span>';
                 }
 
                 const messagesDiv = document.getElementById('chatMessages');
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }, 50);
+        }
+
+        // Pre-process HTML string to wrap code blocks with header (language + copy button)
+        function preprocessCodeBlocks(html) {
+            // Create a temporary container to parse the HTML
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+
+            const preElements = temp.querySelectorAll('pre');
+            preElements.forEach((pre) => {
+                const code = pre.querySelector('code');
+                let language = 'code';
+
+                if (code) {
+                    const classes = code.className.split(' ');
+                    for (const cls of classes) {
+                        if (cls.startsWith('language-')) {
+                            language = cls.replace('language-', '');
+                            break;
+                        } else if (cls.startsWith('hljs-')) {
+                            continue;
+                        } else if (cls && cls !== 'hljs') {
+                            language = cls;
+                            break;
+                        }
+                    }
+                }
+
+                // Create wrapper structure
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block-wrapper';
+                wrapper.innerHTML = `
+                    <div class="code-block-header">
+                        <span class="code-block-lang">${escapeHtml(language)}</span>
+                        <button class="code-copy-btn" onclick="copyCodeBlock(this)">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy code
+                        </button>
+                    </div>
+                `;
+
+                // Insert wrapper before pre and move pre inside
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+            });
+
+            return temp.innerHTML;
         }
 
         function removeStreamingMessage(messageId) {
@@ -2465,15 +3059,21 @@
                 `;
             }
 
+            // Add assistant-message class and data attribute for raw answer
+            messageEl.classList.add('assistant-message');
+            messageEl.dataset.rawAnswer = processedAnswer;
+
             // Update message content directly on the messageEl (no bubble container)
             messageEl.innerHTML = `
                 ${thinkingHtml}
                 <div class="answer-text">${formattedAnswer}</div>
                 ${sourcesHtml}
+                ${getMessageActionsHtml(messageId)}
             `;
 
-            // Render LaTeX
+            // Render LaTeX and enhance code blocks
             renderMath(messageEl);
+            enhanceCodeBlocks(messageEl);
 
             const messagesDiv = document.getElementById('chatMessages');
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -2481,6 +3081,7 @@
 
         function addUserMessage(text) {
             const messagesDiv = document.getElementById('chatMessages');
+            const messageId = 'user-msg-' + Date.now();
 
             // Clear welcome message
             if (messagesDiv.querySelector('.flex-col.items-center')) {
@@ -2488,11 +3089,23 @@
             }
 
             const html = `
-                <div class="max-w-3xl mx-auto mb-6">
+                <div id="${messageId}" class="user-message-wrapper max-w-3xl mx-auto mb-6" data-user-text="${escapeHtml(text)}">
                     <div class="flex justify-end">
                         <div class="max-w-[70%] bg-[#F4F4F4] dark:bg-[#2F2F2F] text-light-text dark:text-dark-text px-4 py-3 rounded-xl">
-                            <p class="text-[15px] leading-relaxed" style="font-family: 'Geist', sans-serif;">${escapeHtml(text)}</p>
+                            <p class="user-message-text text-[15px] leading-relaxed" style="font-family: 'Google Sans Flex', sans-serif;">${escapeHtml(text)}</p>
                         </div>
+                    </div>
+                    <div class="user-message-actions">
+                        <button class="user-action-btn" onclick="copyUserMessage('${messageId}')" title="Copy">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                        <button class="user-action-btn" onclick="editUserMessage('${messageId}')" title="Edit">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             `;
@@ -2518,7 +3131,29 @@
             return id;
         }
 
-        function addAssistantMessage(answer, sources) {
+        function getMessageActionsHtml(messageId) {
+            return `
+                <div class="message-actions">
+                    <button class="message-action-btn" onclick="copyMessageResponse('${messageId}')" title="Copy">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                    <button class="message-action-btn" onclick="regenerateMessage('${messageId}')" title="Regenerate">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                    <button class="message-action-btn" onclick="readAloudMessage('${messageId}')" title="Read aloud" id="tts-btn-${messageId}">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        function addAssistantMessage(answer, sources, messageIndex = null) {
             const messagesDiv = document.getElementById('chatMessages');
             const messageId = 'msg-' + Date.now();
 
@@ -2551,9 +3186,10 @@
             }
 
             const html = `
-                <div id="${messageId}" class="max-w-3xl mx-auto mb-6">
+                <div id="${messageId}" class="assistant-message max-w-3xl mx-auto mb-6" data-raw-answer="${escapeHtml(answer)}" data-message-index="${messageIndex !== null ? messageIndex : ''}">
                     <div class="answer-text">${formattedAnswer}</div>
                     ${sourcesHtml}
+                    ${getMessageActionsHtml(messageId)}
                 </div>
             `;
 
@@ -2563,9 +3199,525 @@
             const messageEl = document.getElementById(messageId);
             if (messageEl) {
                 renderMath(messageEl);
+                enhanceCodeBlocks(messageEl);
             }
 
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function enhanceCodeBlocks(container) {
+            const preElements = container.querySelectorAll('pre');
+            preElements.forEach((pre, index) => {
+                // Skip if already enhanced
+                if (pre.parentElement.classList.contains('code-block-wrapper')) return;
+
+                const code = pre.querySelector('code');
+                let language = 'code';
+
+                if (code) {
+                    // Try to get language from class (hljs adds language-xxx class)
+                    const classes = code.className.split(' ');
+                    for (const cls of classes) {
+                        if (cls.startsWith('language-')) {
+                            language = cls.replace('language-', '');
+                            break;
+                        } else if (cls.startsWith('hljs-')) {
+                            continue;
+                        } else if (cls && cls !== 'hljs') {
+                            language = cls;
+                            break;
+                        }
+                    }
+                }
+
+                // Create wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block-wrapper';
+
+                // Create header
+                const header = document.createElement('div');
+                header.className = 'code-block-header';
+                header.innerHTML = `
+                    <span class="code-block-lang">${escapeHtml(language)}</span>
+                    <button class="code-copy-btn" onclick="copyCodeBlock(this)">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Copy code
+                    </button>
+                `;
+
+                // Wrap the pre element
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(header);
+                wrapper.appendChild(pre);
+            });
+        }
+
+        function copyCodeBlock(button) {
+            const wrapper = button.closest('.code-block-wrapper');
+            const code = wrapper.querySelector('code');
+            const text = code ? code.textContent : wrapper.querySelector('pre').textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = `
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Copied!
+                `;
+                button.classList.add('copied');
+
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        // ========================
+        // MESSAGE ACTION FUNCTIONS
+        // ========================
+
+        // Copy user message to clipboard
+        function copyUserMessage(messageId) {
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            const text = messageEl.dataset.userText || messageEl.querySelector('.user-message-text')?.textContent || '';
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = messageEl.querySelector('.user-action-btn[title="Copy"]');
+                if (btn) {
+                    btn.classList.add('active');
+                    setTimeout(() => btn.classList.remove('active'), 2000);
+                }
+                showToast('Copied to clipboard', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        // Edit user message - shows modal to edit, then truncates and regenerates
+        let editingMessageId = null;
+
+        function editUserMessage(messageId) {
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            const text = messageEl.dataset.userText || messageEl.querySelector('.user-message-text')?.textContent || '';
+            editingMessageId = messageId;
+
+            // Create and show edit modal
+            const modal = document.createElement('div');
+            modal.id = 'editMessageModal';
+            modal.className = 'edit-message-modal';
+            modal.innerHTML = `
+                <div class="edit-message-container">
+                    <textarea class="edit-message-textarea" id="editMessageTextarea">${escapeHtml(text)}</textarea>
+                    <div class="edit-message-footer">
+                        <button class="edit-cancel-btn" onclick="closeEditModal()">Cancel</button>
+                        <button class="edit-send-btn" onclick="submitEditedMessage()">Send</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Focus textarea and move cursor to end
+            const textarea = document.getElementById('editMessageTextarea');
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeEditModal();
+            });
+
+            // Handle Enter key (Ctrl+Enter or Cmd+Enter to send)
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    submitEditedMessage();
+                }
+                if (e.key === 'Escape') {
+                    closeEditModal();
+                }
+            });
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editMessageModal');
+            if (modal) modal.remove();
+            editingMessageId = null;
+        }
+
+        async function submitEditedMessage() {
+            const textarea = document.getElementById('editMessageTextarea');
+            const newText = textarea.value.trim();
+
+            if (!newText) {
+                showToast('Message cannot be empty', 'error');
+                return;
+            }
+
+            if (!editingMessageId || !currentConversation) {
+                closeEditModal();
+                return;
+            }
+
+            const messageEl = document.getElementById(editingMessageId);
+            if (!messageEl) {
+                closeEditModal();
+                return;
+            }
+
+            const originalText = messageEl.dataset.userText || '';
+            closeEditModal();
+
+            // Remove this user message and all messages after it from DOM
+            let currentEl = messageEl;
+            const elementsToRemove = [];
+            while (currentEl) {
+                elementsToRemove.push(currentEl);
+                currentEl = currentEl.nextElementSibling;
+            }
+            elementsToRemove.forEach(el => el.remove());
+
+            // Add the edited user message to DOM
+            addUserMessage(newText);
+
+            // Show loading indicator immediately
+            const streamingMessageId = addStreamingMessage();
+
+            // Truncate messages in DB (fire and forget) - delete from this user message onwards
+            fetch(`/api/conversations/${currentConversation.id}/truncate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...Auth.getAuthHeaders()
+                },
+                body: JSON.stringify({ keep_until_user_message: originalText, delete_user_message: true })
+            }).catch(err => console.warn('Truncate failed:', err));
+
+            // Send new message to get response
+            try {
+                const response = await fetch(`/api/conversations/${currentConversation.id}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        question: newText,
+                        use_search: searchEnabled,
+                        use_thinking: thinkingEnabled
+                    })
+                });
+
+                if (!response.ok) {
+                    removeStreamingMessage(streamingMessageId);
+                    showToast('Failed to send message', 'error');
+                    return;
+                }
+
+                // Handle streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let rawText = '';
+                let rawThinking = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'thinking') {
+                                    rawThinking += data.content;
+                                    updateThinkingContent(streamingMessageId, rawThinking);
+                                } else if (data.type === 'chunk') {
+                                    rawText += data.content;
+                                    updateStreamingMessage(streamingMessageId, rawText);
+                                } else if (data.type === 'done') {
+                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '');
+                                } else if (data.type === 'error') {
+                                    removeStreamingMessage(streamingMessageId);
+                                    addErrorMessage(data.message);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error sending edited message:', error);
+                removeStreamingMessage(streamingMessageId);
+                showToast('Failed to send message', 'error');
+            }
+        }
+
+        // Copy message response to clipboard
+        function copyMessageResponse(messageId) {
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            // Get raw answer from data attribute, or fallback to text content
+            const rawAnswer = messageEl.dataset.rawAnswer || messageEl.querySelector('.answer-text')?.textContent || '';
+
+            navigator.clipboard.writeText(rawAnswer).then(() => {
+                const btn = messageEl.querySelector('.message-action-btn[title="Copy"]');
+                if (btn) {
+                    btn.classList.add('active');
+                    setTimeout(() => btn.classList.remove('active'), 2000);
+                }
+                showToast('Copied to clipboard', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        // Regenerate message - removes this and all subsequent messages, then regenerates
+        async function regenerateMessage(messageId) {
+            if (!currentConversation) {
+                showToast('No active conversation', 'error');
+                return;
+            }
+
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            // Find the user message (question) that precedes this assistant message
+            const messagesDiv = document.getElementById('chatMessages');
+            const allMessages = Array.from(messagesDiv.querySelectorAll('.assistant-message, .flex.justify-end'));
+            const messageIndex = allMessages.indexOf(messageEl);
+
+            if (messageIndex < 1) {
+                showToast('Cannot regenerate first message', 'error');
+                return;
+            }
+
+            // Get the preceding user message
+            let userMessageEl = null;
+            let userQuestion = '';
+            for (let i = messageIndex - 1; i >= 0; i--) {
+                if (allMessages[i].classList.contains('flex') || allMessages[i].querySelector('.flex.justify-end')) {
+                    userMessageEl = allMessages[i];
+                    break;
+                }
+            }
+
+            // Try to find the user message by traversing siblings
+            let prevSibling = messageEl.previousElementSibling;
+            while (prevSibling) {
+                const userBubble = prevSibling.querySelector('.flex.justify-end p');
+                if (userBubble) {
+                    userQuestion = userBubble.textContent;
+                    userMessageEl = prevSibling;
+                    break;
+                }
+                prevSibling = prevSibling.previousElementSibling;
+            }
+
+            if (!userQuestion) {
+                showToast('Could not find the original question', 'error');
+                return;
+            }
+
+            // Remove this message and all messages after it from the DOM
+            let currentEl = messageEl;
+            const elementsToRemove = [];
+            while (currentEl) {
+                elementsToRemove.push(currentEl);
+                currentEl = currentEl.nextElementSibling;
+            }
+            elementsToRemove.forEach(el => el.remove());
+
+            // Show loading indicator IMMEDIATELY (before any API calls)
+            const streamingMessageId = addStreamingMessage();
+
+            // Call backend to truncate conversation and regenerate
+            try {
+                // First, truncate the conversation in the database (don't await - fire and forget)
+                fetch(`/api/conversations/${currentConversation.id}/truncate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ keep_until_user_message: userQuestion })
+                }).catch(err => console.warn('Truncate failed:', err));
+
+                const response = await fetch(`/api/conversations/${currentConversation.id}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        question: userQuestion,
+                        use_search: searchEnabled,
+                        use_thinking: thinkingEnabled,
+                        regenerate: true
+                    })
+                });
+
+                if (!response.ok) {
+                    removeStreamingMessage(streamingMessageId);
+                    showToast('Failed to regenerate response', 'error');
+                    return;
+                }
+
+                // Handle streaming response (same as sendMessage)
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let rawText = '';
+                let rawThinking = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'thinking') {
+                                    rawThinking += data.content;
+                                    updateThinkingContent(streamingMessageId, rawThinking);
+                                } else if (data.type === 'chunk') {
+                                    rawText += data.content;
+                                    updateStreamingMessage(streamingMessageId, rawText);
+                                } else if (data.type === 'done') {
+                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '');
+                                } else if (data.type === 'error') {
+                                    removeStreamingMessage(streamingMessageId);
+                                    addErrorMessage(data.message);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error regenerating:', error);
+                showToast('Failed to regenerate response', 'error');
+            }
+        }
+
+        // Text-to-Speech for reading messages aloud
+        let currentTTSUtterance = null;
+        let currentTTSMessageId = null;
+
+        function readAloudMessage(messageId) {
+            const messageEl = document.getElementById(messageId);
+            if (!messageEl) return;
+
+            const ttsBtn = document.getElementById(`tts-btn-${messageId}`);
+
+            // If already speaking this message, stop it
+            if (currentTTSMessageId === messageId && speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                currentTTSMessageId = null;
+                currentTTSUtterance = null;
+                if (ttsBtn) ttsBtn.classList.remove('speaking');
+                return;
+            }
+
+            // Stop any other ongoing speech
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                // Remove speaking class from previous button
+                if (currentTTSMessageId) {
+                    const prevBtn = document.getElementById(`tts-btn-${currentTTSMessageId}`);
+                    if (prevBtn) prevBtn.classList.remove('speaking');
+                }
+            }
+
+            // Get the rendered text content from answer-text div (not raw markdown)
+            const answerTextEl = messageEl.querySelector('.answer-text');
+            if (!answerTextEl) {
+                showToast('No text to read', 'error');
+                return;
+            }
+
+            // Get text content which strips HTML/markdown and gives plain text
+            let textToRead = answerTextEl.textContent || '';
+
+            // Clean up extra whitespace
+            textToRead = textToRead.replace(/\s+/g, ' ').trim();
+
+            if (!textToRead) {
+                showToast('No text to read', 'error');
+                return;
+            }
+
+            // Create utterance
+            currentTTSUtterance = new SpeechSynthesisUtterance(textToRead);
+            currentTTSMessageId = messageId;
+
+            // Configure voice settings
+            currentTTSUtterance.rate = 1.0;
+            currentTTSUtterance.pitch = 1.0;
+            currentTTSUtterance.volume = 1.0;
+
+            // Try to use a good English voice
+            const voices = speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+                                   voices.find(v => v.lang.startsWith('en') && v.name.includes('Microsoft')) ||
+                                   voices.find(v => v.lang.startsWith('en'));
+            if (preferredVoice) {
+                currentTTSUtterance.voice = preferredVoice;
+            }
+
+            // Add speaking class for visual feedback
+            if (ttsBtn) ttsBtn.classList.add('speaking');
+
+            // Handle speech end
+            currentTTSUtterance.onend = () => {
+                currentTTSMessageId = null;
+                currentTTSUtterance = null;
+                if (ttsBtn) ttsBtn.classList.remove('speaking');
+            };
+
+            currentTTSUtterance.onerror = (e) => {
+                console.error('TTS Error:', e);
+                currentTTSMessageId = null;
+                currentTTSUtterance = null;
+                if (ttsBtn) ttsBtn.classList.remove('speaking');
+                // Don't show error for user-initiated cancellations
+                if (e.error !== 'canceled' && e.error !== 'interrupted') {
+                    showToast('Text-to-speech failed', 'error');
+                }
+            };
+
+            // Start speaking
+            speechSynthesis.speak(currentTTSUtterance);
+        }
+
+        // Load voices when available (some browsers load them async)
+        if (typeof speechSynthesis !== 'undefined') {
+            speechSynthesis.onvoiceschanged = () => {
+                // Voices are now loaded
+            };
         }
 
         function addErrorMessage(error) {
@@ -2724,10 +3876,10 @@
             <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCreateWorkspaceModal()"></div>
 
             <!-- Modal -->
-            <div class="relative bg-surface rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-black/[0.08]">
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-light-border dark:border-dark-border">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-text-primary tracking-tight">Create Workspace</h3>
-                    <button onclick="closeCreateWorkspaceModal()" class="p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-surface-hover transition-colors duration-200">
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">Create Workspace</h3>
+                    <button onclick="closeCreateWorkspaceModal()" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -2735,17 +3887,17 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="newWorkspaceName" class="block text-sm font-medium text-text-secondary mb-1">Workspace Name</label>
+                    <label for="newWorkspaceName" class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Workspace Name</label>
                     <input type="text" id="newWorkspaceName" placeholder="e.g., Machine Learning, Physics 101"
-                           class="w-full px-4 py-2.5 border border-black/[0.08] rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-black/[0.20] transition-colors duration-200"
+                           class="w-full px-4 py-2.5 border border-light-border dark:border-dark-border rounded-xl bg-white dark:bg-dark-bg text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-light-text-secondary dark:focus:border-dark-text-secondary transition-colors duration-200"
                            onkeypress="if(event.key === 'Enter') submitCreateWorkspace()">
                 </div>
 
                 <div class="flex gap-3">
-                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-black/[0.08] text-text-secondary rounded-xl hover:bg-surface-hover font-medium transition-colors duration-200">
+                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium transition-colors duration-200">
                         Cancel
                     </button>
-                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-dark text-white rounded-xl hover:bg-[#333333] font-medium transition-colors duration-200">
+                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-white dark:text-dark-bg rounded-xl hover:bg-[#333333] dark:hover:bg-[#cccccc] font-medium transition-colors duration-200">
                         Create
                     </button>
                 </div>
@@ -2760,10 +3912,10 @@
             <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeWorkspaceSettingsModal()"></div>
 
             <!-- Modal -->
-            <div class="relative bg-surface rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-black/[0.08]">
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-light-border dark:border-dark-border">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-text-primary tracking-tight">Workspace Settings</h3>
-                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-surface-hover transition-colors duration-200">
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">Workspace Settings</h3>
+                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -2773,30 +3925,47 @@
                 <input type="hidden" id="settingsWorkspaceId">
 
                 <div class="mb-4">
-                    <label for="editWorkspaceName" class="block text-sm font-medium text-text-secondary mb-1">Workspace Name</label>
+                    <label for="editWorkspaceName" class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Workspace Name</label>
                     <input type="text" id="editWorkspaceName" placeholder="Workspace name"
-                           class="w-full px-4 py-2.5 border border-black/[0.08] rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:border-black/[0.20] transition-colors duration-200"
+                           class="w-full px-4 py-2.5 border border-light-border dark:border-dark-border rounded-xl bg-white dark:bg-dark-bg text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-light-text-secondary dark:focus:border-dark-text-secondary transition-colors duration-200"
                            onkeypress="if(event.key === 'Enter') submitRenameWorkspace()">
                 </div>
 
                 <div class="flex gap-3 mb-4">
-                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-black/[0.08] text-text-secondary rounded-xl hover:bg-surface-hover font-medium transition-colors duration-200">
+                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium transition-colors duration-200">
                         Cancel
                     </button>
-                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-dark text-white rounded-xl hover:bg-[#333333] font-medium transition-colors duration-200">
+                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-white dark:text-dark-bg rounded-xl hover:bg-[#333333] dark:hover:bg-[#cccccc] font-medium transition-colors duration-200">
                         Save
                     </button>
                 </div>
 
-                <div class="border-t border-black/[0.08] pt-4">
-                    <p class="text-sm text-text-muted mb-3">Danger Zone</p>
-                    <button onclick="confirmDeleteWorkspace()" class="w-full px-4 py-2.5 bg-red-50 text-accent-error border border-red-200 rounded-xl hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                <div class="border-t border-light-border dark:border-dark-border pt-4">
+                    <p class="text-sm text-light-text-muted dark:text-dark-text-muted mb-3">Danger Zone</p>
+
+                    <button onclick="confirmDeleteAllConversations()" class="w-full px-4 py-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 font-medium transition-colors duration-200 flex items-center justify-center gap-2 mb-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        Delete All Conversations
+                    </button>
+                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted mb-4 text-center">Deletes all chat history and generated images.</p>
+
+                    <button onclick="confirmDeleteAllDocuments()" class="w-full px-4 py-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 font-medium transition-colors duration-200 flex items-center justify-center gap-2 mb-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Delete All Documents
+                    </button>
+                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted mb-4 text-center">Deletes all uploaded files from storage and vector database.</p>
+
+                    <button onclick="confirmDeleteWorkspace()" class="w-full px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-accent-error border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 font-medium transition-colors duration-200 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                         Delete Workspace
                     </button>
-                    <p class="text-xs text-text-muted mt-2 text-center">This will permanently delete all documents in this workspace.</p>
+                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted mt-2 text-center">Deletes everything: documents, conversations, and the workspace itself.</p>
                 </div>
             </div>
         </div>
@@ -2860,7 +4029,6 @@
             document.getElementById('settingsWorkspaceId').value = workspaceId;
             document.getElementById('editWorkspaceName').value = workspace.name;
             document.getElementById('workspaceSettingsModal').classList.remove('hidden');
-            document.getElementById('editWorkspaceName').focus();
             // Close workspace dropdown
             document.getElementById('workspaceDropdownContainer').classList.add('hidden');
         }
@@ -2910,6 +4078,77 @@
             }
         }
 
+        async function confirmDeleteAllConversations() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const workspace = workspaces.find(w => w.id === workspaceId);
+
+            if (!workspace) return;
+
+            if (!confirm(`Are you sure you want to delete all conversations in "${workspace.name}"? This will permanently delete all chat history and generated images.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}/conversations`, {
+                    method: 'DELETE',
+                    headers: Auth.getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Clear local conversations if this is the current workspace
+                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
+                        conversations = [];
+                        currentConversation = null;
+                        renderConversationList();
+                        showWelcomeMessage();
+                        document.getElementById('currentChatTitle').textContent = 'New Chat';
+                    }
+                    closeWorkspaceSettingsModal();
+                    showToast(`Deleted ${data.deleted_count} conversations`, 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to delete conversations', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete conversations', 'error');
+            }
+        }
+
+        async function confirmDeleteAllDocuments() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const workspace = workspaces.find(w => w.id === workspaceId);
+
+            if (!workspace) return;
+
+            if (!confirm(`Are you sure you want to delete all documents in "${workspace.name}"? This will permanently delete all uploaded files from S3 and the vector database.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}/documents`, {
+                    method: 'DELETE',
+                    headers: Auth.getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Refresh documents list if this is the current workspace
+                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
+                        loadDocuments();
+                        loadStats();
+                    }
+                    closeWorkspaceSettingsModal();
+                    showToast(`Deleted ${data.deleted_count} documents`, 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to delete documents', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete documents', 'error');
+            }
+        }
+
         async function confirmDeleteWorkspace() {
             const workspaceId = document.getElementById('settingsWorkspaceId').value;
             const workspace = workspaces.find(w => w.id === workspaceId);
@@ -2921,7 +4160,7 @@
                 return;
             }
 
-            if (!confirm(`Are you sure you want to delete "${workspace.name}"? This will permanently delete all documents in this workspace.`)) {
+            if (!confirm(`Are you sure you want to delete "${workspace.name}"? This will permanently delete all documents, conversations, and images.`)) {
                 return;
             }
 

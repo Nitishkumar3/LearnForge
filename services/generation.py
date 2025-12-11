@@ -66,6 +66,39 @@ IMPORTANT:
 Provide your response:"""
 
 
+def build_direct_prompt(query, history_text):
+    """Build prompt for direct LLM conversation without RAG context."""
+    return f"""You are a helpful assistant. Answer the user's question clearly and helpfully.
+{history_text}
+
+QUESTION: {query}
+
+FORMATTING (Markdown + LaTeX):
+
+Structure:
+- Headings: ## Main Section, ### Subsection
+- Bold: **important text**
+- Italic: *emphasized text*
+- Lists: Use - for bullets, 1. 2. 3. for numbered
+- Code: `inline code` or ```code blocks```
+
+Math & Science (use LaTeX with $ delimiters):
+- Inline formulas: $E = mc^2$, $a^2 + b^2 = c^2$
+- Chemical formulas: $CO_2$, $H_2O$, $NaCl$, $C_6H_{{12}}O_6$
+- Subscripts: $x_1$, $A_{{max}}$
+- Superscripts: $x^2$, $e^{{-x}}$
+- Fractions: $\\frac{{a}}{{b}}$
+- Greek letters: $\\alpha$, $\\beta$, $\\Delta$
+- Block equations (own line): $$\\sum_{{i=1}}^{{n}} x_i$$
+
+IMPORTANT:
+- Always use $ for math/chemistry, never plain text for formulas
+- Use double braces for multi-character subscripts/superscripts: $x_{{10}}$ not $x_10$
+- Keep formatting consistent throughout response
+
+Provide your response:"""
+
+
 def process_citations(answer, metadatas):
     if not answer:
         return answer, []
@@ -141,18 +174,15 @@ def generate_answer(query, chunks, metadatas, chat_history=None, use_search=Fals
 
 
 def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_search=False, use_thinking=False):
-    if not chunks:
-        yield {
-            "type": "done",
-            "content": "I don't have any documents to search. Please upload some PDFs first.",
-            "sources": [],
-            "thinking": ""
-        }
-        return
-
-    context = build_context(chunks, metadatas)
     history_text = build_history(chat_history)
-    prompt = build_prompt(query, context, history_text)
+
+    # Build prompt based on whether we have RAG context
+    if chunks:
+        context = build_context(chunks, metadatas)
+        prompt = build_prompt(query, context, history_text)
+    else:
+        # No RAG - direct conversation with LLM
+        prompt = build_direct_prompt(query, history_text)
 
     full_answer = ""
     full_thinking = ""
@@ -169,7 +199,12 @@ def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_sear
         yield {"type": "error", "message": str(e)}
         return
 
-    processed_answer, sources = process_citations(full_answer, metadatas)
+    # Only process citations if we have RAG context
+    if chunks:
+        processed_answer, sources = process_citations(full_answer, metadatas)
+    else:
+        processed_answer = full_answer
+        sources = []
 
     yield {
         "type": "done",

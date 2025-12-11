@@ -4,7 +4,9 @@ cookie.txt
 action-plan.md
 todo.md
 design-guide.md
-gemini-live-test.py
+test/
+new-todo.md
+new-action-plan.md
 
 # Virtual environment
 .venv

@@ -684,6 +684,7 @@ def conversation_chat(conversation_id):
     question = data.get('question', '').strip()
     use_search = data.get('use_search', False)
     use_thinking = data.get('use_thinking', False)
+    use_rag = data.get('use_rag', False)
     is_regenerate = data.get('regenerate', False)
 
     if not question:
@@ -692,10 +693,11 @@ def conversation_chat(conversation_id):
     workspace_id = str(conversation['workspace_id'])
     user_id = request.user_id
 
-    # Check documents
-    user_docs = db.get_documents_by_workspace(workspace_id, user_id)
-    if not user_docs:
-        return jsonify({'error': 'No documents uploaded'}), 400
+    # Check documents only if RAG is enabled
+    if use_rag:
+        user_docs = db.get_documents_by_workspace(workspace_id, user_id)
+        if not user_docs:
+            return jsonify({'error': 'No documents uploaded. Please upload documents or disable RAG.'}), 400
 
     # Save user message (skip if regenerating - user message already exists)
     if not is_regenerate:
@@ -707,8 +709,15 @@ def conversation_chat(conversation_id):
             recent = db.get_recent_messages(conversation_id, limit=10)
             chat_history = [{'question': m['content'], 'answer': ''} for m in recent if m['role'] == 'user']
 
-            # Retrieve chunks
-            retrieval_result = retrieve(question, user_id=user_id, workspace_id=workspace_id)
+            # Retrieve chunks only if RAG is enabled
+            if use_rag:
+                retrieval_result = retrieve(question, user_id=user_id, workspace_id=workspace_id)
+                chunks = retrieval_result["chunks"]
+                metadatas = retrieval_result["metadatas"]
+            else:
+                # No RAG - send directly to LLM without document context
+                chunks = []
+                metadatas = []
 
             full_answer = ""
             full_thinking = ""
@@ -716,8 +725,8 @@ def conversation_chat(conversation_id):
 
             for event in generation.generate_answer_stream(
                 query=question,
-                chunks=retrieval_result["chunks"],
-                metadatas=retrieval_result["metadatas"],
+                chunks=chunks,
+                metadatas=metadatas,
                 chat_history=chat_history,
                 use_search=use_search,
                 use_thinking=use_thinking
@@ -775,12 +784,12 @@ def generate_conversation_title(conversation_id):
 
         prompt = f"Create a 3-5 word title for this conversation. Plain text only, no quotes, no punctuation at start/end.\n\n{context}"
 
-        # Use Mistral for title generation (works for both text and image conversations)
-        from mistralai import Mistral
+        # Use Cerebras Llama 3.3 70B for title generation (ultra fast)
+        from cerebras.cloud.sdk import Cerebras
         import os
-        mistral = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
-        response = mistral.chat.complete(
-            model="mistral-medium-latest",
+        cerebras = Cerebras(api_key=os.getenv("CEREBRAS_API_KEY"))
+        response = cerebras.chat.completions.create(
+            model="llama-3.3-70b",
             messages=[{"role": "user", "content": prompt}]
         )
         title = response.choices[0].message.content

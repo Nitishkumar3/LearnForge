@@ -9,8 +9,8 @@ new-todo.md
 new-action-plan.md
 
 # Virtual environment
-.venv
-venv/
+.lfenv
+lfenv/
 env/
 
 # Model files

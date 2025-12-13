@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnForge - Upload Documents</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(savedTheme);
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'light-bg': '#FFFFFF',
+                        'light-sidebar': '#F9F9F9',
+                        'light-hover': '#ECECEC',
+                        'light-border': '#E5E5E5',
+                        'light-text': '#0D0D0D',
+                        'light-text-secondary': '#666666',
+                        'light-text-muted': '#999999',
+                        'dark-bg': '#212121',
+                        'dark-sidebar': '#171717',
+                        'dark-hover': '#2F2F2F',
+                        'dark-border': '#3E3E3E',
+                        'dark-text': '#ECECEC',
+                        'dark-text-secondary': '#B4B4B4',
+                        'dark-text-muted': '#8E8E8E',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Google Sans Flex', sans-serif; }
+        * { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 3px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+        .upload-zone { border: 2px dashed; transition: all 0.3s ease; }
+        .upload-zone.dragover { border-color: #10B981; background-color: rgba(16, 185, 129, 0.1); }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text min-h-screen">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 h-14 bg-light-bg dark:bg-dark-bg border-b border-light-border dark:border-dark-border z-50 flex items-center px-4">
+        <a href="/chat" class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-light-text dark:bg-dark-text rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+            </div>
+            <span class="text-lg font-semibold">LearnForge</span>
+        </a>
+        <div class="ml-4 flex items-center gap-2">
+            <select id="workspaceSelect" class="bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border rounded-lg px-3 py-1.5 text-sm">
+                <option value="">Select Workspace</option>
+            </select>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+            <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+                <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </button>
+            <a href="/chat" class="px-3 py-1.5 text-sm bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90">Back to Chat</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-14 min-h-screen">
+        <div class="max-w-4xl mx-auto p-6">
+            <h1 class="text-2xl font-semibold mb-2">Upload Documents</h1>
+            <p class="text-light-text-secondary dark:text-dark-text-secondary mb-6">
+                Upload documents to your workspace. Supported formats: PDF, Word, PowerPoint, Excel, Images, Audio.
+            </p>
+
+            <!-- Upload Zone -->
+            <div id="uploadZone"
+                class="upload-zone border-light-border dark:border-dark-border rounded-xl p-12 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted mb-8"
+                onclick="document.getElementById('fileInput').click()"
+                ondrop="handleDrop(event)"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                    <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+                <p class="text-lg font-medium mb-1">Drop files here or click to browse</p>
+                <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Maximum 3 files at a time</p>
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PDF</span>
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">DOCX</span>
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PPTX</span>
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">XLSX</span>
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Images</span>
+                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Audio</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.tif,.mp3,.wav,.ogg,.m4a,.flac,.webm" class="hidden" onchange="handleFileSelect(event)">
+
+            <!-- Uploaded Files List -->
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Uploaded Documents</h2>
+                <button onclick="loadDocuments()" class="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+            <div id="documentsList" class="space-y-2">
+                <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
+                    Select a workspace to view documents
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-light-bg dark:bg-dark-bg rounded-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold">Upload Files</h2>
+                <button onclick="closeUploadModal()" class="p-1 rounded hover:bg-light-hover dark:hover:bg-dark-hover">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="uploadFilesList" class="space-y-3 mb-4"></div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeUploadModal()" class="px-4 py-2 text-sm rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">Cancel</button>
+                <button id="startUploadBtn" onclick="startUpload()" class="px-4 py-2 text-sm bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentWorkspaceId = null;
+        let workspaces = [];
+        let pendingFiles = [];
+        let fileOcrSettings = {};
+        let authToken = localStorage.getItem('learnforge_token');
+
+        async function init() {
+            if (!authToken) {
+                window.location.href = '/signin';
+                return;
+            }
+            await loadWorkspaces();
+
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts.length > 2 && pathParts[2]) {
+                currentWorkspaceId = pathParts[2];
+                document.getElementById('workspaceSelect').value = currentWorkspaceId;
+                loadDocuments();
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('autoUpload') === 'true') {
+                const stored = sessionStorage.getItem('pendingUploadFiles');
+                if (stored && window.opener && window.opener.pendingUploadFiles) {
+                    handleFilesSelected(window.opener.pendingUploadFiles);
+                }
+            }
+        }
+
+        async function loadWorkspaces() {
+            try {
+                const response = await fetch('/api/workspaces', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                workspaces = data.workspaces || [];
+
+                const select = document.getElementById('workspaceSelect');
+                select.innerHTML = '<option value="">Select Workspace</option>';
+                workspaces.forEach(w => {
+                    const option = document.createElement('option');
+                    option.value = w.id;
+                    option.textContent = w.name;
+                    select.appendChild(option);
+                });
+
+                if (currentWorkspaceId) {
+                    select.value = currentWorkspaceId;
+                }
+            } catch (error) {
+                console.error('Failed to load workspaces:', error);
+            }
+        }
+
+        document.getElementById('workspaceSelect').addEventListener('change', function() {
+            currentWorkspaceId = this.value;
+            if (currentWorkspaceId) {
+                window.history.pushState({}, '', `/uploads/${currentWorkspaceId}`);
+                loadDocuments();
+            } else {
+                window.history.pushState({}, '', '/uploads');
+                document.getElementById('documentsList').innerHTML = '<div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">Select a workspace to view documents</div>';
+            }
+        });
+
+        async function loadDocuments() {
+            if (!currentWorkspaceId) return;
+
+            const container = document.getElementById('documentsList');
+            container.innerHTML = '<div class="text-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-light-text dark:border-dark-text border-t-transparent mx-auto"></div></div>';
+
+            try {
+                const response = await fetch(`/api/documents?workspace_id=${currentWorkspaceId}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                const docs = data.documents || [];
+
+                if (docs.length === 0) {
+                    container.innerHTML = '<div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">No documents uploaded yet</div>';
+                    return;
+                }
+
+                container.innerHTML = docs.map(doc => `
+                    <div class="flex items-center gap-3 p-3 bg-light-sidebar dark:bg-dark-sidebar rounded-lg border border-light-border dark:border-dark-border">
+                        <div class="w-10 h-10 rounded-lg bg-light-hover dark:bg-dark-hover flex items-center justify-center flex-shrink-0">
+                            ${getFileIcon(doc.file_type)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium truncate">${doc.original_filename}</p>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                                ${doc.file_type.toUpperCase()} ${doc.num_pages ? `• ${doc.num_pages} pages` : ''} • ${formatFileSize(doc.file_size_bytes)}
+                                ${doc.processing_method === 'ocr' ? '<span class="ml-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded text-xs">OCR</span>' : ''}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openDocumentFile('${doc.id}', 'raw')" title="Open original file" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-blue-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                            <button onclick="openDocumentFile('${doc.id}', 'processed')" title="Open processed markdown" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-green-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteDocument('${doc.id}')" title="Delete document" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-red-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="text-center py-8 text-red-500">Failed to load documents</div>';
+            }
+        }
+
+        function getFileIcon(fileType) {
+            const icons = {
+                pdf: '<svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
+                word: '<svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
+                presentation: '<svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
+                spreadsheet: '<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
+                image: '<svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+                audio: '<svg class="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>',
+            };
+            return icons[fileType] || icons.pdf;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).slice(0, 3);
+            handleFilesSelected(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files).slice(0, 3);
+            handleFilesSelected(files);
+            e.target.value = '';
+        }
+
+        async function handleFilesSelected(files) {
+            if (!currentWorkspaceId) {
+                alert('Please select a workspace first');
+                return;
+            }
+
+            if (files.length === 0) return;
+
+            pendingFiles = files;
+            fileOcrSettings = {};
+
+            const formData = new FormData();
+            files.forEach(f => formData.append('files', f));
+
+            try {
+                const response = await fetch('/api/upload/analyze', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                const data = await response.json();
+
+                const container = document.getElementById('uploadFilesList');
+                container.innerHTML = data.files.map((f, i) => {
+                    fileOcrSettings[f.name] = f.ocr_recommended;
+
+                    const ocrToggle = f.ocr_available ? `
+                        <div class="flex items-center gap-2 mt-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="ocr_${i}" ${f.ocr_recommended ? 'checked' : ''}
+                                    onchange="fileOcrSettings['${f.name}'] = this.checked"
+                                    class="w-4 h-4 rounded border-light-border dark:border-dark-border">
+                                <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                                    Enable OCR ${f.ocr_recommended ? '(recommended)' : ''}
+                                </span>
+                            </label>
+                            ${f.ocr_reason ? `<span class="text-xs text-light-text-muted dark:text-dark-text-muted">${f.ocr_reason}</span>` : ''}
+                        </div>
+                    ` : '<p class="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">Direct extraction (no OCR needed)</p>';
+
+                    return `
+                        <div class="p-3 bg-light-sidebar dark:bg-dark-sidebar rounded-lg border border-light-border dark:border-dark-border">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-light-hover dark:bg-dark-hover flex items-center justify-center flex-shrink-0">
+                                    ${getFileIcon(f.file_type)}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium truncate">${f.name}</p>
+                                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                                        ${formatFileSize(f.size)} ${f.num_pages ? `• ${f.num_pages} pages` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            ${f.supported ? ocrToggle : `<p class="text-xs text-red-500 mt-2">${f.error}</p>`}
+                            <div id="progress_${i}" class="hidden mt-2 flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin text-light-text-muted dark:text-dark-text-muted spinner" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p class="text-xs text-light-text-muted dark:text-dark-text-muted status-text">Processing...</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('uploadModal').classList.remove('hidden');
+            } catch (error) {
+                alert('Failed to analyze files: ' + error.message);
+            }
+        }
+
+        async function startUpload() {
+            const btn = document.getElementById('startUploadBtn');
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+
+            for (let i = 0; i < pendingFiles.length; i++) {
+                const file = pendingFiles[i];
+                const progressEl = document.getElementById(`progress_${i}`);
+                if (progressEl) {
+                    progressEl.classList.remove('hidden');
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('workspace_id', currentWorkspaceId);
+                if (fileOcrSettings[file.name] !== undefined) {
+                    formData.append('use_ocr', fileOcrSettings[file.name] ? 'true' : 'false');
+                }
+
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (progressEl) {
+                        const spinner = progressEl.querySelector('.spinner');
+                        const statusText = progressEl.querySelector('.status-text');
+                        if (data.success) {
+                            spinner.classList.add('hidden');
+                            statusText.textContent = 'Complete!';
+                            statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
+                            statusText.classList.add('text-green-500');
+                        } else {
+                            spinner.classList.add('hidden');
+                            statusText.textContent = 'Failed: ' + data.error;
+                            statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
+                            statusText.classList.add('text-red-500');
+                        }
+                    }
+                } catch (error) {
+                    if (progressEl) {
+                        const spinner = progressEl.querySelector('.spinner');
+                        const statusText = progressEl.querySelector('.status-text');
+                        spinner.classList.add('hidden');
+                        statusText.textContent = 'Error: ' + error.message;
+                        statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
+                        statusText.classList.add('text-red-500');
+                    }
+                }
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Done';
+
+            setTimeout(() => {
+                closeUploadModal();
+                loadDocuments();
+            }, 1500);
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('startUploadBtn').textContent = 'Upload';
+            pendingFiles = [];
+            fileOcrSettings = {};
+        }
+
+        async function openDocumentFile(docId, fileType) {
+            if (fileType === 'processed') {
+                // Open processed markdown in viewer page
+                window.open(`/view/${docId}`, '_blank');
+            } else {
+                // Open raw file via presigned URL
+                try {
+                    const response = await fetch(`/api/documents/${docId}/url/${fileType}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        window.open(data.url, '_blank');
+                    } else {
+                        const data = await response.json();
+                        alert('Failed to open file: ' + data.error);
+                    }
+                } catch (error) {
+                    alert('Failed to get file URL');
+                }
+            }
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Are you sure you want to delete this document?')) return;
+
+            try {
+                const response = await fetch(`/api/documents/${docId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    loadDocuments();
+                } else {
+                    const data = await response.json();
+                    alert('Failed to delete: ' + data.error);
+                }
+            } catch (error) {
+                alert('Failed to delete document');
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            html.classList.remove('light', 'dark');
+            html.classList.add(isDark ? 'light' : 'dark');
+            localStorage.setItem('learnforge_theme', isDark ? 'light' : 'dark');
+        }
+
+        init();
+    </script>
+</body>
+</html>

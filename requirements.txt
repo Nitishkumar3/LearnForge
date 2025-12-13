@@ -16,8 +16,12 @@ cerebras-cloud-sdk
 transformers           
 numpy                  
 
-# PDF Processing
-PyPDF2==3.0.1
+# Document Processing
+PyMuPDF                 
+python-docx              
+python-pptx         
+openpyxl                
+Pillow               
 
 # Vector Database
 chromadb
@@ -29,13 +33,17 @@ python-dotenv
 psycopg2-binary         
 
 # Authentication
-PyJWT>=2.8.0            # JWT token handling
-bcrypt>=4.0.0           # Password hashing
+PyJWT                  # JWT token handling
+bcrypt                 # Password hashing
 
-# Enhanced Retrieval (Hybrid Search + Reranking)
-rank-bm25>=0.2.2        # BM25 keyword search
-nltk>=3.8               # Sentence tokenization for smart chunking
-tiktoken>=0.5.0         # Token counting for context limit
+# Enhanced Retrieval (Vector Search + Reranking)
+rank-bm25               # BM25 search for hybrid retrieval
+nltk                    # Sentence tokenization for smart chunking
+tiktoken                # Token counting for context limit
 
 # S3/R2 Storage
-boto3>=1.28.0        
+boto3
+
+# Image Generation
+fake-useragent          # User agent for API requests
+httpx                   # HTTP client for async requests

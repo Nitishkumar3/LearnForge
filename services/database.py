@@ -238,18 +238,26 @@ def delete_workspace(workspace_id, user_id):
 
 def create_document(workspace_id, user_id, filename, original_filename,
                     file_type, file_size_bytes, storage_key, storage_bucket,
-                    num_pages=None, num_chunks=None, status='pending'):
+                    num_pages=None, num_chunks=None, status='pending',
+                    raw_storage_key=None, processed_storage_key=None,
+                    processing_method='direct', content_hash=None,
+                    extracted_text_length=None, mime_type=None,
+                    duration_seconds=None):
     """Insert new document and return it."""
     return execute_query(
         """INSERT INTO documents
            (workspace_id, user_id, filename, original_filename,
             file_type, file_size_bytes, storage_key, storage_bucket,
-            num_pages, num_chunks, status)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            num_pages, num_chunks, status, raw_storage_key,
+            processed_storage_key, processing_method, content_hash,
+            extracted_text_length, mime_type, duration_seconds)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
            RETURNING *""",
         (workspace_id, user_id, filename, original_filename,
          file_type, file_size_bytes, storage_key, storage_bucket,
-         num_pages, num_chunks, status),
+         num_pages, num_chunks, status, raw_storage_key,
+         processed_storage_key, processing_method, content_hash,
+         extracted_text_length, mime_type, duration_seconds),
         fetch_one=True
     )
 
@@ -533,3 +541,87 @@ def truncate_conversation_messages(conversation_id, keep_count):
         )
 
     return len(message_ids_to_delete)
+
+
+# =============================================
+# SYLLABUS QUERIES
+# =============================================
+
+def update_workspace_syllabus(workspace_id, syllabus_json):
+    """Save or update syllabus for a workspace."""
+    return execute_query(
+        "UPDATE workspaces SET syllabus = %s WHERE id = %s RETURNING *",
+        (Json(syllabus_json), workspace_id),
+        fetch_one=True
+    )
+
+
+def get_workspace_syllabus(workspace_id):
+    """Get syllabus for a workspace."""
+    result = execute_query(
+        "SELECT syllabus FROM workspaces WHERE id = %s",
+        (workspace_id,),
+        fetch_one=True
+    )
+    return result['syllabus'] if result else None
+
+
+def clear_workspace_syllabus(workspace_id):
+    """Clear syllabus from a workspace."""
+    return execute_query(
+        "UPDATE workspaces SET syllabus = NULL WHERE id = %s RETURNING id",
+        (workspace_id,),
+        fetch_one=True
+    )
+
+
+# =============================================
+# STUDY MATERIALS QUERIES
+# =============================================
+
+def save_study_material(workspace_id, user_id, module_id, module_name, subtopic, content):
+    """Save generated study material for a subtopic."""
+    return execute_query(
+        """INSERT INTO study_materials (workspace_id, user_id, module_id, module_name, subtopic, content)
+           VALUES (%s, %s, %s, %s, %s, %s)
+           ON CONFLICT (workspace_id, module_id, subtopic)
+           DO UPDATE SET content = EXCLUDED.content, module_name = EXCLUDED.module_name
+           RETURNING *""",
+        (workspace_id, user_id, module_id, module_name, subtopic, content),
+        fetch_one=True
+    )
+
+
+def get_study_material(workspace_id, module_id, subtopic):
+    """Get study material for a specific subtopic."""
+    return execute_query(
+        """SELECT * FROM study_materials
+           WHERE workspace_id = %s AND module_id = %s AND subtopic = %s""",
+        (workspace_id, module_id, subtopic),
+        fetch_one=True
+    )
+
+
+def get_all_study_materials(workspace_id):
+    """Get all generated study materials for a workspace."""
+    return execute_query(
+        """SELECT id, module_id, module_name, subtopic, created_at
+           FROM study_materials
+           WHERE workspace_id = %s
+           ORDER BY module_id, subtopic""",
+        (workspace_id,),
+        fetch_all=True
+    ) or []
+
+
+def check_study_material_exists(workspace_id, module_id, subtopic):
+    """Check if study material exists for a subtopic."""
+    result = execute_query(
+        """SELECT EXISTS(
+               SELECT 1 FROM study_materials
+               WHERE workspace_id = %s AND module_id = %s AND subtopic = %s
+           ) as exists""",
+        (workspace_id, module_id, subtopic),
+        fetch_one=True
+    )
+    return result['exists'] if result else False

@@ -1,6 +1,7 @@
 """Answer generation using LLM."""
 
 import re
+import json
 from services import llm_providers as llm
 
 
@@ -212,3 +213,180 @@ def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_sear
         "sources": sources,
         "thinking": full_thinking
     }
+
+
+# =============================================
+# SYLLABUS PARSING
+# =============================================
+
+def parse_syllabus(syllabus_text):
+    """Parse raw syllabus text into structured JSON using LLM."""
+    prompt = f"""You are a syllabus parser. Analyze the following syllabus text and extract it into a structured JSON format.
+
+Rules:
+- Identify each module/unit as a separate entry
+- Extract the module name (without hours/duration)
+- List all subtopics mentioned in that module
+- Clean up formatting (remove dashes, extra spaces, combine split words)
+- Return ONLY valid JSON, no other text, no markdown code blocks
+
+Output format:
+{{
+  "modules": [
+    {{
+      "id": 1,
+      "name": "Module Name Here",
+      "subtopics": ["Topic 1", "Topic 2", "Topic 3"]
+    }}
+  ]
+}}
+
+Syllabus text:
+{syllabus_text}
+
+Return ONLY the JSON object:"""
+
+    try:
+        response = llm.generate(prompt)
+        # Clean up response - remove any markdown code blocks
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        # Parse JSON
+        result = json.loads(cleaned)
+        return result
+    except json.JSONDecodeError as e:
+        return {"error": f"Failed to parse syllabus: {str(e)}"}
+    except Exception as e:
+        return {"error": f"Failed to parse syllabus: {str(e)}"}
+
+
+# =============================================
+# STUDY MATERIAL GENERATION
+# =============================================
+
+def generate_study_material(module_name, subtopic, rag_context=None):
+    """Generate detailed study material for a subtopic."""
+
+    context_section = ""
+    if rag_context:
+        context_section = f"""
+REFERENCE MATERIAL (use if relevant):
+---
+{rag_context}
+---
+"""
+
+    prompt = f"""You are an expert educator writing textbook-quality study material.
+
+Module: {module_name}
+Topic: {subtopic}
+{context_section}
+
+WRITING STYLE:
+- Academic, professional tone suitable for direct printing
+- No emojis, no casual language
+- Clear, precise explanations with proper depth
+- Adapt structure naturally to the topic (don't force sections)
+- Progress from fundamentals to advanced concepts organically
+
+FORMATTING:
+- Use ## and ### headings to organize content logically
+- Bold **key terms** when first introduced
+- Use bullet points and numbered lists for clarity
+- Keep paragraphs focused and well-structured
+
+MATHEMATICAL CONTENT:
+- Inline math: $E = mc^2$, $O(n \\log n)$
+- Block equations: $$...$$ (on separate lines)
+- CRITICAL: NEVER use LaTeX ($...$) inside markdown tables
+- In tables, write formulas as plain text: "1/n × Σ(y - ŷ)²" not "$\\frac{{1}}{{n}}...$"
+- Use Unicode symbols in tables where helpful: ×, ÷, √, Σ, α, β, θ
+
+CODE EXAMPLES:
+- Use fenced blocks with language: ```python
+- Include meaningful comments
+- Show practical, working examples
+
+TABLES:
+- Use for comparisons, properties, metrics
+- All table content must be plain text (no LaTeX)
+- Keep tables clean and readable
+
+Generate comprehensive, publication-ready content that thoroughly covers the topic.
+Do not include the topic name as the first heading - begin directly with the content."""
+
+    try:
+        content = llm.generate(prompt)
+        return {"content": content, "error": None}
+    except Exception as e:
+        return {"content": None, "error": str(e)}
+
+
+def generate_study_material_stream(module_name, subtopic, rag_context=None):
+    """Generate study material with streaming output."""
+
+    context_section = ""
+    if rag_context:
+        context_section = f"""
+REFERENCE MATERIAL (use if relevant):
+---
+{rag_context}
+---
+"""
+
+    prompt = f"""You are an expert educator writing textbook-quality study material.
+
+Module: {module_name}
+Topic: {subtopic}
+{context_section}
+
+WRITING STYLE:
+- Academic, professional tone suitable for direct printing
+- No emojis, no casual language
+- Clear, precise explanations with proper depth
+- Adapt structure naturally to the topic (don't force sections)
+- Progress from fundamentals to advanced concepts organically
+
+FORMATTING:
+- Use ## and ### headings to organize content logically
+- Bold **key terms** when first introduced
+- Use bullet points and numbered lists for clarity
+- Keep paragraphs focused and well-structured
+
+MATHEMATICAL CONTENT:
+- Inline math: $E = mc^2$, $O(n \\log n)$
+- Block equations: $$...$$ (on separate lines)
+- CRITICAL: NEVER use LaTeX ($...$) inside markdown tables
+- In tables, write formulas as plain text: "1/n × Σ(y - ŷ)²" not "$\\frac{{1}}{{n}}...$"
+- Use Unicode symbols in tables where helpful: ×, ÷, √, Σ, α, β, θ
+
+CODE EXAMPLES:
+- Use fenced blocks with language: ```python
+- Include meaningful comments
+- Show practical, working examples
+
+TABLES:
+- Use for comparisons, properties, metrics
+- All table content must be plain text (no LaTeX)
+- Keep tables clean and readable
+
+Generate comprehensive, publication-ready content that thoroughly covers the topic.
+Do not include the topic name as the first heading - begin directly with the content."""
+
+    full_content = ""
+    try:
+        for event in llm.generate_stream(prompt):
+            if event["type"] == "text":
+                full_content += event["content"]
+                yield {"type": "chunk", "content": event["content"]}
+
+        yield {"type": "done", "content": full_content}
+    except Exception as e:
+        yield {"type": "error", "message": str(e)}

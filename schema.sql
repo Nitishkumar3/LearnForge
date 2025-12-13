@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
+    syllabus JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, name)
@@ -46,6 +47,13 @@ CREATE TABLE IF NOT EXISTS documents (
     file_size_bytes INTEGER NOT NULL,
     storage_key TEXT NOT NULL,
     storage_bucket TEXT NOT NULL,
+    raw_storage_key TEXT,
+    processed_storage_key TEXT,
+    processing_method TEXT DEFAULT 'direct',
+    content_hash TEXT,
+    extracted_text_length INTEGER,
+    mime_type TEXT,
+    duration_seconds INTEGER,
     num_pages INTEGER,
     num_chunks INTEGER,
     status TEXT DEFAULT 'pending',
@@ -57,6 +65,8 @@ CREATE TABLE IF NOT EXISTS documents (
 CREATE INDEX IF NOT EXISTS idx_documents_workspace_id ON documents(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
+CREATE INDEX IF NOT EXISTS idx_documents_file_type ON documents(file_type);
+CREATE INDEX IF NOT EXISTS idx_documents_content_hash ON documents(content_hash);
 
 -- =============================================
 -- CONVERSATIONS TABLE (ChatGPT-style)
@@ -92,6 +102,24 @@ CREATE TABLE IF NOT EXISTS messages (
 
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+
+-- =============================================
+-- STUDY MATERIALS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS study_materials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    module_id INTEGER NOT NULL,
+    module_name TEXT NOT NULL,
+    subtopic TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(workspace_id, module_id, subtopic)
+);
+
+CREATE INDEX IF NOT EXISTS idx_study_materials_workspace ON study_materials(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_study_materials_module ON study_materials(workspace_id, module_id);
 
 -- =============================================
 -- TRIGGERS FOR updated_at

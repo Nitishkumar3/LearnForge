@@ -117,6 +117,39 @@ def generate_image_key(user_id, workspace_id, image_id, extension='png'):
     return f"{user_id}/{workspace_id}/generatedimages/{image_id}.{extension}"
 
 
+def generate_raw_key(user_id, workspace_id, doc_uuid, extension):
+    """Generate S3 key for raw uploaded files."""
+    ext = extension.lstrip('.')
+    return f"{user_id}/{workspace_id}/raw_files/{doc_uuid}.{ext}"
+
+
+def generate_processed_key(user_id, workspace_id, doc_uuid):
+    """Generate S3 key for processed markdown files."""
+    return f"{user_id}/{workspace_id}/processed_files/{doc_uuid}.md"
+
+
+def upload_text(key, text_content, content_type='text/markdown'):
+    """Upload text content directly to S3."""
+    import io
+    file_obj = io.BytesIO(text_content.encode('utf-8'))
+    get_client().upload_fileobj(
+        file_obj,
+        BUCKET_NAME,
+        key,
+        ExtraArgs={'ContentType': content_type}
+    )
+    return True
+
+
+def download_text(key):
+    """Download text content from S3."""
+    import io
+    file_obj = io.BytesIO()
+    get_client().download_fileobj(BUCKET_NAME, key, file_obj)
+    file_obj.seek(0)
+    return file_obj.read().decode('utf-8')
+
+
 def upload_image_bytes(key, image_bytes, content_type='image/png'):
     """Upload image bytes directly to S3."""
     import io

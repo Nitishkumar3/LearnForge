@@ -254,3 +254,4 @@ def retrieve(query, user_id=None, workspace_id=None, do_rewrite=True):
 def invalidate_bm25_cache():
     global corpus_hash
     corpus_hash = None
+    

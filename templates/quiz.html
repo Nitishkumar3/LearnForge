@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnForge - Quiz Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(savedTheme);
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'light-bg': '#FFFFFF',
+                        'light-sidebar': '#F9F9F9',
+                        'light-hover': '#ECECEC',
+                        'light-border': '#E5E5E5',
+                        'light-text': '#0D0D0D',
+                        'light-text-secondary': '#666666',
+                        'light-text-muted': '#999999',
+                        'dark-bg': '#212121',
+                        'dark-sidebar': '#171717',
+                        'dark-hover': '#2F2F2F',
+                        'dark-border': '#3E3E3E',
+                        'dark-text': '#ECECEC',
+                        'dark-text-secondary': '#B4B4B4',
+                        'dark-text-muted': '#8E8E8E',
+                        'accent-primary': '#2563EB',
+                        'accent-success': '#10B981',
+                        'accent-warning': '#F59E0B',
+                        'accent-error': '#EF4444',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Google Sans Flex', sans-serif;
+            font-optical-sizing: auto;
+        }
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .theme-toggle {
+            padding: 8px;
+            border-radius: 8px;
+            color: #666666;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: #ECECEC;
+            color: #0D0D0D;
+        }
+        .dark .theme-toggle {
+            color: #B4B4B4;
+        }
+        .dark .theme-toggle:hover {
+            background: #2F2F2F;
+            color: #ECECEC;
+        }
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOutDown {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="h-14 flex-shrink-0 border-b border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg px-4">
+        <div class="h-full flex items-center justify-between max-w-full">
+            <div class="flex items-center gap-4">
+                <a id="backToChatLink" href="/chat" class="flex items-center gap-2 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span class="text-sm font-medium">Back to Chat</span>
+                </a>
+                <div class="h-6 w-px bg-light-border dark:bg-dark-border"></div>
+                <h1 class="text-lg font-semibold text-light-text dark:text-dark-text">Quiz Mode</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="theme-toggle" title="Toggle theme">
+                    <svg class="hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <svg class="block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+                <div class="relative">
+                    <button id="userMenuButton" onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-light-text dark:bg-dark-text flex items-center justify-center">
+                            <span id="userInitial" class="text-sm font-semibold text-light-bg dark:text-dark-bg">U</span>
+                        </div>
+                    </button>
+                    <div id="userDropdownContainer" class="hidden absolute right-0 mt-2 w-56 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                        <div class="p-3 border-b border-light-border dark:border-dark-border">
+                            <p id="userName" class="text-sm font-medium text-light-text dark:text-dark-text">User</p>
+                            <p id="userEmail" class="text-xs text-light-text-muted dark:text-dark-text-muted">user@email.com</p>
+                        </div>
+                        <div class="p-2">
+                            <button onclick="Auth.logout()" class="w-full flex items-center gap-2 p-2 text-accent-error hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Panel: Quiz History -->
+        <aside class="w-72 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-shrink-0 flex flex-col">
+            <div class="p-4 border-b border-light-border dark:border-dark-border">
+                <button onclick="showNewQuizPanel()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-light-bg dark:text-dark-bg bg-light-text dark:bg-dark-text hover:opacity-90 rounded-xl transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Quiz
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
+                <p class="px-2 py-1.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted uppercase tracking-wider">Past Quizzes</p>
+                <div id="quizHistoryList" class="space-y-1 mt-2">
+                    <p class="px-3 py-2 text-sm text-light-text-muted dark:text-dark-text-muted">No quizzes yet</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Quiz Content -->
+        <main class="flex-1 flex flex-col bg-light-bg dark:bg-dark-bg overflow-hidden">
+            <!-- New Quiz Panel -->
+            <div id="newQuizPanel" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="text-xl font-semibold text-light-text dark:text-dark-text mb-6">Create New Quiz</h2>
+
+                    <!-- Topic Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-3">Select Topics</label>
+                        <div id="topicsContainer" class="max-h-64 overflow-y-auto custom-scrollbar border border-light-border dark:border-dark-border rounded-xl p-4 bg-light-sidebar dark:bg-dark-sidebar">
+                            <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Loading syllabus...</p>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Type -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-3">Quiz Type</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="quizType" value="mcq" checked class="peer sr-only">
+                                <div class="p-4 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg peer-checked:border-accent-primary peer-checked:bg-accent-primary/5 transition-all">
+                                    <div class="text-center">
+                                        <svg class="w-6 h-6 mx-auto mb-2 text-light-text-secondary dark:text-dark-text-secondary peer-checked:text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <p class="text-sm font-medium text-light-text dark:text-dark-text">MCQ</p>
+                                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Multiple Choice</p>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="quizType" value="fitb" class="peer sr-only">
+                                <div class="p-4 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg peer-checked:border-accent-primary peer-checked:bg-accent-primary/5 transition-all">
+                                    <div class="text-center">
+                                        <svg class="w-6 h-6 mx-auto mb-2 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h8m-8 6h16"/>
+                                        </svg>
+                                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Fill Blanks</p>
+                                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Fill in the Blanks</p>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="quizType" value="subjective" class="peer sr-only">
+                                <div class="p-4 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg peer-checked:border-accent-primary peer-checked:bg-accent-primary/5 transition-all">
+                                    <div class="text-center">
+                                        <svg class="w-6 h-6 mx-auto mb-2 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Subjective</p>
+                                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Written Answers</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Number of Questions -->
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-3">
+                            Number of Questions <span id="maxQuestionsLabel" class="text-light-text-muted dark:text-dark-text-muted">(max 25)</span>
+                        </label>
+                        <input type="number" id="numQuestions" value="10" min="1" max="25" class="w-full px-4 py-2.5 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-accent-primary">
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="generateQuiz()" id="generateBtn" class="w-full px-6 py-3 bg-accent-primary text-white rounded-xl hover:opacity-90 font-medium transition-opacity flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Generate Quiz
+                    </button>
+                </div>
+            </div>
+
+            <!-- Take Quiz Panel (hidden by default) -->
+            <div id="takeQuizPanel" class="hidden flex-1 overflow-y-auto custom-scrollbar p-6">
+                <div class="max-w-2xl mx-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 id="quizTitle" class="text-xl font-semibold text-light-text dark:text-dark-text">Quiz</h2>
+                            <p id="quizSubtitle" class="text-sm text-light-text-muted dark:text-dark-text-muted">0 questions</p>
+                        </div>
+                        <button onclick="showNewQuizPanel()" class="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text">
+                            Cancel
+                        </button>
+                    </div>
+                    <div id="questionsContainer" class="space-y-6">
+                        <!-- Questions will be rendered here -->
+                    </div>
+                    <div class="mt-8">
+                        <button onclick="submitQuiz()" id="submitBtn" class="w-full px-6 py-3 bg-accent-primary text-white rounded-xl hover:opacity-90 font-medium transition-opacity">
+                            Submit Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel (hidden by default) -->
+            <div id="resultsPanel" class="hidden flex-1 overflow-y-auto custom-scrollbar p-6">
+                <div class="max-w-2xl mx-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-light-text dark:text-dark-text">Quiz Results</h2>
+                        <button onclick="showNewQuizPanel()" class="px-4 py-2 text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text border border-light-border dark:border-dark-border rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                            New Quiz
+                        </button>
+                    </div>
+                    <div id="resultsContainer">
+                        <!-- Results will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Syllabus Message -->
+            <div id="noSyllabusPanel" class="hidden flex-1 flex items-center justify-center">
+                <div class="text-center max-w-md">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                        <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">No Syllabus Found</h3>
+                    <p class="text-sm text-light-text-muted dark:text-dark-text-muted mb-4">Please add a syllabus to your workspace first to generate quizzes.</p>
+                    <a href="/chat" class="inline-flex items-center gap-2 px-4 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Go to Workspace Settings
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ========================
+        // AUTH MODULE
+        // ========================
+        const Auth = {
+            TOKEN_KEY: 'learnforge_token',
+            USER_KEY: 'learnforge_user',
+            WORKSPACE_KEY: 'learnforge_workspace',
+
+            getToken() {
+                return localStorage.getItem(this.TOKEN_KEY);
+            },
+            getUser() {
+                const user = localStorage.getItem(this.USER_KEY);
+                return user ? JSON.parse(user) : null;
+            },
+            getCurrentWorkspace() {
+                const ws = localStorage.getItem(this.WORKSPACE_KEY);
+                return ws ? JSON.parse(ws) : null;
+            },
+            setCurrentWorkspace(workspace) {
+                localStorage.setItem(this.WORKSPACE_KEY, JSON.stringify(workspace));
+            },
+            isAuthenticated() {
+                return !!this.getToken();
+            },
+            logout() {
+                localStorage.removeItem(this.TOKEN_KEY);
+                localStorage.removeItem(this.USER_KEY);
+                localStorage.removeItem(this.WORKSPACE_KEY);
+                window.location.href = '/signin';
+            },
+            getAuthHeaders() {
+                const token = this.getToken();
+                return token ? { 'Authorization': `Bearer ${token}` } : {};
+            }
+        };
+
+        // ========================
+        // STATE
+        // ========================
+        let currentWorkspace = null;
+        let currentSyllabus = null;
+        let currentQuiz = null;
+        let quizzes = [];
+
+        // ========================
+        // URL PARSING
+        // ========================
+        function getUrlParams() {
+            const path = window.location.pathname;
+            const parts = path.split('/').filter(p => p);
+            // Expected: /quiz or /quiz/<workspace_id> or /quiz/<workspace_id>/<quiz_id>
+            return {
+                workspaceId: parts[1] || null,
+                quizId: parts[2] || null
+            };
+        }
+
+        function updateUrl(workspaceId, quizId = null) {
+            let newPath = '/quiz';
+            if (workspaceId) {
+                newPath += '/' + workspaceId;
+                if (quizId) {
+                    newPath += '/' + quizId;
+                }
+            }
+            window.history.pushState({}, '', newPath);
+        }
+
+        // ========================
+        // INITIALIZATION
+        // ========================
+        async function init() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '/signin';
+                return;
+            }
+
+            const user = Auth.getUser();
+            if (user) {
+                document.getElementById('userInitial').textContent = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+                document.getElementById('userName').textContent = user.name || 'User';
+                document.getElementById('userEmail').textContent = user.email || '';
+            }
+
+            // Get workspace from URL or localStorage
+            const urlParams = getUrlParams();
+
+            if (urlParams.workspaceId) {
+                // Fetch workspace from API to validate
+                try {
+                    const response = await fetch('/api/workspaces', {
+                        headers: Auth.getAuthHeaders()
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const workspace = data.workspaces.find(w => w.id === urlParams.workspaceId);
+                        if (workspace) {
+                            currentWorkspace = workspace;
+                            Auth.setCurrentWorkspace(workspace);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch workspaces:', error);
+                }
+            }
+
+            if (!currentWorkspace) {
+                currentWorkspace = Auth.getCurrentWorkspace();
+            }
+
+            if (!currentWorkspace) {
+                showToast('Please select a workspace first', 'error');
+                setTimeout(() => window.location.href = '/chat', 1500);
+                return;
+            }
+
+            // Update URL if workspace_id wasn't in URL
+            if (!urlParams.workspaceId) {
+                updateUrl(currentWorkspace.id);
+            }
+
+            // Update back to chat link with workspace_id
+            document.getElementById('backToChatLink').href = '/chat/' + currentWorkspace.id;
+
+            await loadSyllabus();
+            await loadQuizHistory();
+
+            // If quiz_id in URL, auto-load it
+            if (urlParams.quizId) {
+                await loadQuiz(urlParams.quizId);
+            }
+        }
+
+        async function loadSyllabus() {
+            try {
+                const response = await fetch(`/api/workspaces/${currentWorkspace.id}/syllabus`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    currentSyllabus = data.syllabus;
+                    if (currentSyllabus && currentSyllabus.modules && currentSyllabus.modules.length > 0) {
+                        renderTopics();
+                        showNewQuizPanel();
+                    } else {
+                        document.getElementById('newQuizPanel').classList.add('hidden');
+                        document.getElementById('noSyllabusPanel').classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load syllabus:', error);
+            }
+        }
+
+        async function loadQuizHistory() {
+            try {
+                const response = await fetch(`/api/workspaces/${currentWorkspace.id}/quiz`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    quizzes = data.quizzes || [];
+                    renderQuizHistory();
+                }
+            } catch (error) {
+                console.error('Failed to load quiz history:', error);
+            }
+        }
+
+        // ========================
+        // RENDER FUNCTIONS
+        // ========================
+        function renderTopics() {
+            const container = document.getElementById('topicsContainer');
+            if (!currentSyllabus || !currentSyllabus.modules) {
+                container.innerHTML = '<p class="text-sm text-light-text-muted dark:text-dark-text-muted">No topics available</p>';
+                return;
+            }
+
+            let html = '';
+            currentSyllabus.modules.forEach(module => {
+                html += `<div class="mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="module_${module.id}" class="module-checkbox rounded text-accent-primary" data-module-id="${module.id}" onchange="toggleModuleSubtopics(${module.id})">
+                        <label for="module_${module.id}" class="text-sm font-medium text-light-text dark:text-dark-text cursor-pointer">${module.id}. ${escapeHtml(module.name)}</label>
+                    </div>
+                    <div class="pl-6 space-y-1.5">`;
+                module.subtopics.forEach((subtopic, idx) => {
+                    html += `<div class="flex items-center gap-2">
+                        <input type="checkbox" id="subtopic_${module.id}_${idx}" class="subtopic-checkbox rounded text-accent-primary" data-module-id="${module.id}" data-module-name="${escapeHtml(module.name)}" data-subtopic="${escapeHtml(subtopic)}">
+                        <label for="subtopic_${module.id}_${idx}" class="text-sm text-light-text-secondary dark:text-dark-text-secondary cursor-pointer">${escapeHtml(subtopic)}</label>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderQuizHistory() {
+            const container = document.getElementById('quizHistoryList');
+            if (quizzes.length === 0) {
+                container.innerHTML = '<p class="px-3 py-2 text-sm text-light-text-muted dark:text-dark-text-muted">No quizzes yet</p>';
+                return;
+            }
+
+            const quizTypeNames = { mcq: 'MCQ', fitb: 'Fill Blanks', subjective: 'Subjective' };
+            container.innerHTML = quizzes.map(quiz => {
+                const dateObj = quiz.created_at ? new Date(quiz.created_at) : null;
+                const date = dateObj && !isNaN(dateObj) ? dateObj.toLocaleDateString() : 'Unknown';
+                const isCompleted = quiz.status === 'completed';
+                const scoreText = isCompleted ? `${quiz.score ?? 0}/${quiz.max_score}` : 'In Progress';
+                const scoreColor = isCompleted ? 'text-accent-success' : 'text-accent-warning';
+
+                return `<button onclick="loadQuiz('${quiz.id}')" class="w-full text-left p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-light-text dark:text-dark-text">${quizTypeNames[quiz.quiz_type]}</span>
+                        <span class="text-xs ${scoreColor}">${scoreText}</span>
+                    </div>
+                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">${quiz.total_questions} questions • ${date}</p>
+                </button>`;
+            }).join('');
+        }
+
+        function renderQuizQuestions() {
+            const container = document.getElementById('questionsContainer');
+            const questions = currentQuiz.questions;
+            const quizTypeNames = { mcq: 'Multiple Choice', fitb: 'Fill in the Blanks', subjective: 'Subjective' };
+
+            document.getElementById('quizTitle').textContent = quizTypeNames[currentQuiz.quiz_type] + ' Quiz';
+            document.getElementById('quizSubtitle').textContent = `${currentQuiz.total_questions} questions`;
+
+            let html = '';
+            questions.forEach((q, idx) => {
+                html += `<div class="p-5 bg-light-sidebar dark:bg-dark-sidebar rounded-xl border border-light-border dark:border-dark-border">
+                    <p class="text-sm font-medium text-light-text dark:text-dark-text mb-4">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary text-white text-xs font-semibold mr-2">${idx + 1}</span>
+                        ${escapeHtml(q.question)}
+                    </p>`;
+
+                if (currentQuiz.quiz_type === 'mcq') {
+                    html += `<div class="space-y-2 pl-9">`;
+                    // Handle both array and object format for options
+                    const optionLetters = ['A', 'B', 'C', 'D'];
+                    optionLetters.forEach((letter) => {
+                        const opt = q.options && q.options[letter];
+                        if (opt) {
+                            html += `<label class="flex items-center gap-3 p-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover cursor-pointer transition-colors">
+                                <input type="radio" name="q_${idx}" value="${letter}" class="text-accent-primary">
+                                <span class="text-sm text-light-text-secondary dark:text-dark-text-secondary">${letter}. ${escapeHtml(opt)}</span>
+                            </label>`;
+                        }
+                    });
+                    html += `</div>`;
+                } else if (currentQuiz.quiz_type === 'fitb') {
+                    html += `<div class="pl-9">
+                        <input type="text" id="answer_${idx}" placeholder="Type your answer..." class="w-full px-4 py-3 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-accent-primary">
+                    </div>`;
+                } else if (currentQuiz.quiz_type === 'subjective') {
+                    html += `<div class="pl-9">
+                        <textarea id="answer_${idx}" rows="4" placeholder="Write your answer..." class="w-full px-4 py-3 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-accent-primary resize-none"></textarea>
+                    </div>`;
+                }
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderQuizResults() {
+            const container = document.getElementById('resultsContainer');
+            const questions = currentQuiz.questions;
+            const results = currentQuiz.results || [];
+            const answers = currentQuiz.answers || [];
+
+            const percentage = ((currentQuiz.score / currentQuiz.max_score) * 100).toFixed(1);
+            let gradeColor = 'text-accent-success';
+            if (percentage < 50) gradeColor = 'text-accent-error';
+            else if (percentage < 75) gradeColor = 'text-accent-warning';
+
+            let html = `<div class="mb-8 p-6 bg-light-sidebar dark:bg-dark-sidebar rounded-2xl border border-light-border dark:border-dark-border text-center">
+                <p class="text-4xl font-bold ${gradeColor} mb-2">${currentQuiz.score} / ${currentQuiz.max_score}</p>
+                <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary">${percentage}% Correct</p>
+            </div>`;
+
+            questions.forEach((q, idx) => {
+                const result = results[idx] || {};
+                const userAnswer = answers[idx] || 'Not answered';
+                const isCorrect = result.is_correct;
+                const borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+                const bgColor = isCorrect ? 'bg-green-500/5' : 'bg-red-500/5';
+                const iconBg = isCorrect ? 'bg-green-500' : 'bg-red-500';
+
+                html += `<div class="mb-4 p-5 ${bgColor} rounded-xl border-l-4 ${borderColor}">
+                    <p class="text-sm font-medium text-light-text dark:text-dark-text mb-3">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full ${iconBg} text-white text-xs font-semibold mr-2">${idx + 1}</span>
+                        ${escapeHtml(q.question)}
+                    </p>`;
+
+                if (currentQuiz.quiz_type === 'mcq') {
+                    html += `<div class="pl-9 space-y-1 mb-3">`;
+                    // Handle both array and object format for options
+                    const optionLetters = ['A', 'B', 'C', 'D'];
+                    optionLetters.forEach((letter) => {
+                        const opt = q.options && q.options[letter];
+                        if (opt) {
+                            const isCorrectOpt = letter === q.correct_answer;
+                            const isUserOpt = letter === userAnswer;
+                            let optClass = 'text-light-text-secondary dark:text-dark-text-secondary';
+                            let marker = '';
+                            if (isCorrectOpt) {
+                                optClass = 'text-green-600 dark:text-green-400 font-medium';
+                                marker = ' ✓';
+                            }
+                            if (isUserOpt && !isCorrect) {
+                                optClass = 'text-red-600 dark:text-red-400 line-through';
+                                marker = ' (your answer)';
+                            }
+                            html += `<p class="text-sm ${optClass}">${letter}. ${escapeHtml(opt)}${marker}</p>`;
+                        }
+                    });
+                    html += `</div>`;
+                } else if (currentQuiz.quiz_type === 'fitb') {
+                    html += `<div class="pl-9 mb-3 space-y-1">
+                        <p class="text-sm"><span class="text-light-text-muted dark:text-dark-text-muted">Your answer:</span> <span class="${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${escapeHtml(userAnswer)}</span></p>
+                        <p class="text-sm"><span class="text-light-text-muted dark:text-dark-text-muted">Correct answer:</span> <span class="text-green-600 dark:text-green-400">${escapeHtml(q.correct_answer)}</span></p>
+                    </div>`;
+                } else if (currentQuiz.quiz_type === 'subjective') {
+                    html += `<div class="pl-9 mb-3">
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted mb-1">Your answer:</p>
+                        <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2 whitespace-pre-wrap bg-light-bg dark:bg-dark-bg p-3 rounded-lg">${escapeHtml(userAnswer)}</p>
+                        <p class="text-sm font-medium text-accent-primary">Score: ${result.score || 0} / 10</p>
+                    </div>`;
+                }
+
+                if (result.feedback) {
+                    html += `<div class="pl-9 pt-3 border-t border-light-border dark:border-dark-border">
+                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted"><strong>Feedback:</strong> ${escapeHtml(result.feedback)}</p>
+                    </div>`;
+                }
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ========================
+        // PANEL NAVIGATION
+        // ========================
+        function showNewQuizPanel() {
+            document.getElementById('newQuizPanel').classList.remove('hidden');
+            document.getElementById('takeQuizPanel').classList.add('hidden');
+            document.getElementById('resultsPanel').classList.add('hidden');
+            document.getElementById('noSyllabusPanel').classList.add('hidden');
+            currentQuiz = null;
+            // Update URL to remove quiz_id
+            updateUrl(currentWorkspace.id);
+        }
+
+        function showTakeQuizPanel() {
+            document.getElementById('newQuizPanel').classList.add('hidden');
+            document.getElementById('takeQuizPanel').classList.remove('hidden');
+            document.getElementById('resultsPanel').classList.add('hidden');
+            document.getElementById('noSyllabusPanel').classList.add('hidden');
+            // Update URL with quiz_id
+            if (currentQuiz) {
+                updateUrl(currentWorkspace.id, currentQuiz.id);
+            }
+        }
+
+        function showResultsPanel() {
+            document.getElementById('newQuizPanel').classList.add('hidden');
+            document.getElementById('takeQuizPanel').classList.add('hidden');
+            document.getElementById('resultsPanel').classList.remove('hidden');
+            document.getElementById('noSyllabusPanel').classList.add('hidden');
+            // Update URL with quiz_id
+            if (currentQuiz) {
+                updateUrl(currentWorkspace.id, currentQuiz.id);
+            }
+        }
+
+        // ========================
+        // QUIZ ACTIONS
+        // ========================
+        function toggleModuleSubtopics(moduleId) {
+            const moduleCheckbox = document.getElementById(`module_${moduleId}`);
+            const subtopicCheckboxes = document.querySelectorAll(`.subtopic-checkbox[data-module-id="${moduleId}"]`);
+            subtopicCheckboxes.forEach(cb => cb.checked = moduleCheckbox.checked);
+        }
+
+        // Update max questions when quiz type changes
+        document.querySelectorAll('input[name="quizType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const maxQ = this.value === 'subjective' ? 10 : 25;
+                const numInput = document.getElementById('numQuestions');
+                numInput.max = maxQ;
+                document.getElementById('maxQuestionsLabel').textContent = `(max ${maxQ})`;
+                if (parseInt(numInput.value) > maxQ) {
+                    numInput.value = maxQ;
+                }
+            });
+        });
+
+        async function generateQuiz() {
+            const selectedSubtopics = [];
+            document.querySelectorAll('.subtopic-checkbox:checked').forEach(cb => {
+                selectedSubtopics.push({
+                    module_id: parseInt(cb.dataset.moduleId),
+                    module_name: cb.dataset.moduleName,
+                    subtopic: cb.dataset.subtopic
+                });
+            });
+
+            if (selectedSubtopics.length === 0) {
+                showToast('Please select at least one topic', 'error');
+                return;
+            }
+
+            const quizType = document.querySelector('input[name="quizType"]:checked').value;
+            const numQuestions = parseInt(document.getElementById('numQuestions').value);
+            const maxQ = quizType === 'subjective' ? 10 : 25;
+
+            if (numQuestions < 1 || numQuestions > maxQ) {
+                showToast(`Number of questions must be between 1 and ${maxQ}`, 'error');
+                return;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
+
+            try {
+                const response = await fetch(`/api/workspaces/${currentWorkspace.id}/quiz/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        topics: selectedSubtopics,
+                        quiz_type: quizType,
+                        num_questions: numQuestions
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentQuiz = data.quiz;
+                    quizzes.unshift(currentQuiz);
+                    renderQuizHistory();
+                    renderQuizQuestions();
+                    showTakeQuizPanel();
+                    showToast('Quiz generated successfully', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to generate quiz', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to generate quiz', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate Quiz';
+            }
+        }
+
+        async function loadQuiz(quizId) {
+            try {
+                console.log('Loading quiz:', quizId, 'workspace:', currentWorkspace.id);
+                const response = await fetch(`/api/workspaces/${currentWorkspace.id}/quiz/${quizId}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                console.log('Response status:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Quiz data:', data);
+                    currentQuiz = data.quiz;
+
+                    if (currentQuiz.status === 'completed') {
+                        renderQuizResults();
+                        showResultsPanel();
+                    } else {
+                        renderQuizQuestions();
+                        showTakeQuizPanel();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Failed to load quiz:', errorData);
+                    showToast(errorData.error || 'Failed to load quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading quiz:', error);
+                showToast('Failed to load quiz', 'error');
+            }
+        }
+
+        async function submitQuiz() {
+            if (!currentQuiz) return;
+
+            const answers = [];
+            const questions = currentQuiz.questions;
+
+            for (let i = 0; i < questions.length; i++) {
+                if (currentQuiz.quiz_type === 'mcq') {
+                    const selected = document.querySelector(`input[name="q_${i}"]:checked`);
+                    answers.push(selected ? selected.value : '');
+                } else {
+                    const input = document.getElementById(`answer_${i}`);
+                    answers.push(input ? input.value.trim() : '');
+                }
+            }
+
+            const unanswered = answers.filter(a => !a).length;
+            if (unanswered > 0) {
+                if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch(`/api/workspaces/${currentWorkspace.id}/quiz/${currentQuiz.id}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ answers })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentQuiz = data.quiz;
+
+                    // Update in history
+                    const idx = quizzes.findIndex(q => q.id === currentQuiz.id);
+                    if (idx !== -1) quizzes[idx] = currentQuiz;
+                    renderQuizHistory();
+
+                    renderQuizResults();
+                    showResultsPanel();
+                    showToast(`Quiz completed! Score: ${data.quiz.score}/${data.quiz.max_score}`, 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to submit quiz', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to submit quiz', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Quiz';
+            }
+        }
+
+        // ========================
+        // UTILITIES
+        // ========================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 bg-[#0D0D0D] dark:bg-[#ECECEC] text-white dark:text-[#0D0D0D] px-4 py-3 rounded-xl shadow-lg z-50 text-sm font-medium`;
+            toast.style.animation = 'fadeInUp 0.3s ease-out';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOutDown 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 2700);
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            html.classList.remove('light', 'dark');
+            html.classList.add(isDark ? 'light' : 'dark');
+            localStorage.setItem('learnforge_theme', isDark ? 'light' : 'dark');
+        }
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdownContainer');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdownContainer');
+            const button = document.getElementById('userMenuButton');
+            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

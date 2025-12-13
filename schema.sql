@@ -122,6 +122,30 @@ CREATE INDEX IF NOT EXISTS idx_study_materials_workspace ON study_materials(work
 CREATE INDEX IF NOT EXISTS idx_study_materials_module ON study_materials(workspace_id, module_id);
 
 -- =============================================
+-- QUIZZES TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS quizzes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    quiz_type VARCHAR(20) NOT NULL CHECK (quiz_type IN ('mcq', 'fitb', 'subjective')),
+    topics JSONB NOT NULL,
+    total_questions INTEGER NOT NULL,
+    questions JSONB NOT NULL,
+    answers JSONB,
+    results JSONB,
+    score DECIMAL(5,2),
+    max_score DECIMAL(5,2),
+    status VARCHAR(20) DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_quizzes_workspace ON quizzes(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_user ON quizzes(user_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_status ON quizzes(status);
+
+-- =============================================
 -- TRIGGERS FOR updated_at
 -- =============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()

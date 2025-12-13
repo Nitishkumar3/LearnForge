@@ -51,6 +51,13 @@ MODELS = {
         "supports_search": False,
         "supports_thinking": False
     },
+    "GPT OSS 120B": {
+        "provider": "cerebras",
+        "model_id": "gpt-oss-120b",
+        "description": "GPT OSS 120B on Cerebras - high reasoning capability",
+        "supports_search": False,
+        "supports_thinking": False
+    },
     "Nova Canvas": {
         "provider": "nova",
         "model_id": "bedrock-amazon.nova-canvas-v1-0",
@@ -258,6 +265,94 @@ def mistral_stream(client, model_id, prompt, use_search):
         for event in stream:
             if event.data.choices[0].delta.content:
                 yield {"type": "text", "content": event.data.choices[0].delta.content}
+
+
+# Study Material Generation (always uses Cerebras qwen-3-235b)
+def generate_study_material(prompt):
+    """Generate study material using Cerebras qwen-3-235b (20k tokens)."""
+    import time
+    print(f"[STUDY-QWEN] Starting non-stream generation...")
+    start = time.time()
+
+    provider = get_provider("cerebras")
+    response = provider["client"].chat.completions.create(
+        model="qwen-3-235b-a22b-instruct-2507",
+        messages=[{"role": "user", "content": prompt}],
+        max_completion_tokens=20000,
+        temperature=0.7,
+        top_p=0.8
+    )
+
+    elapsed = time.time() - start
+    content = response.choices[0].message.content
+    print(f"[STUDY-QWEN] Completed in {elapsed:.2f}s, {len(content)} chars")
+    return content
+
+
+def generate_study_material_stream(prompt):
+    """Stream study material generation using Cerebras qwen-3-235b (20k tokens)."""
+    import time
+    print(f"[STUDY-QWEN] Starting stream generation...")
+    start = time.time()
+    first_chunk_time = None
+    chunk_count = 0
+    total_chars = 0
+
+    provider = get_provider("cerebras")
+    print(f"[STUDY-QWEN] Got provider, calling API...")
+
+    stream = provider["client"].chat.completions.create(
+        model="qwen-3-235b-a22b-instruct-2507",
+        messages=[{"role": "user", "content": prompt}],
+        max_completion_tokens=20000,
+        temperature=0.7,
+        top_p=0.8,
+        stream=True
+    )
+    print(f"[STUDY-QWEN] Stream created, iterating...")
+
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            if first_chunk_time is None:
+                first_chunk_time = time.time() - start
+                print(f"[STUDY-QWEN] First chunk after {first_chunk_time:.2f}s")
+
+            chunk_count += 1
+            total_chars += len(chunk.choices[0].delta.content)
+
+            if chunk_count % 50 == 0:
+                print(f"[STUDY-QWEN] Chunk {chunk_count}, {total_chars} chars so far...")
+
+            yield {"type": "text", "content": chunk.choices[0].delta.content}
+
+    elapsed = time.time() - start
+    print(f"[STUDY-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
+
+
+# Quiz Generation (always uses Cerebras gpt-oss-120b with JSON format)
+def generate_quiz(prompt):
+    """Generate quiz questions using Cerebras gpt-oss-120b with JSON response format (20k tokens)."""
+    import time
+    print(f"[QUIZ-GPT-OSS] Starting quiz generation...")
+    start = time.time()
+
+    provider = get_provider("cerebras")
+    response = provider["client"].chat.completions.create(
+        model="gpt-oss-120b",
+        messages=[
+            {"role": "system", "content": "You are a quiz generator. Always respond with valid JSON only, no markdown code blocks."},
+            {"role": "user", "content": prompt}
+        ],
+        max_completion_tokens=20000,
+        temperature=0.7,
+        top_p=1,
+        response_format={"type": "json_object"}
+    )
+
+    elapsed = time.time() - start
+    content = response.choices[0].message.content
+    print(f"[QUIZ-GPT-OSS] Completed in {elapsed:.2f}s, {len(content)} chars")
+    return content
 
 
 # Cerebras

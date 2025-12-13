@@ -616,3 +616,71 @@ def check_study_material_exists(workspace_id, module_id, subtopic):
         fetch_one=True
     )
     return result['exists'] if result else False
+
+
+# =============================================
+# QUIZ QUERIES
+# =============================================
+
+def create_quiz(workspace_id, user_id, quiz_type, topics, total_questions, questions):
+    """Create a new quiz and return it."""
+    return execute_query(
+        """INSERT INTO quizzes (workspace_id, user_id, quiz_type, topics, total_questions, questions)
+           VALUES (%s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (workspace_id, user_id, quiz_type, Json(topics), total_questions, Json(questions)),
+        fetch_one=True
+    )
+
+
+def get_quiz(quiz_id, user_id):
+    """Get quiz by ID (with ownership check)."""
+    return execute_query(
+        "SELECT * FROM quizzes WHERE id = %s AND user_id = %s",
+        (quiz_id, user_id),
+        fetch_one=True
+    )
+
+
+def get_workspace_quizzes(workspace_id, user_id):
+    """Get all quizzes for a workspace."""
+    return execute_query(
+        """SELECT id, quiz_type, topics, total_questions, score, max_score, status, created_at, completed_at
+           FROM quizzes
+           WHERE workspace_id = %s AND user_id = %s
+           ORDER BY created_at DESC""",
+        (workspace_id, user_id),
+        fetch_all=True
+    ) or []
+
+
+def update_quiz_answers(quiz_id, user_id, answers):
+    """Save user's answers to a quiz."""
+    return execute_query(
+        """UPDATE quizzes SET answers = %s
+           WHERE id = %s AND user_id = %s
+           RETURNING *""",
+        (Json(answers), quiz_id, user_id),
+        fetch_one=True
+    )
+
+
+def complete_quiz(quiz_id, user_id, results, score, max_score):
+    """Mark quiz as completed with results and scores."""
+    return execute_query(
+        """UPDATE quizzes
+           SET results = %s, score = %s, max_score = %s, status = 'completed', completed_at = NOW()
+           WHERE id = %s AND user_id = %s
+           RETURNING *""",
+        (Json(results), score, max_score, quiz_id, user_id),
+        fetch_one=True
+    )
+
+
+def delete_quiz(quiz_id, user_id):
+    """Delete a quiz."""
+    return execute_query(
+        "DELETE FROM quizzes WHERE id = %s AND user_id = %s RETURNING id",
+        (quiz_id, user_id),
+        fetch_one=True
+    )

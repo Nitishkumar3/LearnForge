@@ -321,10 +321,11 @@ TABLES:
 - Keep tables clean and readable
 
 Generate comprehensive, publication-ready content that thoroughly covers the topic.
-Do not include the topic name as the first heading - begin directly with the content."""
+Do not include the topic name as the first heading - begin directly with the content.
+Do NOT add ending sections like "Key Takeaways", "Conclusion", "Summary", or "In Summary" - end naturally after covering all concepts."""
 
     try:
-        content = llm.generate(prompt)
+        content = llm.generate_study_material(prompt)
         return {"content": content, "error": None}
     except Exception as e:
         return {"content": None, "error": str(e)}
@@ -379,11 +380,12 @@ TABLES:
 - Keep tables clean and readable
 
 Generate comprehensive, publication-ready content that thoroughly covers the topic.
-Do not include the topic name as the first heading - begin directly with the content."""
+Do not include the topic name as the first heading - begin directly with the content.
+Do NOT add ending sections like "Key Takeaways", "Conclusion", "Summary", or "In Summary" - end naturally after covering all concepts."""
 
     full_content = ""
     try:
-        for event in llm.generate_stream(prompt):
+        for event in llm.generate_study_material_stream(prompt):
             if event["type"] == "text":
                 full_content += event["content"]
                 yield {"type": "chunk", "content": event["content"]}
@@ -391,3 +393,387 @@ Do not include the topic name as the first heading - begin directly with the con
         yield {"type": "done", "content": full_content}
     except Exception as e:
         yield {"type": "error", "message": str(e)}
+
+
+# =============================================
+# QUIZ GENERATION
+# =============================================
+
+def generate_quiz_questions(topics, quiz_type, num_questions, rag_context=None):
+    """
+    Generate quiz questions using LLM.
+
+    Args:
+        topics: List of topic strings to generate questions about
+        quiz_type: 'mcq', 'fitb', or 'subjective'
+        num_questions: Number of questions to generate
+        rag_context: Optional RAG context from documents
+
+    Returns:
+        {"questions": [...], "error": None} or {"questions": None, "error": str}
+    """
+    topics_str = ", ".join(topics)
+
+    context_section = ""
+    if rag_context:
+        context_section = f"""
+Use the following reference material to create relevant questions:
+---
+{rag_context}
+---
+"""
+
+    if quiz_type == "mcq":
+        prompt = f"""Generate {num_questions} multiple choice questions on the following topics: {topics_str}
+{context_section}
+Rules:
+- Each question should have exactly 4 options (A, B, C, D)
+- Only one option should be correct
+- Questions should test understanding, not just memorization
+- Vary difficulty across questions
+- Make options plausible (avoid obviously wrong answers)
+
+Return ONLY valid JSON array with no markdown formatting:
+[
+  {{
+    "id": 1,
+    "type": "mcq",
+    "question": "Question text here?",
+    "options": {{
+      "A": "First option",
+      "B": "Second option",
+      "C": "Third option",
+      "D": "Fourth option"
+    }},
+    "correct_answer": "A"
+  }}
+]"""
+
+    elif quiz_type == "fitb":
+        prompt = f"""Generate {num_questions} fill-in-the-blank questions on the following topics: {topics_str}
+{context_section}
+Rules:
+- Use _____ (5 underscores) to indicate the blank
+- The blank should be for a key term or concept
+- Answer should be 1-3 words maximum
+- Questions should test important concepts
+- Place the blank where it tests understanding
+
+Return ONLY valid JSON array with no markdown formatting:
+[
+  {{
+    "id": 1,
+    "type": "fitb",
+    "question": "In machine learning, _____ is used to prevent overfitting.",
+    "correct_answer": "regularization"
+  }}
+]"""
+
+    elif quiz_type == "subjective":
+        prompt = f"""Generate {num_questions} subjective/descriptive questions on the following topics: {topics_str}
+{context_section}
+Rules:
+- Questions should require explanation or analysis
+- Avoid yes/no questions
+- Questions should be answerable in 3-5 sentences
+- Focus on understanding and application
+- Ask about concepts, comparisons, or applications
+
+Return ONLY valid JSON array with no markdown formatting:
+[
+  {{
+    "id": 1,
+    "type": "subjective",
+    "question": "Explain the concept of..."
+  }}
+]"""
+
+    else:
+        return {"questions": None, "error": f"Invalid quiz type: {quiz_type}"}
+
+    try:
+        # Use dedicated quiz generation with JSON format
+        response = llm.generate_quiz(prompt)
+        print(f"[QUIZ] Raw response preview: {response[:500]}...")
+
+        # Parse JSON response (should be clean due to response_format)
+        cleaned = response.strip()
+        # Handle if wrapped in markdown (fallback)
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        # Parse - may be array or object with "questions" key
+        parsed = json.loads(cleaned)
+        print(f"[QUIZ] Parsed type: {type(parsed).__name__}, keys: {parsed.keys() if isinstance(parsed, dict) else 'N/A'}")
+
+        if isinstance(parsed, list):
+            questions = parsed
+        elif isinstance(parsed, dict):
+            # Try common keys the LLM might use
+            if "questions" in parsed:
+                questions = parsed["questions"]
+            elif "quiz" in parsed:
+                questions = parsed["quiz"]
+            elif "data" in parsed:
+                questions = parsed["data"]
+            else:
+                # Take the first list value found
+                questions = None
+                for key, value in parsed.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        questions = value
+                        print(f"[QUIZ] Found questions under key: {key}")
+                        break
+                if questions is None:
+                    return {"questions": None, "error": f"Could not find questions in response: {list(parsed.keys())}"}
+        else:
+            questions = parsed
+
+        # Validate questions is a list of dicts
+        if not isinstance(questions, list):
+            return {"questions": None, "error": f"Questions is not a list: {type(questions).__name__}"}
+
+        # Filter and validate each question is a dict
+        valid_questions = []
+        for q in questions:
+            if isinstance(q, dict):
+                valid_questions.append(q)
+            else:
+                print(f"[QUIZ] Skipping non-dict question: {type(q).__name__}")
+        questions = valid_questions
+
+        if not questions:
+            return {"questions": None, "error": "No valid question objects found in response"}
+
+        # Strictly enforce the requested number of questions
+        if len(questions) > num_questions:
+            questions = questions[:num_questions]
+        elif len(questions) < num_questions:
+            print(f"[QUIZ] Warning: LLM generated {len(questions)} questions, requested {num_questions}")
+
+        # Validate and ensure IDs are sequential
+        for i, q in enumerate(questions):
+            q["id"] = i + 1
+            q["type"] = quiz_type
+
+        return {"questions": questions, "error": None}
+
+    except json.JSONDecodeError as e:
+        return {"questions": None, "error": f"Failed to parse questions: {str(e)}"}
+    except Exception as e:
+        return {"questions": None, "error": f"Failed to generate questions: {str(e)}"}
+
+
+# =============================================
+# QUIZ EVALUATION
+# =============================================
+
+def evaluate_mcq_answers(questions, answers):
+    """
+    Evaluate MCQ answers by direct comparison.
+
+    Args:
+        questions: List of question objects with correct_answer
+        answers: List of answer strings (by index) OR List of {"id": int, "answer": str}
+
+    Returns:
+        List of result objects
+    """
+    results = []
+
+    # Handle both formats: simple array ["A", "B", ...] or object array [{"id": 1, "answer": "A"}, ...]
+    if answers and len(answers) > 0 and isinstance(answers[0], dict):
+        answer_map = {a["id"]: a["answer"] for a in answers}
+        get_answer = lambda q, idx: answer_map.get(q.get("id"), "")
+    else:
+        get_answer = lambda q, idx: answers[idx] if idx < len(answers) else ""
+
+    for idx, q in enumerate(questions):
+        user_answer = get_answer(q, idx)
+        correct_answer = q.get("correct_answer", "")
+        is_correct = user_answer.upper() == correct_answer.upper() if user_answer and correct_answer else False
+
+        results.append({
+            "id": q.get("id", idx),
+            "is_correct": is_correct,
+            "score": 1 if is_correct else 0,
+            "max_score": 1,
+            "user_answer": user_answer,
+            "correct_answer": correct_answer,
+            "feedback": None
+        })
+
+    return results
+
+
+def evaluate_fitb_answer(question, correct_answer, user_answer):
+    """
+    Evaluate a single FITB answer using LLM for spelling tolerance.
+
+    Returns:
+        {"correct": bool, "feedback": str or None}
+    """
+    if not user_answer or not user_answer.strip():
+        return {"correct": False, "feedback": "No answer provided"}
+
+    # Quick exact match check (case-insensitive)
+    if user_answer.strip().lower() == correct_answer.strip().lower():
+        return {"correct": True, "feedback": None}
+
+    # Use LLM for fuzzy matching
+    prompt = f"""Evaluate if the user's answer is correct for this fill-in-the-blank question.
+
+Question: {question}
+Expected Answer: {correct_answer}
+User's Answer: {user_answer}
+
+Rules:
+- Allow minor spelling mistakes (1-2 characters off)
+- Allow common abbreviations
+- Case insensitive comparison
+- The meaning must be correct
+
+Return ONLY valid JSON with no markdown:
+{{"correct": true or false, "feedback": "Brief explanation if incorrect, or null if correct"}}"""
+
+    try:
+        response = llm.generate(prompt)
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("```")[1]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+        result = json.loads(cleaned)
+        return {
+            "correct": result.get("correct", False),
+            "feedback": result.get("feedback")
+        }
+    except:
+        # Fallback to strict comparison
+        return {
+            "correct": user_answer.strip().lower() == correct_answer.strip().lower(),
+            "feedback": None
+        }
+
+
+def evaluate_subjective_answer(question, user_answer):
+    """
+    Evaluate a subjective answer using LLM.
+
+    Returns:
+        {"score": int (0-10), "feedback": str}
+    """
+    if not user_answer or not user_answer.strip():
+        return {"score": 0, "feedback": "No answer provided"}
+
+    prompt = f"""Evaluate the following answer for a subjective question.
+
+Question: {question}
+User's Answer: {user_answer}
+
+Evaluation criteria:
+- Accuracy of information (0-4 points)
+- Completeness of explanation (0-3 points)
+- Clarity and coherence (0-3 points)
+
+Return ONLY valid JSON with no markdown:
+{{"score": <number 0-10>, "feedback": "1-2 sentence feedback on the answer"}}"""
+
+    try:
+        response = llm.generate(prompt)
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("```")[1]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+        result = json.loads(cleaned)
+        return {
+            "score": min(10, max(0, int(result.get("score", 0)))),
+            "feedback": result.get("feedback", "Unable to evaluate")
+        }
+    except:
+        return {"score": 0, "feedback": "Evaluation failed"}
+
+
+def evaluate_quiz(quiz_type, questions, answers):
+    """
+    Evaluate all quiz answers based on quiz type.
+
+    Args:
+        quiz_type: 'mcq', 'fitb', or 'subjective'
+        questions: List of question objects
+        answers: List of answer strings (by index) OR List of {"id": int, "answer": str}
+
+    Returns:
+        {
+            "results": [...],
+            "score": float,
+            "max_score": float
+        }
+    """
+    # Handle both formats: simple array ["A", "B", ...] or object array [{"id": 1, "answer": "A"}, ...]
+    if answers and len(answers) > 0 and isinstance(answers[0], dict):
+        get_answer = lambda idx: answers[idx]["answer"] if idx < len(answers) else ""
+    else:
+        get_answer = lambda idx: answers[idx] if idx < len(answers) else ""
+
+    if quiz_type == "mcq":
+        results = evaluate_mcq_answers(questions, answers)
+        score = sum(r["score"] for r in results)
+        max_score = len(questions)
+
+    elif quiz_type == "fitb":
+        results = []
+        for idx, q in enumerate(questions):
+            user_answer = get_answer(idx)
+            eval_result = evaluate_fitb_answer(q["question"], q["correct_answer"], user_answer)
+
+            results.append({
+                "id": q.get("id", idx),
+                "is_correct": eval_result["correct"],
+                "score": 1 if eval_result["correct"] else 0,
+                "max_score": 1,
+                "user_answer": user_answer,
+                "correct_answer": q["correct_answer"],
+                "feedback": eval_result["feedback"]
+            })
+
+        score = sum(r["score"] for r in results)
+        max_score = len(questions)
+
+    elif quiz_type == "subjective":
+        results = []
+        for idx, q in enumerate(questions):
+            user_answer = get_answer(idx)
+            eval_result = evaluate_subjective_answer(q["question"], user_answer)
+
+            results.append({
+                "id": q.get("id", idx),
+                "is_correct": None,  # No correct/incorrect for subjective
+                "score": eval_result["score"],
+                "max_score": 10,
+                "user_answer": user_answer,
+                "correct_answer": None,
+                "feedback": eval_result["feedback"]
+            })
+
+        score = sum(r["score"] for r in results)
+        max_score = len(questions) * 10
+
+    else:
+        return {"results": [], "score": 0, "max_score": 0}
+
+    return {
+        "results": results,
+        "score": score,
+        "max_score": max_score
+    }

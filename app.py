@@ -194,6 +194,14 @@ def study(workspace_id=None, module_id=None, subtopic_index=None):
     return render_template('study.html')
 
 
+@app.route('/quiz')
+@app.route('/quiz/<workspace_id>')
+@app.route('/quiz/<workspace_id>/<quiz_id>')
+def quiz(workspace_id=None, quiz_id=None):
+    """Render the quiz mode page. Optionally load a specific workspace/quiz."""
+    return render_template('quiz.html')
+
+
 @app.route('/uploads')
 @app.route('/uploads/<workspace_id>')
 def uploads(workspace_id=None):
@@ -1849,6 +1857,229 @@ def forgotpassword_page():
 def resetpassword_page():
     """Render reset password page."""
     return render_template('resetpassword.html')
+
+
+# ===================
+# QUIZ ROUTES
+# ===================
+
+@app.route('/api/workspaces/<workspace_id>/quiz/generate', methods=['POST'])
+@auth_required
+def generate_quiz(workspace_id):
+    """Generate a new quiz for the workspace."""
+    data = request.json
+
+    topics_data = data.get('topics')
+    quiz_type = data.get('quiz_type')
+    num_questions = data.get('num_questions', 10)
+
+    if not topics_data or not quiz_type:
+        return jsonify({'error': 'topics and quiz_type are required'}), 400
+
+    if quiz_type not in ['mcq', 'fitb', 'subjective']:
+        return jsonify({'error': 'quiz_type must be mcq, fitb, or subjective'}), 400
+
+    # Validate question limits
+    max_questions = {'mcq': 25, 'fitb': 25, 'subjective': 10}
+    if num_questions > max_questions[quiz_type]:
+        num_questions = max_questions[quiz_type]
+    if num_questions < 1:
+        num_questions = 1
+
+    # Extract topic strings for question generation
+    # topics_data can be:
+    # 1. Array of {module_id, module_name, subtopic} objects (from quiz.html)
+    # 2. Dict with 'source': 'syllabus' and 'subtopics' array
+    # 3. Dict with 'topics' array of strings
+    if isinstance(topics_data, list):
+        # Direct array of subtopic objects from quiz.html
+        topics = [s.get('subtopic', '') for s in topics_data if isinstance(s, dict) and s.get('subtopic')]
+    elif isinstance(topics_data, dict):
+        if topics_data.get('source') == 'syllabus':
+            subtopics = topics_data.get('subtopics', [])
+            topics = [s.get('subtopic', '') for s in subtopics if s.get('subtopic')]
+        else:
+            topics = topics_data.get('topics', [])
+    else:
+        topics = []
+
+    if not topics:
+        return jsonify({'error': 'At least one topic is required'}), 400
+
+    # Get RAG context automatically if documents exist
+    rag_context = None
+    try:
+        documents = db.get_documents_by_workspace(workspace_id, request.user_id)
+        if documents:
+            search_query = " ".join(topics[:5])  # Use first 5 topics for search
+            result = retrieve(search_query, request.user_id, workspace_id)
+            if result and result.get('chunks'):
+                rag_context = "\n\n".join(result['chunks'][:10])
+    except Exception as e:
+        print(f"RAG retrieval error for quiz: {e}")
+
+    # Generate questions
+    try:
+        print(f"[QUIZ] Generating {num_questions} {quiz_type} questions for topics: {topics[:3]}...")
+        result = generation.generate_quiz_questions(topics, quiz_type, num_questions, rag_context)
+
+        if result['error']:
+            print(f"[QUIZ] Generation error: {result['error']}")
+            return jsonify({'error': result['error']}), 500
+
+        questions = result['questions']
+        print(f"[QUIZ] Generated {len(questions)} questions successfully")
+    except Exception as e:
+        print(f"[QUIZ] Exception during generation: {e}")
+        return jsonify({'error': f'Quiz generation failed: {str(e)}'}), 500
+
+    # Save quiz to database
+    try:
+        quiz = db.create_quiz(
+            workspace_id=workspace_id,
+            user_id=request.user_id,
+            quiz_type=quiz_type,
+            topics=topics_data,
+            total_questions=len(questions),
+            questions=questions
+        )
+    except Exception as e:
+        print(f"[QUIZ] Database error: {e}")
+        return jsonify({'error': f'Failed to save quiz: {str(e)}'}), 500
+
+    # Return quiz without correct answers (for MCQ/FITB)
+    safe_questions = []
+    for q in questions:
+        safe_q = {k: v for k, v in q.items() if k != 'correct_answer'}
+        safe_questions.append(safe_q)
+
+    return jsonify({
+        'quiz': {
+            'id': str(quiz['id']),
+            'quiz_type': quiz['quiz_type'],
+            'topics': quiz['topics'],
+            'total_questions': quiz['total_questions'],
+            'questions': safe_questions,
+            'status': quiz['status'],
+            'created_at': quiz['created_at'].isoformat() if quiz['created_at'] else None
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/quiz', methods=['GET'])
+@auth_required
+def list_quizzes(workspace_id):
+    """List all quizzes for a workspace."""
+    quizzes = db.get_workspace_quizzes(workspace_id, request.user_id)
+
+    return jsonify({
+        'quizzes': [{
+            'id': str(q['id']),
+            'quiz_type': q['quiz_type'],
+            'topics': q['topics'],
+            'total_questions': q['total_questions'],
+            'score': float(q['score']) if q['score'] else None,
+            'max_score': float(q['max_score']) if q['max_score'] else None,
+            'status': q['status'],
+            'created_at': q['created_at'].isoformat() if q['created_at'] else None,
+            'completed_at': q['completed_at'].isoformat() if q['completed_at'] else None
+        } for q in quizzes]
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>', methods=['GET'])
+@auth_required
+def get_quiz(workspace_id, quiz_id):
+    """Get a specific quiz."""
+    quiz = db.get_quiz(quiz_id, request.user_id)
+
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+
+    questions = quiz['questions']
+
+    # Hide correct answers if quiz is in progress
+    if quiz['status'] == 'in_progress':
+        safe_questions = []
+        for q in questions:
+            safe_q = {k: v for k, v in q.items() if k != 'correct_answer'}
+            safe_questions.append(safe_q)
+        questions = safe_questions
+
+    return jsonify({
+        'quiz': {
+            'id': str(quiz['id']),
+            'quiz_type': quiz['quiz_type'],
+            'topics': quiz['topics'],
+            'total_questions': quiz['total_questions'],
+            'questions': questions,
+            'answers': quiz['answers'],
+            'results': quiz['results'],
+            'score': float(quiz['score']) if quiz['score'] else None,
+            'max_score': float(quiz['max_score']) if quiz['max_score'] else None,
+            'status': quiz['status'],
+            'created_at': quiz['created_at'].isoformat() if quiz['created_at'] else None,
+            'completed_at': quiz['completed_at'].isoformat() if quiz['completed_at'] else None
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>/submit', methods=['POST'])
+@auth_required
+def submit_quiz(workspace_id, quiz_id):
+    """Submit quiz answers and get results."""
+    data = request.json
+    answers = data.get('answers', [])
+
+    quiz = db.get_quiz(quiz_id, request.user_id)
+
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+
+    if quiz['status'] == 'completed':
+        return jsonify({'error': 'Quiz already completed'}), 400
+
+    # Save answers first
+    db.update_quiz_answers(quiz_id, request.user_id, answers)
+
+    # Evaluate answers
+    eval_result = generation.evaluate_quiz(quiz['quiz_type'], quiz['questions'], answers)
+
+    # Complete quiz with results
+    updated_quiz = db.complete_quiz(
+        quiz_id=quiz_id,
+        user_id=request.user_id,
+        results=eval_result['results'],
+        score=eval_result['score'],
+        max_score=eval_result['max_score']
+    )
+
+    return jsonify({
+        'quiz': {
+            'id': str(quiz['id']),
+            'quiz_type': quiz['quiz_type'],
+            'topics': quiz['topics'],
+            'total_questions': quiz['total_questions'],
+            'questions': quiz['questions'],  # Include full questions with correct answers
+            'answers': answers,
+            'results': eval_result['results'],
+            'score': eval_result['score'],
+            'max_score': eval_result['max_score'],
+            'status': 'completed'
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>', methods=['DELETE'])
+@auth_required
+def delete_quiz_route(workspace_id, quiz_id):
+    """Delete a quiz."""
+    result = db.delete_quiz(quiz_id, request.user_id)
+
+    if not result:
+        return jsonify({'error': 'Quiz not found'}), 404
+
+    return jsonify({'success': True, 'message': 'Quiz deleted'})
 
 
 # ===================

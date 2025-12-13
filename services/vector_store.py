@@ -101,3 +101,28 @@ def clear_all():
     except Exception as e:
         print(f"Error clearing collection: {e}")
         return False
+
+
+def delete_by_metadata(filters):
+    """Delete chunks matching metadata filters.
+
+    Args:
+        filters: dict of metadata key-value pairs to match
+
+    Returns:
+        Number of chunks deleted
+    """
+    try:
+        if len(filters) == 1:
+            where_clause = filters
+        else:
+            where_clause = {"$and": [{k: v} for k, v in filters.items()]}
+
+        results = get_collection().get(where=where_clause)
+        if results["ids"]:
+            get_collection().delete(ids=results["ids"])
+            return len(results["ids"])
+        return 0
+    except Exception as e:
+        print(f"Error deleting by metadata: {e}")
+        return 0

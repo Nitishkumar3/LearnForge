@@ -39,6 +39,7 @@ RESPONSE GUIDELINES:
 - If the question is related to the documents, use the context and cite sources as [1], [2], etc.
 - If the question is unrelated to the provided context, answer it directly without referencing the documents
 - Do NOT force document references or add document-related information when the question is clearly unrelated
+- Do NOT add a "Sources:" or "References:" section at the end - only use inline [1], [2] markers within the text
 - Be clear, helpful, and well-structured
 
 FORMATTING (Markdown + LaTeX):

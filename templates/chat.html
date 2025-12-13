@@ -1482,14 +1482,11 @@
 
             <!-- Documents Section - Fixed at Bottom of Sidebar -->
             <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span class="text-[11px] font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">Documents</span>
-                    </div>
-                    <span id="docCount" class="text-[11px] font-medium text-light-text-muted dark:text-dark-text-muted bg-light-hover dark:bg-dark-hover px-2 py-0.5 rounded-full">0</span>
+                <div class="flex items-center gap-2 mb-3">
+                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span class="text-[11px] font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">Files</span>
                 </div>
                 <div
                     id="dropZone"
@@ -2514,8 +2511,12 @@
                 // Hide search and thinking for image models
                 searchBtn.classList.add('hidden');
                 thinkingBtn.classList.add('hidden');
-                // Show aspect ratio selector
-                aspectRatioSelector.classList.remove('hidden');
+                // Show aspect ratio selector only if model supports it
+                if (currentModel.aspect_ratios && currentModel.aspect_ratios.length > 0) {
+                    aspectRatioSelector.classList.remove('hidden');
+                } else {
+                    aspectRatioSelector.classList.add('hidden');
+                }
                 // Update placeholder
                 questionInput.placeholder = 'Describe the image...';
             } else {
@@ -2696,11 +2697,9 @@
                 });
                 const data = await response.json();
                 const listDiv = document.getElementById('documentsList');
-                const docCountEl = document.getElementById('docCount');
 
                 // Update document count and RAG button state
                 documentCount = data.documents.length;
-                if (docCountEl) docCountEl.textContent = documentCount;
                 updateRAGButtonState();
 
                 if (data.documents.length === 0) {

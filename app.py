@@ -60,6 +60,93 @@ def allowed_file(filename):
     """Check if file extension is allowed."""
     return file_types.is_allowed_file(filename)
 
+
+def add_study_material_to_vector_db(content, user_id, workspace_id, module_index, module_name, subtopic_name):
+    """Add study material content to vector DB for RAG retrieval.
+
+    Deletes any existing chunks for this subtopic first (handles regeneration).
+    """
+    try:
+        # Delete existing chunks for this subtopic (handles regeneration)
+        vector_store.delete_by_metadata({
+            "type": "study_material",
+            "user_id": user_id,
+            "workspace_id": workspace_id,
+            "module_index": module_index,
+            "subtopic_name": subtopic_name
+        })
+
+        # Invalidate BM25 cache
+        invalidate_bm25_cache()
+
+        # Create unique document ID for this study material
+        doc_id = f"study_{workspace_id}_{module_index}_{subtopic_name.replace(' ', '_')[:30]}"
+
+        # Chunk the content
+        chunks = chunking.split_into_chunks(content)
+        if not chunks:
+            return 0
+
+        # Build metadata for each chunk
+        metadatas = []
+        for i, chunk_text in enumerate(chunks):
+            metadatas.append({
+                "type": "study_material",
+                "user_id": user_id,
+                "workspace_id": workspace_id,
+                "module_index": module_index,
+                "module_name": module_name,
+                "subtopic_name": subtopic_name,
+                "document_id": doc_id,
+                "document_name": f"{module_name} - {subtopic_name}",
+                "chunk_index": i,
+                "total_chunks": len(chunks)
+            })
+
+        # Embed chunks
+        embeddings = embedding.embed_texts(chunks)
+
+        # Add to vector store
+        vector_store.add_chunks(
+            chunks=chunks,
+            embeddings=embeddings,
+            metadatas=metadatas,
+            document_id=doc_id
+        )
+
+        print(f"[STUDY] Added {len(chunks)} chunks for: {module_name} - {subtopic_name}")
+        return len(chunks)
+    except Exception as e:
+        print(f"[STUDY] Error adding to vector DB: {e}")
+        return 0
+
+
+def delete_study_material_from_vector_db(user_id, workspace_id, module_index=None, subtopic_name=None):
+    """Delete study material chunks from vector DB.
+
+    If module_index and subtopic_name provided, deletes specific subtopic.
+    Otherwise deletes all study materials for the workspace.
+    """
+    try:
+        filters = {
+            "type": "study_material",
+            "user_id": user_id,
+            "workspace_id": workspace_id
+        }
+        if module_index is not None:
+            filters["module_index"] = module_index
+        if subtopic_name is not None:
+            filters["subtopic_name"] = subtopic_name
+
+        deleted = vector_store.delete_by_metadata(filters)
+        invalidate_bm25_cache()
+        print(f"[STUDY] Deleted {deleted} chunks from vector DB")
+        return deleted
+    except Exception as e:
+        print(f"[STUDY] Error deleting from vector DB: {e}")
+        return 0
+
+
 # ===================
 # STARTUP HEALTH CHECKS
 # ===================
@@ -435,6 +522,9 @@ def delete_workspace_route(workspace_id):
         except Exception as e:
             print(f"Error deleting vectors for doc {doc['id']}: {e}")
 
+    # Delete all study material chunks from vector DB
+    delete_study_material_from_vector_db(request.user_id, workspace_id)
+
     invalidate_bm25_cache()
 
     # Delete all conversations and their S3 images
@@ -724,6 +814,17 @@ def generate_study_material_stream_route(workspace_id):
                             subtopic,
                             full_content
                         )
+
+                        # Add to vector DB for RAG (deletes old chunks first if regenerating)
+                        add_study_material_to_vector_db(
+                            content=full_content,
+                            user_id=user_id,
+                            workspace_id=workspace_id,
+                            module_index=module_id,
+                            module_name=module_name,
+                            subtopic_name=subtopic
+                        )
+
                         yield f"data: {json.dumps({'type': 'done', 'id': str(saved['id']) if saved else None})}\n\n"
                     except Exception as save_error:
                         yield f"data: {json.dumps({'type': 'error', 'message': f'Failed to save: {str(save_error)}'})}\n\n"
@@ -1748,6 +1849,40 @@ def forgotpassword_page():
 def resetpassword_page():
     """Render reset password page."""
     return render_template('resetpassword.html')
+
+
+# ===================
+# TEST ENDPOINTS (TEMP)
+# ===================
+
+@app.route('/test/vector/<user_id>/<workspace_id>')
+def test_vector_contents(user_id, workspace_id):
+    """Temporary endpoint to check vector DB contents for a workspace."""
+    try:
+        coll = vector_store.get_collection()
+        results = coll.get(
+            where={"$and": [{"user_id": user_id}, {"workspace_id": workspace_id}]},
+            include=["metadatas", "documents"]
+        )
+
+        chunks = []
+        for i, doc in enumerate(results["documents"] or []):
+            meta = results["metadatas"][i] if results["metadatas"] else {}
+            chunks.append({
+                "text_preview": doc[:200] + "..." if len(doc) > 200 else doc,
+                "type": meta.get("type", "document"),
+                "document_name": meta.get("document_name"),
+                "module_name": meta.get("module_name"),
+                "subtopic_name": meta.get("subtopic_name"),
+                "chunk_index": meta.get("chunk_index")
+            })
+
+        return jsonify({
+            "total_chunks": len(chunks),
+            "chunks": chunks
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ===================

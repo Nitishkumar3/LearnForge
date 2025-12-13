@@ -176,17 +176,6 @@ def process(file_path, use_ocr=None):
     }
 
 
-def get_page_count(file_path):
-    """Get page count from PDF."""
-    try:
-        doc = pymupdf.open(file_path)
-        count = len(doc)
-        doc.close()
-        return count
-    except:
-        return 0
-
-
 def analyze_pdf(file_path):
     """
     Analyze PDF to determine if OCR is recommended.

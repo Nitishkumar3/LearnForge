@@ -8,7 +8,7 @@ Designed for single-user now, scalable to multi-user later.
 import os
 import uuid
 import json
-from flask import Flask, request, jsonify, render_template, Response, current_app
+from flask import Flask, request, jsonify, render_template, Response
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from dotenv import load_dotenv

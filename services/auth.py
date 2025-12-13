@@ -6,7 +6,7 @@ import bcrypt
 import secrets
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import request, jsonify, current_app
+from flask import request, jsonify
 
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 TOKEN_EXPIRY_HOURS = 24 * 7

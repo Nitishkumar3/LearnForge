@@ -122,32 +122,3 @@ def extract_text_from_image(image_bytes, mime_type='image/png'):
     )
 
     return response.text
-
-
-def extract_text_from_image_file(file_path):
-    """
-    Extract text from image file.
-
-    Args:
-        file_path: Path to image file
-
-    Returns:
-        Extracted text as string
-    """
-    ext = os.path.splitext(file_path)[1].lower()
-    mime_map = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.bmp': 'image/bmp',
-        '.webp': 'image/webp',
-        '.tiff': 'image/tiff',
-        '.tif': 'image/tiff'
-    }
-    mime_type = mime_map.get(ext, 'image/png')
-
-    with open(file_path, 'rb') as f:
-        image_bytes = f.read()
-
-    return extract_text_from_image(image_bytes, mime_type)

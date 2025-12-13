@@ -262,15 +262,6 @@ def create_document(workspace_id, user_id, filename, original_filename,
     )
 
 
-def get_document_by_id(doc_id):
-    """Get document by ID."""
-    return execute_query(
-        "SELECT * FROM documents WHERE id = %s",
-        (doc_id,),
-        fetch_one=True
-    )
-
-
 def get_document_by_id_and_user(doc_id, user_id):
     """Get document by ID, ensuring it belongs to user."""
     return execute_query(

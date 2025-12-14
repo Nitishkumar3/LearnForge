@@ -175,7 +175,7 @@ def generate_answer(query, chunks, metadatas, chat_history=None, use_search=Fals
     }
 
 
-def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_search=False, use_thinking=False):
+def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_search=False, use_thinking=False, web_context=""):
     history_text = build_history(chat_history)
 
     # Build prompt based on whether we have RAG context
@@ -185,6 +185,18 @@ def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_sear
     else:
         # No RAG - direct conversation with LLM
         prompt = build_direct_prompt(query, history_text)
+
+    # Append web context from Deep Search if available
+    if web_context:
+        prompt = prompt.replace(
+            "Provide your response:",
+            f"""WEB SEARCH RESULTS (additional context from internet):
+{web_context}
+
+Provide your response:"""
+        )
+
+    print(prompt)
 
     full_answer = ""
     full_thinking = ""

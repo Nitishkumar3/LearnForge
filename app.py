@@ -1086,6 +1086,7 @@ def conversation_chat(conversation_id):
     use_search = data.get('use_search', False)
     use_thinking = data.get('use_thinking', False)
     use_rag = data.get('use_rag', False)
+    use_deep_search = data.get('use_deep_search', False)
     is_regenerate = data.get('regenerate', False)
 
     if not question:
@@ -1120,6 +1121,15 @@ def conversation_chat(conversation_id):
                 chunks = []
                 metadatas = []
 
+            # Deep Search with Exa.ai
+            web_context = ""
+            web_sources = []
+            if use_deep_search:
+                from services.exa_search import get_web_context_for_llm
+                exa_result = get_web_context_for_llm(question, num_results=8, top_chunks=5)
+                web_context = exa_result.get("context", "")
+                web_sources = exa_result.get("web_sources", [])
+
             full_answer = ""
             full_thinking = ""
             sources = []
@@ -1130,7 +1140,8 @@ def conversation_chat(conversation_id):
                 metadatas=metadatas,
                 chat_history=chat_history,
                 use_search=use_search,
-                use_thinking=use_thinking
+                use_thinking=use_thinking,
+                web_context=web_context
             ):
                 if event["type"] == "thinking":
                     full_thinking += event.get("content", "")
@@ -1140,16 +1151,23 @@ def conversation_chat(conversation_id):
                 elif event["type"] == "done":
                     full_answer = event.get("content", "")
                     sources = event.get("sources", [])
+                    # Add web_sources to the done event for frontend
+                    event["web_sources"] = web_sources
                     yield f"data: {json.dumps(event)}\n\n"
                 elif event["type"] == "error":
                     yield f"data: {json.dumps(event)}\n\n"
                     return
 
-            # Save assistant message
+            # Save assistant message with web_sources embedded in sources
             if full_answer:
+                # Combine doc sources and web sources into one JSON structure
+                combined_sources = {
+                    "documents": sources if sources else [],
+                    "web": web_sources if web_sources else []
+                }
                 db.add_message(
                     conversation_id, 'assistant', full_answer,
-                    sources=sources, thinking=full_thinking or None
+                    sources=combined_sources, thinking=full_thinking or None
                 )
 
         except Exception as e:

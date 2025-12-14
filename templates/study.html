@@ -387,7 +387,15 @@
                 <span>Study Materials</span>
             </a>
 
-            <!-- New Chat Button -->
+            <!-- Quiz Link -->
+            <a href="/quiz" id="quizLink" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Quiz</span>
+            </a>
+
+            <!-- Go to Chat Button -->
             <div class="p-4 pt-2">
                 <a href="/chat" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-border rounded-lg transition-all duration-200 ease-smooth">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,51 +420,35 @@
                 </div>
             </div>
 
-            <!-- Documents Section - Fixed at Bottom of Sidebar -->
-            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span class="text-[11px] font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">Documents</span>
-                    </div>
-                    <span id="docCount" class="text-[11px] font-medium text-light-text-muted dark:text-dark-text-muted bg-light-hover dark:bg-dark-hover px-2 py-0.5 rounded-full">0</span>
-                </div>
-                <div
-                    id="dropZone"
-                    class="upload-zone border border-dashed border-light-border dark:border-dark-border rounded-xl p-3 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted hover:bg-light-hover dark:hover:bg-dark-hover transition-all duration-200"
-                    ondrop="handleDrop(event)"
-                    ondragover="handleDragOver(event)"
-                    ondragleave="handleDragLeave(event)"
-                    onclick="goToUploads()"
-                >
-                    <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
-                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            <!-- Files Section - Fixed at Bottom of Sidebar -->
+            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4"
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <!-- Files Button - Opens Modal -->
+                <button id="filesButton" onclick="openFilesModal()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group cursor-not-allowed opacity-60">
+                    <div class="w-10 h-10 rounded-xl bg-light-hover dark:bg-dark-hover group-hover:bg-light-border dark:group-hover:bg-dark-border flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                         </svg>
                     </div>
-                    <p class="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary">Upload files</p>
-                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Click or drop here</p>
-                </div>
+                    <div class="flex-1 text-left">
+                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Files</p>
+                        <p id="filesCount" class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            <span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>
+                        </p>
+                    </div>
+                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+
+                <!-- Upload Button -->
+                <button onclick="goToUploads()" class="w-full mt-2 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-dashed border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted hover:bg-light-hover dark:hover:bg-dark-hover transition-all text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="text-xs font-medium">Upload or drop files</span>
+                </button>
                 <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.mp3,.wav,.ogg,.m4a" multiple class="hidden" onchange="handleFileSelect(event)">
-
-                <!-- Upload Progress -->
-                <div id="uploadProgress" class="hidden mt-2">
-                    <div class="flex items-center gap-2 p-2 bg-light-hover dark:bg-dark-hover rounded-lg border border-light-border dark:border-dark-border">
-                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-light-text dark:border-dark-text border-t-transparent flex-shrink-0"></div>
-                        <span id="uploadStatus" class="text-xs text-light-text-secondary dark:text-dark-text-secondary font-medium truncate">Processing...</span>
-                    </div>
-                </div>
-
-                <!-- Documents List - Internal Scroll -->
-                <div id="documentsList" class="mt-2 max-h-28 overflow-y-auto custom-scrollbar space-y-1">
-                    <!-- Shimmer loading skeleton -->
-                    <div class="shimmer-skeleton space-y-1">
-                        <div class="shimmer h-9 w-full rounded-lg"></div>
-                        <div class="shimmer h-9 w-full rounded-lg"></div>
-                    </div>
-                </div>
             </div>
         </aside>
 
@@ -585,6 +577,39 @@
         </div>
     </div>
 
+    <!-- Files Modal -->
+    <div id="filesModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeFilesModal()"></div>
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col z-10 border border-light-border dark:border-dark-border">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 border-b border-light-border dark:border-dark-border">
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text">Files</h3>
+                    <button onclick="closeFilesModal()" class="p-1.5 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Modal Content -->
+                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    <div id="filesModalList" class="space-y-2">
+                        <!-- Files will be rendered here -->
+                    </div>
+                </div>
+                <!-- Modal Footer -->
+                <div class="p-4 border-t border-light-border dark:border-dark-border">
+                    <button onclick="closeFilesModal(); goToUploads();" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl hover:opacity-90 font-medium transition-colors text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Upload More Files
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Workspace Settings Modal -->
     <div id="workspaceSettingsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -682,36 +707,18 @@ Machine Learning - Types of ML - Supervised Learning..."
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <script>
-        // Auth utilities
-        const Auth = {
-            getToken: () => localStorage.getItem('learnforge_token'),
-            getAuthHeaders: () => ({
-                'Authorization': `Bearer ${localStorage.getItem('learnforge_token')}`
-            }),
-            getCurrentWorkspace: () => {
-                const ws = localStorage.getItem('learnforge_workspace');
-                return ws ? JSON.parse(ws) : null;
-            },
-            setCurrentWorkspace: (workspace) => {
-                localStorage.setItem('learnforge_workspace', JSON.stringify(workspace));
-            },
-            logout: () => {
-                localStorage.removeItem('learnforge_token');
-                localStorage.removeItem('learnforge_workspace');
-                window.location.href = '/';
-            }
-        };
+    <!-- Navbar JS (shared module) -->
+    <script src="/static/js/navbar.js"></script>
 
-        // State
-        let currentWorkspace = null;
+    <script>
+        // Page-specific state
         let currentSyllabus = null;
         let generatedMaterials = [];
         let currentSubtopic = null;
         let pendingGeneration = null;
         let documentCount = 0;
-        let workspaces = [];
-        let currentUser = null;
+        let documents = [];
+        let filesLoading = true;
 
         // URL handling functions
         function getUrlParams() {
@@ -786,123 +793,11 @@ Machine Learning - Types of ML - Supervised Learning..."
             }
         });
 
-        // Theme toggle
-        function toggleTheme() {
-            const html = document.documentElement;
-            const isDark = html.classList.contains('dark');
-            html.classList.remove('light', 'dark');
-            html.classList.add(isDark ? 'light' : 'dark');
-            localStorage.setItem('learnforge_theme', isDark ? 'light' : 'dark');
-
-            // Toggle highlight.js stylesheets
-            document.getElementById('hljs-light').disabled = !isDark;
-            document.getElementById('hljs-dark').disabled = isDark;
-        }
-
-        // Toast notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-gray-700';
-            toast.className = `${bgColor} text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transform transition-all duration-300 translate-x-full`;
-            toast.textContent = message;
-            container.appendChild(toast);
-
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full');
-            });
-
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Dropdown toggles
-        function toggleWorkspaceDropdown() {
-            const dropdown = document.getElementById('workspaceDropdownContainer');
-            const userDropdown = document.getElementById('userDropdownContainer');
-            userDropdown.classList.add('hidden');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function toggleUserDropdown() {
-            const dropdown = document.getElementById('userDropdownContainer');
-            const workspaceDropdown = document.getElementById('workspaceDropdownContainer');
-            workspaceDropdown.classList.add('hidden');
-            dropdown.classList.toggle('hidden');
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', (e) => {
-            const workspaceDropdown = document.getElementById('workspaceDropdownContainer');
-            const userDropdown = document.getElementById('userDropdownContainer');
-            const workspaceSwitcher = document.getElementById('workspaceSwitcher');
-            const userMenuButton = document.getElementById('userMenuButton');
-
-            if (!workspaceSwitcher.contains(e.target) && !workspaceDropdown.contains(e.target)) {
-                workspaceDropdown.classList.add('hidden');
-            }
-            if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-                userDropdown.classList.add('hidden');
-            }
-        });
-
-        // Workspace functions
-        function openCreateWorkspaceModal() {
-            document.getElementById('createWorkspaceModal').classList.remove('hidden');
-            document.getElementById('newWorkspaceName').focus();
-            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
-        }
-
-        function closeCreateWorkspaceModal() {
-            document.getElementById('createWorkspaceModal').classList.add('hidden');
-            document.getElementById('newWorkspaceName').value = '';
-        }
-
-        async function createWorkspace() {
-            const name = document.getElementById('newWorkspaceName').value.trim();
-            if (!name) {
-                showToast('Please enter a workspace name', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/workspaces', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...Auth.getAuthHeaders()
-                    },
-                    body: JSON.stringify({ name })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    workspaces.push(data.workspace);
-                    closeCreateWorkspaceModal();
-                    await switchWorkspace(data.workspace.id);
-                    showToast('Workspace created successfully', 'success');
-                } else {
-                    const error = await response.json();
-                    showToast(error.error || 'Failed to create workspace', 'error');
-                }
-            } catch (error) {
-                showToast('Failed to create workspace', 'error');
-            }
-        }
-
-        // Workspace Settings Functions
+        // Workspace Settings Functions (page-specific - called from Navbar.openWorkspaceSettings)
         function openWorkspaceSettingsModal(workspaceId, event) {
-            event.stopPropagation();
+            if (event) event.stopPropagation();
 
+            const workspaces = Navbar.getWorkspaces();
             const workspace = workspaces.find(w => w.id === workspaceId);
             if (!workspace) return;
 
@@ -937,15 +832,8 @@ Machine Learning - Types of ML - Supervised Learning..."
                 });
 
                 if (response.ok) {
-                    const wsIndex = workspaces.findIndex(w => w.id === workspaceId);
-                    if (wsIndex !== -1) {
-                        workspaces[wsIndex].name = newName;
-                    }
-                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
-                        currentWorkspace.name = newName;
-                        Auth.setCurrentWorkspace(currentWorkspace);
-                    }
-                    updateWorkspaceDisplay();
+                    // Reload navbar to refresh workspace list
+                    await Navbar.init();
                     closeWorkspaceSettingsModal();
                     showToast('Workspace renamed', 'success');
                 } else {
@@ -959,7 +847,9 @@ Machine Learning - Types of ML - Supervised Learning..."
 
         async function confirmDeleteAllDocuments() {
             const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const workspaces = Navbar.getWorkspaces();
             const workspace = workspaces.find(w => w.id === workspaceId);
+            const currentWorkspace = Navbar.getCurrentWorkspace();
 
             if (!workspace) return;
 
@@ -991,7 +881,9 @@ Machine Learning - Types of ML - Supervised Learning..."
 
         async function confirmDeleteWorkspace() {
             const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const workspaces = Navbar.getWorkspaces();
             const workspace = workspaces.find(w => w.id === workspaceId);
+            const currentWorkspace = Navbar.getCurrentWorkspace();
 
             if (!workspace) return;
 
@@ -1011,21 +903,12 @@ Machine Learning - Types of ML - Supervised Learning..."
                 });
 
                 if (response.ok) {
-                    workspaces = workspaces.filter(w => w.id !== workspaceId);
-
-                    if (currentWorkspace && currentWorkspace.id === workspaceId) {
-                        currentWorkspace = workspaces[0];
-                        Auth.setCurrentWorkspace(currentWorkspace);
-                        await Promise.all([
-                            loadSyllabus(),
-                            loadDocuments(),
-                            loadGeneratedMaterials(),
-                            loadChatHistory()
-                        ]);
-                        renderModules();
+                    // Reload navbar and switch to first workspace
+                    await Navbar.init();
+                    const newWorkspaces = Navbar.getWorkspaces();
+                    if (newWorkspaces.length > 0) {
+                        await Navbar.switchWorkspace(newWorkspaces[0].id);
                     }
-
-                    updateWorkspaceDisplay();
                     closeWorkspaceSettingsModal();
                     showToast('Workspace deleted', 'success');
                 } else {
@@ -1133,111 +1016,10 @@ Machine Learning - Types of ML - Supervised Learning..."
             }
         }
 
-        async function switchWorkspace(workspaceId, updateUrl = true) {
-            const workspace = workspaces.find(w => w.id === workspaceId);
-            if (!workspace || workspace.id === currentWorkspace?.id) return;
-
-            currentWorkspace = workspace;
-            Auth.setCurrentWorkspace(workspace);
-            updateWorkspaceDisplay();
-            toggleWorkspaceDropdown();
-
-            // Reload data for new workspace
-            await Promise.all([
-                loadSyllabus(),
-                loadDocuments(),
-                loadGeneratedMaterials(),
-                loadChatHistory()
-            ]);
-
-            renderModules();
-
-            // Reset content area
-            currentSubtopic = null;
-            showWelcomeContent();
-
-            // Update URL
-            if (updateUrl) {
-                history.pushState({ workspaceId: workspace.id }, '', buildStudyUrl(workspace.id));
-            }
-
-            showToast(`Switched to ${workspace.name}`, 'success');
-        }
-
-        async function loadWorkspaces() {
-            try {
-                const response = await fetch('/api/workspaces', {
-                    headers: Auth.getAuthHeaders()
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    workspaces = data.workspaces || [];
-                    updateWorkspaceDisplay();
-                }
-            } catch (error) {
-                console.error('Failed to load workspaces:', error);
-            }
-        }
-
-        function updateWorkspaceDisplay() {
-            const wsNameEl = document.getElementById('currentWorkspaceName');
-            const wsDropdownEl = document.getElementById('workspaceDropdown');
-
-            if (wsNameEl && currentWorkspace) {
-                wsNameEl.textContent = currentWorkspace.name;
-            }
-
-            if (wsDropdownEl) {
-                if (workspaces.length === 0) {
-                    wsDropdownEl.innerHTML = '<p class="text-sm text-light-text-muted dark:text-dark-text-muted p-2">No workspaces</p>';
-                    return;
-                }
-
-                wsDropdownEl.innerHTML = workspaces.map(ws => `
-                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover cursor-pointer group ${ws.id === currentWorkspace?.id ? 'bg-light-hover dark:bg-dark-hover' : ''}"
-                         onclick="switchWorkspace('${ws.id}')">
-                        <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <div class="w-6 h-6 rounded-md bg-light-text dark:bg-dark-text flex items-center justify-center text-xs font-semibold text-light-bg dark:text-dark-bg flex-shrink-0">
-                                ${ws.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span class="text-sm truncate ${ws.id === currentWorkspace?.id ? 'font-medium text-light-text dark:text-dark-text' : 'text-light-text-secondary dark:text-dark-text-secondary'}">${escapeHtml(ws.name)}</span>
-                        </div>
-                        <div class="flex items-center gap-1 flex-shrink-0">
-                            ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-light-text dark:text-dark-text" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : ''}
-                            <button onclick="openWorkspaceSettingsModal('${ws.id}', event)"
-                                    class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Workspace settings">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // User functions
-        async function loadUser() {
-            try {
-                const response = await fetch('/api/auth/me', {
-                    headers: Auth.getAuthHeaders()
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    document.getElementById('userInitial').textContent = currentUser.name?.charAt(0).toUpperCase() || 'U';
-                    document.getElementById('userName').textContent = currentUser.name || 'User';
-                    document.getElementById('userEmail').textContent = currentUser.email || '';
-                }
-            } catch (error) {
-                console.error('Failed to load user:', error);
-            }
-        }
-
         // Chat history functions
         async function loadChatHistory() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) return;
             try {
                 const response = await fetch(`/api/conversations?workspace_id=${currentWorkspace.id}`, {
                     headers: Auth.getAuthHeaders()
@@ -1269,48 +1051,119 @@ Machine Learning - Types of ML - Supervised Learning..."
             `).join('');
         }
 
-        // Document functions
+        // Document/Files functions
+        function showFilesShimmer() {
+            filesLoading = true;
+            const btn = document.getElementById('filesButton');
+            btn.classList.add('cursor-not-allowed', 'opacity-60');
+            btn.classList.remove('cursor-pointer');
+            document.getElementById('filesCount').innerHTML = '<span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>';
+        }
+
+        function enableFilesButton() {
+            filesLoading = false;
+            const btn = document.getElementById('filesButton');
+            btn.classList.remove('cursor-not-allowed', 'opacity-60');
+            btn.classList.add('cursor-pointer');
+        }
+
         async function loadDocuments() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) {
+                document.getElementById('filesCount').textContent = 'No workspace selected';
+                enableFilesButton();
+                return;
+            }
+            showFilesShimmer();
             try {
                 const response = await fetch(`/api/documents?workspace_id=${currentWorkspace.id}`, {
                     headers: Auth.getAuthHeaders()
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    const docs = data.documents || [];
-                    documentCount = docs.length;
-                    document.getElementById('docCount').textContent = documentCount;
-                    renderDocuments(docs);
+                    documents = data.documents || [];
+                    documentCount = documents.length;
+                    document.getElementById('filesCount').textContent = documentCount === 0
+                        ? 'No files uploaded yet'
+                        : `${documentCount} file${documentCount !== 1 ? 's' : ''} uploaded`;
                 }
             } catch (error) {
                 console.error('Failed to load documents:', error);
+                documents = [];
                 documentCount = 0;
-                document.getElementById('docCount').textContent = '0';
-                renderDocuments([]);
+                document.getElementById('filesCount').textContent = 'Failed to load files';
             }
+            enableFilesButton();
         }
 
-        function renderDocuments(docs) {
-            const list = document.getElementById('documentsList');
-            if (docs.length === 0) {
-                list.innerHTML = '';
+        function openFilesModal() {
+            if (filesLoading) return;
+            renderFilesModal();
+            document.getElementById('filesModal').classList.remove('hidden');
+        }
+
+        function closeFilesModal() {
+            document.getElementById('filesModal').classList.add('hidden');
+        }
+
+        function renderFilesModal() {
+            const list = document.getElementById('filesModalList');
+            if (documents.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                            <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted">No files uploaded yet</p>
+                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">Upload files to enhance your learning</p>
+                    </div>
+                `;
                 return;
             }
 
-            list.innerHTML = docs.map(doc => `
-                <div class="flex items-center gap-2 p-2 rounded-lg bg-light-hover dark:bg-dark-hover group">
-                    <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                        <path fill="white" d="M14 2v6h6"/>
-                    </svg>
-                    <span class="text-xs text-light-text dark:text-dark-text truncate flex-1">${escapeHtml(doc.filename)}</span>
-                    <button onclick="deleteDocument(${doc.id})" class="hidden group-hover:block p-1 hover:bg-light-border dark:hover:bg-dark-border rounded transition-colors">
-                        <svg class="w-3 h-3 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            `).join('');
+            list.innerHTML = documents.map(doc => {
+                const ext = doc.filename.split('.').pop().toLowerCase();
+                const iconColor = getFileIconColor(ext);
+                return `
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-light-hover dark:bg-dark-hover group">
+                        <div class="w-10 h-10 rounded-lg ${iconColor} flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-light-text dark:text-dark-text truncate">${escapeHtml(doc.filename)}</p>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">${formatFileSize(doc.file_size_bytes)}</p>
+                        </div>
+                        <button onclick="deleteDocument('${doc.id}')" class="opacity-0 group-hover:opacity-100 p-2 hover:bg-light-border dark:hover:bg-dark-border rounded-lg transition-all">
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted hover:text-accent-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getFileIconColor(ext) {
+            const colors = {
+                pdf: 'bg-red-500',
+                doc: 'bg-blue-500', docx: 'bg-blue-500',
+                ppt: 'bg-orange-500', pptx: 'bg-orange-500',
+                xls: 'bg-green-500', xlsx: 'bg-green-500', csv: 'bg-green-500',
+                png: 'bg-purple-500', jpg: 'bg-purple-500', jpeg: 'bg-purple-500', gif: 'bg-purple-500',
+                mp3: 'bg-pink-500', wav: 'bg-pink-500', ogg: 'bg-pink-500', m4a: 'bg-pink-500'
+            };
+            return colors[ext] || 'bg-gray-500';
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return 'Unknown size';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
         async function deleteDocument(docId) {
@@ -1321,6 +1174,10 @@ Machine Learning - Types of ML - Supervised Learning..."
                 });
                 if (response.ok) {
                     await loadDocuments();
+                    // Re-render modal if it's open
+                    if (!document.getElementById('filesModal').classList.contains('hidden')) {
+                        renderFilesModal();
+                    }
                     showToast('Document deleted', 'success');
                 }
             } catch (error) {
@@ -1360,6 +1217,7 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         function goToUploads() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             if (!currentWorkspace) {
                 showToast('Please select a workspace first', 'error');
                 return;
@@ -1368,6 +1226,7 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         async function uploadFiles(files) {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             const progressDiv = document.getElementById('uploadProgress');
             const statusSpan = document.getElementById('uploadStatus');
 
@@ -1405,43 +1264,55 @@ Machine Learning - Types of ML - Supervised Learning..."
         // Initialize
         async function init() {
             // Check auth
-            if (!Auth.getToken()) {
-                window.location.href = '/';
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '/signin';
                 return;
             }
 
-            // Load user and workspaces first
-            await Promise.all([
-                loadUser(),
-                loadWorkspaces()
-            ]);
+            // Initialize navbar (loads user and workspaces)
+            await Navbar.init();
+
+            // Register workspace switch callback
+            Navbar.onWorkspaceSwitch(async (workspace, updateUrl = true) => {
+                // Reload data for new workspace
+                await Promise.all([
+                    loadSyllabus(),
+                    loadDocuments(),
+                    loadGeneratedMaterials(),
+                    loadChatHistory()
+                ]);
+
+                renderModules();
+
+                // Reset content area
+                currentSubtopic = null;
+                showWelcomeContent();
+
+                // Update URL
+                if (updateUrl) {
+                    history.pushState({ workspaceId: workspace.id }, '', buildStudyUrl(workspace.id));
+                }
+            });
 
             // Check URL parameters
             const urlParams = getUrlParams();
+            const workspaces = Navbar.getWorkspaces();
 
             // Determine workspace from URL or localStorage
             if (urlParams.workspaceId && workspaces.length > 0) {
                 const workspaceFromUrl = workspaces.find(w => w.id === urlParams.workspaceId);
                 if (workspaceFromUrl) {
-                    currentWorkspace = workspaceFromUrl;
-                    Auth.setCurrentWorkspace(workspaceFromUrl);
+                    await Navbar.switchWorkspace(workspaceFromUrl.id, false);
                 }
             }
 
-            // Fall back to localStorage workspace
-            if (!currentWorkspace) {
-                currentWorkspace = Auth.getCurrentWorkspace();
-            }
-
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             if (!currentWorkspace) {
                 window.location.href = '/chat';
                 return;
             }
 
-            // Update workspace display
-            updateWorkspaceDisplay();
-
-            // Then load workspace-specific data
+            // Load workspace-specific data
             await Promise.all([
                 loadSyllabus(),
                 loadDocuments(),
@@ -1468,6 +1339,8 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         async function loadSyllabus() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) return;
             try {
                 const response = await fetch(`/api/workspaces/${currentWorkspace.id}/syllabus`, {
                     headers: Auth.getAuthHeaders()
@@ -1482,6 +1355,8 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         async function loadGeneratedMaterials() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) return;
             try {
                 const response = await fetch(`/api/workspaces/${currentWorkspace.id}/study-materials`, {
                     headers: Auth.getAuthHeaders()
@@ -1578,6 +1453,7 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         async function loadSubtopicContent(moduleId, moduleName, subtopic, updateUrl = true) {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             const contentDiv = document.getElementById('subtopicContent');
 
             // Update URL to reflect current subtopic (using index)
@@ -1699,6 +1575,7 @@ Machine Learning - Types of ML - Supervised Learning..."
         }
 
         async function doGenerateSubtopic(moduleId, moduleName, subtopic, regenerate = false) {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             const contentDiv = document.getElementById('subtopicContent');
 
             contentDiv.innerHTML = `

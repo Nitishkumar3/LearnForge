@@ -10,6 +10,7 @@ google-genai
 groq
 mistralai
 cerebras-cloud-sdk
+exa_py
 
 # AI/ML - Embeddings (embedserver.py)
 # onnxruntime-gpu        

@@ -916,7 +916,7 @@
             opacity: 0.9;
         }
 
-        /* RAG Toggle Button Styles */
+        /* RAG Toggle Button Styles - matches toolbar-btn */
         .rag-toggle-btn {
             background: transparent;
             color: #666666;
@@ -937,20 +937,23 @@
             border-color: #5A5A5A;
         }
         .rag-toggle-btn.active {
-            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            background: #0D0D0D;
             color: #FFFFFF;
-            border-color: transparent;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            border-color: #0D0D0D;
         }
         .dark .rag-toggle-btn.active {
-            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
-            color: #FFFFFF;
-            border-color: transparent;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+            background: #ECECEC;
+            color: #0D0D0D;
+            border-color: #ECECEC;
         }
-        .rag-toggle-btn.active:hover {
-            opacity: 0.9;
-        }
+        /* .rag-toggle-btn.active:hover {
+            background: #0D0D0D;
+            border-color: #0D0D0D;
+        } */
+        /* .dark .rag-toggle-btn.active:hover {
+            background: #ECECEC;
+            border-color: #ECECEC;
+        } */
         .rag-toggle-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -1445,16 +1448,8 @@
     <div class="flex flex-1 overflow-hidden min-h-0">
         <!-- Left Sidebar -->
         <aside class="w-80 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-shrink-0 flex flex-col overflow-hidden">
-            <!-- Files Link -->
-            <a href="/uploads" id="filesLink" class="mx-4 mt-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
-                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                </svg>
-                <span>Files</span>
-            </a>
-
             <!-- Study Materials Link -->
-            <a href="/study" id="studyMaterialsLink" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+            <a href="/study" id="studyMaterialsLink" class="mx-4 mt-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
                 <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                 </svg>
@@ -1466,7 +1461,7 @@
                 <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
-                <span>Quiz Mode</span>
+                <span>Quiz</span>
             </a>
 
             <!-- New Chat Button -->
@@ -1497,47 +1492,34 @@
             </div>
 
             <!-- Documents Section - Fixed at Bottom of Sidebar -->
-            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4">
-                <div class="flex items-center gap-2 mb-3">
-                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span class="text-[11px] font-medium text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider">Files</span>
-                </div>
-                <div
-                    id="dropZone"
-                    class="upload-zone border border-dashed border-light-border dark:border-dark-border rounded-xl p-3 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted hover:bg-light-hover dark:hover:bg-dark-hover transition-all duration-200"
-                    ondrop="handleDrop(event)"
-                    ondragover="handleDragOver(event)"
-                    ondragleave="handleDragLeave(event)"
-                    onclick="goToUploads()"
-                >
-                    <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
-                        <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4"
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <!-- Files Button - Opens Modal -->
+                <button id="filesButton" onclick="openFilesModal()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group cursor-not-allowed opacity-60">
+                    <div class="w-10 h-10 rounded-xl bg-light-hover dark:bg-dark-hover group-hover:bg-light-border dark:group-hover:bg-dark-border flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                         </svg>
                     </div>
-                    <p class="text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary">Upload files</p>
-                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Click or drop here</p>
-                </div>
+                    <div class="flex-1 text-left">
+                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Files</p>
+                        <p id="filesCount" class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            <span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>
+                        </p>
+                    </div>
+                    <svg id="filesArrow" class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+
+                <!-- Upload Button -->
+                <button onclick="goToUploads()" class="w-full mt-2 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-dashed border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted hover:bg-light-hover dark:hover:bg-dark-hover transition-all text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="text-xs font-medium">Upload or drop files</span>
+                </button>
                 <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.mp3,.wav,.ogg,.m4a" multiple class="hidden" onchange="handleFileSelect(event)">
-
-                <!-- Upload Progress -->
-                <div id="uploadProgress" class="hidden mt-2">
-                    <div class="flex items-center gap-2 p-2 bg-light-hover dark:bg-dark-hover rounded-lg border border-light-border dark:border-dark-border">
-                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-light-text dark:border-dark-text border-t-transparent flex-shrink-0"></div>
-                        <span id="uploadStatus" class="text-xs text-light-text-secondary dark:text-dark-text-secondary font-medium truncate">Processing...</span>
-                    </div>
-                </div>
-
-                <!-- Documents List - Internal Scroll -->
-                <div id="documentsList" class="mt-2 max-h-28 overflow-y-auto custom-scrollbar space-y-1">
-                    <!-- Shimmer loading skeleton -->
-                    <div class="shimmer-skeleton space-y-1">
-                        <div class="shimmer h-9 w-full rounded-lg"></div>
-                        <div class="shimmer h-9 w-full rounded-lg"></div>
-                    </div>
-                </div>
             </div>
         </aside>
 
@@ -1595,6 +1577,19 @@
                         <div class="flex items-center justify-between px-3 pb-3 pt-1">
                             <!-- Left side: Feature buttons -->
                             <div class="flex items-center gap-1">
+                                <!-- Deep Search Button (Exa.ai) -->
+                                <button
+                                    id="deepSearchToggleBtn"
+                                    onclick="toggleDeepSearch()"
+                                    class="toolbar-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+                                    title="Deep Web Search (Exa.ai)"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>Deep Search</span>
+                                </button>
+
                                 <!-- Search Button -->
                                 <button
                                     id="searchToggleBtn"
@@ -1721,62 +1716,23 @@
         </main>
     </div>
 
+    <!-- Navbar Module -->
+    <script src="/static/js/navbar.js"></script>
+
     <script>
         // ===================
-        // AUTH & STATE
+        // PAGE STATE
         // ===================
-        const Auth = {
-            TOKEN_KEY: 'learnforge_token',
-            USER_KEY: 'learnforge_user',
-            WORKSPACE_KEY: 'learnforge_workspace',
-
-            getToken() {
-                return localStorage.getItem(this.TOKEN_KEY);
-            },
-
-            getUser() {
-                const user = localStorage.getItem(this.USER_KEY);
-                return user ? JSON.parse(user) : null;
-            },
-
-            getCurrentWorkspace() {
-                const ws = localStorage.getItem(this.WORKSPACE_KEY);
-                return ws ? JSON.parse(ws) : null;
-            },
-
-            setCurrentWorkspace(workspace) {
-                localStorage.setItem(this.WORKSPACE_KEY, JSON.stringify(workspace));
-            },
-
-            isAuthenticated() {
-                return !!this.getToken();
-            },
-
-            logout() {
-                localStorage.removeItem(this.TOKEN_KEY);
-                localStorage.removeItem(this.USER_KEY);
-                localStorage.removeItem(this.WORKSPACE_KEY);
-                window.location.href = '/signin';
-            },
-
-            getAuthHeaders() {
-                const token = this.getToken();
-                return token ? { 'Authorization': `Bearer ${token}` } : {};
-            }
-        };
-
-        // State
         let isProcessing = false;
         let sourceMap = {};
         let currentModel = null;
         let searchEnabled = false;
         let thinkingEnabled = false;
         let ragEnabled = false;
+        let deepSearchEnabled = false;
         let documentCount = 0;
         let streamingRenderTimeout = null;
         let selectedAspectRatio = '1:1';
-        let currentWorkspace = null;
-        let workspaces = [];
         let currentConversation = null;
         let conversations = [];
 
@@ -1847,17 +1803,20 @@
                 gfm: true
             });
 
-            // Load user info and workspaces
-            await loadUserAndWorkspaces();
+            // Load user info and workspaces via Navbar module
+            await Navbar.init();
 
             // Check if there's a workspace ID in the URL and switch to it
             const urlParams = getUrlParams();
             if (urlParams.workspaceId && workspaces.length > 0) {
                 const workspaceFromUrl = workspaces.find(w => w.id === urlParams.workspaceId);
                 if (workspaceFromUrl && workspaceFromUrl.id !== currentWorkspace?.id) {
-                    await switchWorkspace(urlParams.workspaceId, false); // Don't update URL since we're already at it
+                    await Navbar.switchWorkspace(urlParams.workspaceId, false); // Don't update URL since we're already at it
                 }
             }
+
+            // Load syllabus after workspaces are loaded
+            await loadSyllabus();
 
             loadDocuments();
             loadStats();
@@ -1951,195 +1910,36 @@
             autoResize();
         }
 
-        // Theme toggle function
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        // Register workspace switch callback for page-specific actions
+        Navbar.onWorkspaceSwitch(async (workspace, updateUrl) => {
+            // Reset RAG state when switching workspaces
+            ragEnabled = false;
+            documentCount = 0;
+            updateRAGButtonState();
 
-            html.classList.remove('light', 'dark');
-            html.classList.add(newTheme);
-            localStorage.setItem('learnforge_theme', newTheme);
+            // Reload documents and conversations for new workspace
+            loadDocuments();
+            loadStats();
+            loadConversations();
+            currentConversation = null;
+            showWelcomeMessage();
 
-            // Update highlight.js theme
-            const lightStyle = document.getElementById('hljs-light');
-            const darkStyle = document.getElementById('hljs-dark');
-            if (newTheme === 'dark') {
-                lightStyle.disabled = true;
-                darkStyle.disabled = false;
-            } else {
-                lightStyle.disabled = false;
-                darkStyle.disabled = true;
-            }
-        }
-
-        // Initialize theme on load
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
-            const lightStyle = document.getElementById('hljs-light');
-            const darkStyle = document.getElementById('hljs-dark');
-            if (savedTheme === 'dark') {
-                lightStyle.disabled = true;
-                darkStyle.disabled = false;
-            } else {
-                lightStyle.disabled = false;
-                darkStyle.disabled = true;
-            }
-        }
-        initializeTheme();
-
-        async function loadUserAndWorkspaces() {
-            try {
-                // Load user info
-                const userResponse = await fetch('/api/auth/me', {
-                    headers: Auth.getAuthHeaders()
-                });
-
-                if (!userResponse.ok) {
-                    // Token invalid, redirect to login
-                    Auth.logout();
-                    return;
-                }
-
-                const userData = await userResponse.json();
-                updateUserDisplay(userData.user);
-
-                // Load workspaces
-                const wsResponse = await fetch('/api/workspaces', {
-                    headers: Auth.getAuthHeaders()
-                });
-
-                if (wsResponse.ok) {
-                    const wsData = await wsResponse.json();
-                    workspaces = wsData.workspaces;
-
-                    // Set current workspace
-                    const savedWorkspace = Auth.getCurrentWorkspace();
-                    if (savedWorkspace && workspaces.find(w => w.id === savedWorkspace.id)) {
-                        currentWorkspace = savedWorkspace;
-                    } else if (workspaces.length > 0) {
-                        currentWorkspace = workspaces[0];
-                        Auth.setCurrentWorkspace(currentWorkspace);
-                    }
-
-                    updateWorkspaceDisplay();
-                }
-            } catch (error) {
-                console.error('Error loading user/workspaces:', error);
-            }
-        }
-
-        function updateUserDisplay(user) {
-            const userNameEl = document.getElementById('userName');
-            const userEmailEl = document.getElementById('userEmail');
-            const userInitialEl = document.getElementById('userInitial');
-
-            if (userNameEl) userNameEl.textContent = user.name;
-            if (userEmailEl) userEmailEl.textContent = user.email;
-            if (userInitialEl) userInitialEl.textContent = user.name.charAt(0).toUpperCase();
-        }
-
-        function updateWorkspaceDisplay() {
-            const wsNameEl = document.getElementById('currentWorkspaceName');
-            const wsDropdownEl = document.getElementById('workspaceDropdown');
-
-            if (wsNameEl && currentWorkspace) {
-                wsNameEl.textContent = currentWorkspace.name;
+            // Update URL to reflect new workspace
+            if (updateUrl) {
+                history.pushState({ workspaceId: workspace.id }, '', buildChatUrl(workspace.id));
             }
 
-            if (wsDropdownEl) {
-                wsDropdownEl.innerHTML = workspaces.map(ws => `
-                    <div class="workspace-item flex items-center justify-between p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover cursor-pointer group ${ws.id === currentWorkspace?.id ? 'bg-light-hover dark:bg-dark-hover' : ''}"
-                         onclick="switchWorkspace('${ws.id}')">
-                        <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <div class="w-6 h-6 rounded-md bg-light-text dark:bg-dark-text flex items-center justify-center text-xs font-semibold text-light-bg dark:text-dark-bg flex-shrink-0">
-                                ${ws.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span class="text-sm truncate ${ws.id === currentWorkspace?.id ? 'font-medium text-light-text dark:text-dark-text' : 'text-light-text-secondary dark:text-dark-text-secondary'}">${escapeHtml(ws.name)}</span>
-                        </div>
-                        <div class="flex items-center gap-1 flex-shrink-0">
-                            ${ws.id === currentWorkspace?.id ? '<svg class="w-4 h-4 text-light-text dark:text-dark-text" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : ''}
-                            <button onclick="openWorkspaceSettingsModal('${ws.id}', event)"
-                                    class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Workspace settings">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
+            // Reload syllabus for new workspace
+            await loadSyllabus();
+        });
 
-            // Update navigation links with workspace_id
-            if (currentWorkspace) {
-                const filesLink = document.getElementById('filesLink');
-                const studyLink = document.getElementById('studyMaterialsLink');
-                const quizLink = document.getElementById('quizBtn');
-                if (filesLink) filesLink.href = '/uploads/' + currentWorkspace.id;
-                if (studyLink) studyLink.href = '/study/' + currentWorkspace.id;
-                if (quizLink) quizLink.href = '/quiz/' + currentWorkspace.id;
-            }
-        }
-
-        function toggleWorkspaceDropdown() {
-            const dropdown = document.getElementById('workspaceDropdownContainer');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function toggleUserDropdown() {
-            const dropdown = document.getElementById('userDropdownContainer');
-            dropdown.classList.toggle('hidden');
-        }
-
-        // Close dropdowns when clicking outside
+        // Close model dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            const wsDropdown = document.getElementById('workspaceDropdownContainer');
-            const wsButton = document.getElementById('workspaceSwitcher');
-            const userDropdown = document.getElementById('userDropdownContainer');
-            const userButton = document.getElementById('userMenuButton');
             const modelDropdown = document.getElementById('modelSelectorContainer');
-
-            if (wsDropdown && !wsDropdown.contains(e.target) && !wsButton?.contains(e.target)) {
-                wsDropdown.classList.add('hidden');
-            }
-            if (userDropdown && !userDropdown.contains(e.target) && !userButton?.contains(e.target)) {
-                userDropdown.classList.add('hidden');
-            }
             if (modelDropdown && !modelDropdown.contains(e.target)) {
                 closeModelDropdown();
             }
         });
-
-        async function switchWorkspace(workspaceId, updateUrl = true) {
-            const workspace = workspaces.find(w => w.id === workspaceId);
-            if (workspace && workspace.id !== currentWorkspace?.id) {
-                currentWorkspace = workspace;
-                Auth.setCurrentWorkspace(workspace);
-                updateWorkspaceDisplay();
-                toggleWorkspaceDropdown();
-
-                // Reset RAG state when switching workspaces
-                ragEnabled = false;
-                documentCount = 0;
-                updateRAGButtonState();
-
-                // Reload documents and conversations for new workspace
-                loadDocuments();
-                loadStats();
-                loadConversations();
-                currentConversation = null;
-                showWelcomeMessage();
-
-                // Update URL to reflect new workspace
-                if (updateUrl) {
-                    history.pushState({ workspaceId: workspace.id }, '', buildChatUrl(workspace.id));
-                }
-
-                showToast(`Switched to ${workspace.name}`, 'success');
-            }
-        }
 
         // ===================
         // CONVERSATION FUNCTIONS
@@ -2303,7 +2103,20 @@
                         if (imageAttachment && imageAttachment.s3_key) {
                             addImageMessage(imageAttachment.s3_key, imageAttachment.mime_type, imageAttachment.prompt || msg.content);
                         } else {
-                            addAssistantMessage(msg.content, msg.sources || []);
+                            // Parse combined sources format: {documents: [], web: []} or legacy array format
+                            let docSources = [];
+                            let webSources = [];
+                            if (msg.sources) {
+                                if (Array.isArray(msg.sources)) {
+                                    // Legacy format: array of document names
+                                    docSources = msg.sources;
+                                } else if (typeof msg.sources === 'object') {
+                                    // New format: {documents: [], web: []}
+                                    docSources = msg.sources.documents || [];
+                                    webSources = msg.sources.web || [];
+                                }
+                            }
+                            addAssistantMessage(msg.content, docSources, webSources);
                         }
                     }
                 }
@@ -2403,6 +2216,27 @@
             if (btn.disabled) return;
             ragEnabled = !ragEnabled;
             btn.classList.toggle('active', ragEnabled);
+        }
+
+        function toggleDeepSearch() {
+            const btn = document.getElementById('deepSearchToggleBtn');
+            if (!btn || btn.classList.contains('hidden')) return;
+            deepSearchEnabled = !deepSearchEnabled;
+            btn.classList.toggle('active', deepSearchEnabled);
+        }
+
+        function updateDeepSearchButtonState() {
+            const btn = document.getElementById('deepSearchToggleBtn');
+            if (!btn) return;
+
+            // Hide for image models (Nova Canvas)
+            if (currentModel && currentModel.is_image_model) {
+                btn.classList.add('hidden');
+                deepSearchEnabled = false;
+                btn.classList.remove('active');
+            } else {
+                btn.classList.remove('hidden');
+            }
         }
 
         function updateRAGButtonState() {
@@ -2527,6 +2361,7 @@
 
             const searchBtn = document.getElementById('searchToggleBtn');
             const thinkingBtn = document.getElementById('thinkingToggleBtn');
+            const deepSearchBtn = document.getElementById('deepSearchToggleBtn');
             const aspectRatioSelector = document.getElementById('aspectRatioSelector');
             const questionInput = document.getElementById('questionInput');
 
@@ -2534,9 +2369,12 @@
             const isImageModel = currentModel.type === 'image';
 
             if (isImageModel) {
-                // Hide search and thinking for image models
+                // Hide search, thinking, and deep search for image models
                 searchBtn.classList.add('hidden');
                 thinkingBtn.classList.add('hidden');
+                deepSearchBtn.classList.add('hidden');
+                deepSearchEnabled = false;
+                deepSearchBtn.classList.remove('active');
                 // Show aspect ratio selector only if model supports it
                 if (currentModel.aspect_ratios && currentModel.aspect_ratios.length > 0) {
                     aspectRatioSelector.classList.remove('hidden');
@@ -2579,6 +2417,9 @@
                     thinkingBtn.classList.add('hidden');
                     thinkingEnabled = false;
                 }
+
+                // Deep Search button - available for all non-image models
+                deepSearchBtn.classList.remove('hidden');
             }
         }
 
@@ -2605,20 +2446,6 @@
                 showToast(error.message, 'error');
                 loadModels();
             }
-        }
-
-        // Helpers
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            // Dark style toast for all types
-            toast.className = `fixed bottom-4 right-4 bg-[#0D0D0D] dark:bg-[#ECECEC] text-white dark:text-[#0D0D0D] px-4 py-3 rounded-xl shadow-lg z-50 text-sm font-medium transition-all duration-300`;
-            toast.style.animation = 'fadeInUp 0.3s ease-out';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'fadeOutDown 0.3s ease-out';
-                setTimeout(() => toast.remove(), 300);
-            }, 2700);
         }
 
         // File Upload
@@ -2702,57 +2529,178 @@
         }
 
         // Documents
-        function showDocumentsShimmer() {
-            const listDiv = document.getElementById('documentsList');
-            listDiv.innerHTML = `
-                <div class="shimmer-skeleton space-y-1">
-                    <div class="shimmer h-9 w-full rounded-lg"></div>
-                    <div class="shimmer h-9 w-full rounded-lg"></div>
-                </div>
-            `;
+        let currentDocuments = [];
+        let filesLoading = true; // Start as true to block modal until first load completes
+
+        function showFilesShimmer() {
+            const filesCountEl = document.getElementById('filesCount');
+            const filesButton = document.getElementById('filesButton');
+            if (filesCountEl) {
+                filesCountEl.innerHTML = '<span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>';
+            }
+            if (filesButton) {
+                filesButton.classList.add('cursor-not-allowed', 'opacity-60');
+                filesButton.classList.remove('cursor-pointer');
+            }
+        }
+
+        function enableFilesButton() {
+            const filesButton = document.getElementById('filesButton');
+            if (filesButton) {
+                filesButton.classList.remove('cursor-not-allowed', 'opacity-60');
+                filesButton.classList.add('cursor-pointer');
+            }
         }
 
         async function loadDocuments() {
-            if (!currentWorkspace) return;
+            if (!currentWorkspace) {
+                // No workspace - show disabled state
+                const filesCountEl = document.getElementById('filesCount');
+                if (filesCountEl) filesCountEl.textContent = 'Select a workspace';
+                filesLoading = true; // Keep blocked
+                return;
+            }
 
-            showDocumentsShimmer();
+            filesLoading = true;
+            showFilesShimmer();
 
             try {
                 const response = await fetch(`/api/documents?workspace_id=${currentWorkspace.id}`, {
                     headers: Auth.getAuthHeaders()
                 });
                 const data = await response.json();
-                const listDiv = document.getElementById('documentsList');
 
-                // Update document count and RAG button state
-                documentCount = data.documents.length;
+                // Store documents and update count
+                currentDocuments = data.documents || [];
+                documentCount = currentDocuments.length;
                 updateRAGButtonState();
 
-                if (data.documents.length === 0) {
-                    listDiv.innerHTML = '';
-                    return;
+                // Update files count display
+                const filesCountEl = document.getElementById('filesCount');
+                if (filesCountEl) {
+                    if (documentCount === 0) {
+                        filesCountEl.textContent = 'No files uploaded';
+                    } else if (documentCount === 1) {
+                        filesCountEl.textContent = '1 document';
+                    } else {
+                        filesCountEl.textContent = `${documentCount} documents`;
+                    }
                 }
-
-                listDiv.innerHTML = data.documents.map(doc => `
-                    <div class="doc-card group flex items-center gap-2 p-2 rounded-lg bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted transition-colors">
-                        <div class="w-6 h-6 rounded bg-red-50 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-3.5 h-3.5 text-red-500 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary truncate flex-1 min-w-0">${escapeHtml(doc.filename)}</span>
-                        <button onclick="deleteDocument('${doc.id}')" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-red-500 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                `).join('');
             } catch (error) {
                 console.error('Error loading documents:', error);
-                document.getElementById('documentsList').innerHTML = '';
+                currentDocuments = [];
                 documentCount = 0;
                 updateRAGButtonState();
+                const filesCountEl = document.getElementById('filesCount');
+                if (filesCountEl) filesCountEl.textContent = 'No files uploaded';
+            } finally {
+                filesLoading = false;
+                enableFilesButton();
+            }
+        }
+
+        function openFilesModal() {
+            if (!currentWorkspace) {
+                showToast('Please select a workspace first', 'error');
+                return;
+            }
+            if (filesLoading) {
+                return; // Block modal while loading
+            }
+            renderFilesModal();
+            document.getElementById('filesModal').classList.remove('hidden');
+        }
+
+        function closeFilesModal() {
+            document.getElementById('filesModal').classList.add('hidden');
+        }
+
+        function renderFilesModal() {
+            const listEl = document.getElementById('filesModalList');
+            const countEl = document.getElementById('filesModalCount');
+
+            countEl.textContent = currentDocuments.length === 1 ? '1 document' : `${currentDocuments.length} documents`;
+
+            if (currentDocuments.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm">No files uploaded yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = currentDocuments.map(doc => `
+                <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover group transition-colors">
+                    <div class="w-10 h-10 rounded-lg ${getFileColorClass(doc.file_type)} flex items-center justify-center flex-shrink-0">
+                        ${getFileIconSvg(doc.file_type)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-light-text dark:text-dark-text truncate">${escapeHtml(doc.original_filename || doc.filename)}</p>
+                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            ${doc.file_type ? doc.file_type.toUpperCase() : 'FILE'}
+                            ${doc.num_pages ? ` • ${doc.num_pages} pages` : ''}
+                            ${doc.file_size_bytes ? ` • ${formatFileSize(doc.file_size_bytes)}` : ''}
+                        </p>
+                    </div>
+                    <button onclick="deleteDocumentFromModal('${doc.id}')" class="p-2 text-light-text-muted hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all" title="Delete">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function getFileColorClass(fileType) {
+            const colors = {
+                pdf: 'bg-red-50 dark:bg-red-900/30',
+                word: 'bg-blue-50 dark:bg-blue-900/30',
+                presentation: 'bg-orange-50 dark:bg-orange-900/30',
+                spreadsheet: 'bg-green-50 dark:bg-green-900/30',
+                image: 'bg-purple-50 dark:bg-purple-900/30',
+                audio: 'bg-pink-50 dark:bg-pink-900/30',
+            };
+            return colors[fileType] || colors.pdf;
+        }
+
+        function getFileIconSvg(fileType) {
+            const colors = {
+                pdf: 'text-red-500',
+                word: 'text-blue-500',
+                presentation: 'text-orange-500',
+                spreadsheet: 'text-green-500',
+                image: 'text-purple-500',
+                audio: 'text-pink-500',
+            };
+            const color = colors[fileType] || colors.pdf;
+            return `<svg class="w-5 h-5 ${color}" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>`;
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        async function deleteDocumentFromModal(docId) {
+            if (!confirm('Delete this document?')) return;
+            try {
+                const response = await fetch(`/api/documents/${docId}`, {
+                    method: 'DELETE',
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    await loadDocuments();
+                    renderFilesModal();
+                    showToast('Document deleted', 'success');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
             }
         }
 
@@ -2842,7 +2790,8 @@
                         question,
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled,
-                        use_rag: ragEnabled
+                        use_rag: ragEnabled,
+                        use_deep_search: deepSearchEnabled
                     })
                 });
 
@@ -2884,7 +2833,7 @@
                                     updateStreamingMessage(messageId, rawText);
                                 } else if (data.type === 'done') {
                                     // Final message with processed content, sources, and thinking
-                                    finalizeStreamingMessage(messageId, data.content, data.sources || [], data.thinking || '');
+                                    finalizeStreamingMessage(messageId, data.content, data.sources || [], data.thinking || '', data.web_sources || []);
                                 } else if (data.type === 'error') {
                                     removeStreamingMessage(messageId);
                                     addErrorMessage(data.message);
@@ -3237,7 +3186,7 @@
             document.getElementById(messageId)?.remove();
         }
 
-        function finalizeStreamingMessage(messageId, processedAnswer, sources, thinking) {
+        function finalizeStreamingMessage(messageId, processedAnswer, sources, thinking, webSources = []) {
             // Clear any pending render timeout
             if (streamingRenderTimeout) {
                 clearTimeout(streamingRenderTimeout);
@@ -3280,7 +3229,7 @@
                 `;
             }
 
-            // Build sources section
+            // Build sources section (document sources)
             let sourcesHtml = '';
             if (msgSources.length > 0) {
                 sourcesHtml = `
@@ -3298,6 +3247,25 @@
                 `;
             }
 
+            // Build web sources section
+            let webSourcesHtml = '';
+            if (webSources && webSources.length > 0) {
+                webSourcesHtml = `
+                    <div class="mt-4 pt-4 border-t border-light-border dark:border-dark-border">
+                        <p class="text-xs font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Web Sources</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${webSources.map(src => `
+                                <a href="${escapeHtml(src.url)}" target="_blank" rel="noopener noreferrer"
+                                   class="web-source-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted transition-colors cursor-pointer text-xs">
+                                    <img src="${escapeHtml(src.favicon)}" alt="" class="w-4 h-4 rounded" onerror="this.src='https://www.google.com/s2/favicons?domain=${encodeURIComponent(src.url)}&sz=32'">
+                                    <span class="text-light-text dark:text-dark-text truncate max-w-[200px]">${escapeHtml(src.title)}</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             // Add assistant-message class and data attribute for raw answer
             messageEl.classList.add('assistant-message');
             messageEl.dataset.rawAnswer = processedAnswer;
@@ -3307,6 +3275,7 @@
                 ${thinkingHtml}
                 <div class="answer-text">${formattedAnswer}</div>
                 ${sourcesHtml}
+                ${webSourcesHtml}
                 ${getMessageActionsHtml(messageId)}
             `;
 
@@ -3393,7 +3362,7 @@
             `;
         }
 
-        function addAssistantMessage(answer, sources, messageIndex = null) {
+        function addAssistantMessage(answer, sources, webSources = [], messageIndex = null) {
             const messagesDiv = document.getElementById('chatMessages');
             const messageId = 'msg-' + Date.now();
 
@@ -3407,7 +3376,7 @@
             // Format answer with inline citations
             const formattedAnswer = formatAnswerWithCitations(answer, msgSources);
 
-            // Build sources section
+            // Build sources section (document sources)
             let sourcesHtml = '';
             if (msgSources.length > 0) {
                 sourcesHtml = `
@@ -3425,10 +3394,30 @@
                 `;
             }
 
+            // Build web sources section
+            let webSourcesHtml = '';
+            if (webSources && webSources.length > 0) {
+                webSourcesHtml = `
+                    <div class="mt-4 pt-4 border-t border-light-border dark:border-dark-border">
+                        <p class="text-xs font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Web Sources</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${webSources.map(src => `
+                                <a href="${escapeHtml(src.url)}" target="_blank" rel="noopener noreferrer"
+                                   class="web-source-pill flex items-center gap-2 px-3 py-1.5 rounded-lg bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted transition-colors cursor-pointer text-xs">
+                                    <img src="${escapeHtml(src.favicon)}" alt="" class="w-4 h-4 rounded" onerror="this.src='https://www.google.com/s2/favicons?domain=${encodeURIComponent(src.url)}&sz=32'">
+                                    <span class="text-light-text dark:text-dark-text truncate max-w-[200px]">${escapeHtml(src.title)}</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             const html = `
                 <div id="${messageId}" class="assistant-message max-w-3xl mx-auto mb-6" data-raw-answer="${escapeHtml(answer)}" data-message-index="${messageIndex !== null ? messageIndex : ''}">
                     <div class="answer-text">${formattedAnswer}</div>
                     ${sourcesHtml}
+                    ${webSourcesHtml}
                     ${getMessageActionsHtml(messageId)}
                 </div>
             `;
@@ -3655,7 +3644,8 @@
                     body: JSON.stringify({
                         question: newText,
                         use_search: searchEnabled,
-                        use_thinking: thinkingEnabled
+                        use_thinking: thinkingEnabled,
+                        use_deep_search: deepSearchEnabled
                     })
                 });
 
@@ -3691,7 +3681,7 @@
                                     rawText += data.content;
                                     updateStreamingMessage(streamingMessageId, rawText);
                                 } else if (data.type === 'done') {
-                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '');
+                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '', data.web_sources || []);
                                 } else if (data.type === 'error') {
                                     removeStreamingMessage(streamingMessageId);
                                     addErrorMessage(data.message);
@@ -3811,6 +3801,7 @@
                         question: userQuestion,
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled,
+                        use_deep_search: deepSearchEnabled,
                         regenerate: true
                     })
                 });
@@ -3847,7 +3838,7 @@
                                     rawText += data.content;
                                     updateStreamingMessage(streamingMessageId, rawText);
                                 } else if (data.type === 'done') {
-                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '');
+                                    finalizeStreamingMessage(streamingMessageId, data.content, data.sources || [], data.thinking || '', data.web_sources || []);
                                 } else if (data.type === 'error') {
                                     removeStreamingMessage(streamingMessageId);
                                     addErrorMessage(data.message);
@@ -4112,12 +4103,6 @@
             });
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
 
     </script>
 
@@ -4262,69 +4247,58 @@ Machine Learning - Types of ML - Supervised Learning..."
         </div>
     </div>
 
+    <!-- Files Modal -->
+    <div id="filesModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeFilesModal()"></div>
+
+            <!-- Modal -->
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-lg w-full z-10 border border-light-border dark:border-dark-border overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b border-light-border dark:border-dark-border">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                            <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-light-text dark:text-dark-text">Files</h3>
+                            <p id="filesModalCount" class="text-xs text-light-text-muted dark:text-dark-text-muted">0 documents</p>
+                        </div>
+                    </div>
+                    <button onclick="closeFilesModal()" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="filesModalList" class="max-h-80 overflow-y-auto custom-scrollbar p-2">
+                    <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm">No files uploaded yet</p>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-light-border dark:border-dark-border bg-light-sidebar dark:bg-dark-sidebar">
+                    <button onclick="goToUploads(); closeFilesModal();" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl hover:opacity-90 transition-colors font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Upload Files
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========================
-        // WORKSPACE MODAL FUNCTIONS
-        // ========================
-
-        function openCreateWorkspaceModal() {
-            document.getElementById('createWorkspaceModal').classList.remove('hidden');
-            document.getElementById('newWorkspaceName').value = '';
-            document.getElementById('newWorkspaceName').focus();
-            // Close workspace dropdown
-            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
-        }
-
-        function closeCreateWorkspaceModal() {
-            document.getElementById('createWorkspaceModal').classList.add('hidden');
-        }
-
-        async function submitCreateWorkspace() {
-            const name = document.getElementById('newWorkspaceName').value.trim();
-            if (!name) {
-                showToast('Please enter a workspace name', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/workspaces', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...Auth.getAuthHeaders()
-                    },
-                    body: JSON.stringify({ name })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    workspaces.push(data.workspace);
-                    closeCreateWorkspaceModal();
-                    await switchWorkspace(data.workspace.id);
-                    showToast('Workspace created', 'success');
-                } else {
-                    const error = await response.json();
-                    showToast(error.error || 'Failed to create workspace', 'error');
-                }
-            } catch (error) {
-                showToast('Failed to create workspace', 'error');
-            }
-        }
-
-        function openWorkspaceSettingsModal(workspaceId, event) {
-            event.stopPropagation(); // Prevent switching workspace
-
-            const workspace = workspaces.find(w => w.id === workspaceId);
-            if (!workspace) return;
-
-            document.getElementById('settingsWorkspaceId').value = workspaceId;
-            document.getElementById('editWorkspaceName').value = workspace.name;
-            document.getElementById('workspaceSettingsModal').classList.remove('hidden');
-            // Close workspace dropdown
-            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
-            // Update syllabus view
-            updateSyllabusView();
-        }
+        // WORKSPACE SETTINGS MODAL FUNCTIONS
+        // ===================================
 
         function closeWorkspaceSettingsModal() {
             document.getElementById('workspaceSettingsModal').classList.add('hidden');
@@ -4359,7 +4333,7 @@ Machine Learning - Types of ML - Supervised Learning..."
                         currentWorkspace.name = newName;
                         Auth.setCurrentWorkspace(currentWorkspace);
                     }
-                    updateWorkspaceDisplay();
+                    Navbar.updateWorkspaceDisplay();
                     closeWorkspaceSettingsModal();
                     showToast('Workspace renamed', 'success');
                 } else {
@@ -4478,7 +4452,7 @@ Machine Learning - Types of ML - Supervised Learning..."
                         showWelcomeMessage();
                     }
 
-                    updateWorkspaceDisplay();
+                    Navbar.updateWorkspaceDisplay();
                     closeWorkspaceSettingsModal();
                     showToast('Workspace deleted', 'success');
                 } else {
@@ -4605,20 +4579,6 @@ Machine Learning - Types of ML - Supervised Learning..."
                 showToast('Failed to clear syllabus', 'error');
             }
         }
-
-        // Load syllabus on page load after workspaces are loaded
-        const _origLoadUserAndWorkspaces = loadUserAndWorkspaces;
-        loadUserAndWorkspaces = async function() {
-            await _origLoadUserAndWorkspaces();
-            await loadSyllabus();
-        };
-
-        // Load syllabus when switching workspaces
-        const _origSwitchWorkspace = switchWorkspace;
-        switchWorkspace = async function(workspaceId) {
-            await _origSwitchWorkspace(workspaceId);
-            await loadSyllabus();
-        };
 
     </script>
 </body>

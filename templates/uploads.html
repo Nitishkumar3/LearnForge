@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LearnForge - Upload Documents</title>
+    <title>LearnForge - Files</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fa71.pages.dev/css/all.css">
     <script>
         (function() {
             const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
@@ -35,6 +36,9 @@
                         'dark-text': '#ECECEC',
                         'dark-text-secondary': '#B4B4B4',
                         'dark-text-muted': '#8E8E8E',
+                        'accent-success': '#10B981',
+                        'accent-warning': '#F59E0B',
+                        'accent-error': '#EF4444',
                     },
                 }
             }
@@ -47,89 +51,240 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 3px; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .theme-toggle:hover { background: #ECECEC; }
+        .dark .theme-toggle:hover { background: #2F2F2F; }
+        .theme-toggle svg { width: 20px; height: 20px; color: #666666; }
+        .dark .theme-toggle svg { color: #B4B4B4; }
         .upload-zone { border: 2px dashed; transition: all 0.3s ease; }
         .upload-zone.dragover { border-color: #10B981; background-color: rgba(16, 185, 129, 0.1); }
+        /* Shimmer animation */
+        .shimmer {
+            background: linear-gradient(90deg, #E5E5E5 25%, #F0F0F0 50%, #E5E5E5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+        .dark .shimmer {
+            background: linear-gradient(90deg, #2F2F2F 25%, #3E3E3E 50%, #2F2F2F 75%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
-<body class="bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text min-h-screen">
+<body class="bg-light-bg dark:bg-dark-bg h-screen flex flex-col overflow-hidden">
     <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 h-14 bg-light-bg dark:bg-dark-bg border-b border-light-border dark:border-dark-border z-50 flex items-center px-4">
-        <a href="/chat" class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-light-text dark:bg-dark-text rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
+    <header class="bg-light-bg dark:bg-dark-sidebar border-b border-light-border dark:border-dark-border z-50 flex-shrink-0">
+        <div class="px-4 sm:px-6">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-4">
+                    <!-- Logo -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center">
+                            <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">LearnForge</h1>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Smart Document Assistant</p>
+                        </div>
+                    </div>
+
+                    <!-- Workspace Switcher -->
+                    <div class="relative ml-4">
+                        <button id="workspaceSwitcher" onclick="toggleWorkspaceDropdown()"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200 border border-light-border dark:border-dark-border">
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                            <span id="currentWorkspaceName" class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary max-w-32 truncate">
+                                <span class="shimmer inline-block h-4 w-24 rounded align-middle"></span>
+                            </span>
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <!-- Workspace Dropdown -->
+                        <div id="workspaceDropdownContainer" class="hidden absolute left-0 mt-2 w-64 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar" id="workspaceDropdown">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="theme-toggle" title="Toggle theme">
+                        <svg class="hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg class="block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+
+                    <!-- User Menu -->
+                    <div class="relative">
+                        <button id="userMenuButton" onclick="toggleUserDropdown()"
+                                class="flex items-center gap-2 p-1 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
+                            <div class="w-8 h-8 rounded-full bg-light-text dark:bg-dark-text flex items-center justify-center">
+                                <span id="userInitial" class="text-sm font-semibold text-light-bg dark:text-dark-bg">U</span>
+                            </div>
+                        </button>
+
+                        <!-- User Dropdown -->
+                        <div id="userDropdownContainer" class="hidden absolute right-0 mt-2 w-56 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-3 border-b border-light-border dark:border-dark-border">
+                                <p id="userName" class="text-sm font-medium text-light-text dark:text-dark-text">User</p>
+                                <p id="userEmail" class="text-xs text-light-text-muted dark:text-dark-text-muted">user@email.com</p>
+                            </div>
+                            <div class="p-2">
+                                <button onclick="Auth.logout()" class="w-full flex items-center gap-2 p-2 text-accent-error hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <span class="text-lg font-semibold">LearnForge</span>
-        </a>
-        <div class="ml-4 flex items-center gap-2">
-            <select id="workspaceSelect" class="bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border rounded-lg px-3 py-1.5 text-sm">
-                <option value="">Select Workspace</option>
-            </select>
-        </div>
-        <div class="ml-auto flex items-center gap-2">
-            <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
-                <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                </svg>
-                <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-            </button>
-            <a href="/chat" class="px-3 py-1.5 text-sm bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90">Back to Chat</a>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="pt-14 min-h-screen">
-        <div class="max-w-4xl mx-auto p-6">
-            <h1 class="text-2xl font-semibold mb-2">Upload Documents</h1>
-            <p class="text-light-text-secondary dark:text-dark-text-secondary mb-6">
-                Upload documents to your workspace. Supported formats: PDF, Word, PowerPoint, Excel, Images, Audio.
-            </p>
+    <!-- Main Layout: Sidebar + Content -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <!-- Left Sidebar -->
+        <aside class="w-80 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-shrink-0 flex flex-col overflow-hidden">
+            <!-- Study Materials Link -->
+            <a href="/study" id="studyMaterialsLink" class="mx-4 mt-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                <span>Study Materials</span>
+            </a>
 
-            <!-- Upload Zone -->
-            <div id="uploadZone"
-                class="upload-zone border-light-border dark:border-dark-border rounded-xl p-12 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted mb-8"
-                onclick="document.getElementById('fileInput').click()"
-                ondrop="handleDrop(event)"
-                ondragover="handleDragOver(event)"
-                ondragleave="handleDragLeave(event)">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
-                    <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            <!-- Quiz Mode Link -->
+            <a href="/quiz" id="quizBtn" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Quiz</span>
+            </a>
+
+            <!-- Go to Chat Button -->
+            <div class="p-4 pt-2">
+                <a href="/chat" id="chatLink" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-border rounded-lg transition-all duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                     </svg>
-                </div>
-                <p class="text-lg font-medium mb-1">Drop files here or click to browse</p>
-                <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Maximum 3 files at a time</p>
-                <div class="mt-4 flex flex-wrap justify-center gap-2">
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PDF</span>
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">DOCX</span>
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PPTX</span>
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">XLSX</span>
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Images</span>
-                    <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Audio</span>
+                    Go to Chat
+                </a>
+            </div>
+
+            <!-- Chat History - Internal Scroll Only -->
+            <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <p class="px-4 py-1.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted">Your chats</p>
+                <div class="flex-1 overflow-y-auto custom-scrollbar px-2">
+                    <div id="chatHistoryList" class="pb-2">
+                        <!-- Shimmer loading skeleton -->
+                        <div class="shimmer-skeleton space-y-2 px-2">
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.tif,.mp3,.wav,.ogg,.m4a,.flac,.webm" class="hidden" onchange="handleFileSelect(event)">
 
-            <!-- Uploaded Files List -->
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Uploaded Documents</h2>
-                <button onclick="loadDocuments()" class="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text">
-                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            <!-- Files Section - Fixed at Bottom of Sidebar -->
+            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4"
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <!-- Files Button -->
+                <button id="filesButton" onclick="scrollToDocuments()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group">
+                    <div class="w-10 h-10 rounded-xl bg-light-hover dark:bg-dark-hover group-hover:bg-light-border dark:group-hover:bg-dark-border flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Files</p>
+                        <p id="filesCount" class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            <span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>
+                        </p>
+                    </div>
+                </button>
+
+                <!-- Upload Button (Active/Highlighted) -->
+                <button onclick="document.getElementById('fileInput').click()" class="w-full mt-2 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg hover:opacity-90 transition-all font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
                     </svg>
-                    Refresh
+                    <span class="text-xs font-medium">Upload or drop files</span>
                 </button>
             </div>
-            <div id="documentsList" class="space-y-2">
-                <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
-                    Select a workspace to view documents
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar bg-light-bg dark:bg-dark-bg">
+            <div class="max-w-4xl mx-auto p-6">
+                <h1 class="text-2xl font-semibold mb-2">Upload Documents</h1>
+                <p class="text-light-text-secondary dark:text-dark-text-secondary mb-6">
+                    Upload documents to your workspace. Supported formats: PDF, Word, PowerPoint, Excel, Images, Audio.
+                </p>
+
+                <!-- Upload Zone -->
+                <div id="uploadZone"
+                    class="upload-zone border-light-border dark:border-dark-border rounded-xl p-12 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted mb-8"
+                    onclick="document.getElementById('fileInput').click()"
+                    ondrop="handleDrop(event)"
+                    ondragover="handleDragOver(event)"
+                    ondragleave="handleDragLeave(event)">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center">
+                        <svg class="w-8 h-8 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-medium mb-1">Drop files here or click to browse</p>
+                    <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Maximum 3 files at a time</p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-2">
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PDF</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">DOCX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PPTX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">XLSX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Images</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Audio</span>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.tif,.mp3,.wav,.ogg,.m4a,.flac,.webm" class="hidden" onchange="handleFileSelect(event)">
+
+                <!-- Uploaded Files List -->
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Uploaded Documents</h2>
+                </div>
+                <div id="documentsList" class="space-y-2">
+                    <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
+                        Select a workspace to view documents
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <!-- Upload Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
@@ -150,90 +305,179 @@
         </div>
     </div>
 
+    <!-- Create Workspace Modal -->
+    <div id="createWorkspaceModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCreateWorkspaceModal()"></div>
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-light-border dark:border-dark-border">
+                <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-4">Create New Workspace</h3>
+                <input type="text" id="newWorkspaceName" placeholder="Workspace name"
+                       class="w-full px-4 py-3 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-sidebar text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-light-text-muted dark:focus:border-dark-text-muted transition-colors"
+                       onkeypress="if(event.key === 'Enter') submitCreateWorkspace()">
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium transition-colors duration-200 text-sm">Cancel</button>
+                    <button onclick="submitCreateWorkspace()" class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl hover:opacity-90 font-medium transition-colors duration-200 text-sm">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workspace Settings Modal -->
+    <div id="workspaceSettingsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeWorkspaceSettingsModal()"></div>
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-light-border dark:border-dark-border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text">Workspace Settings</h3>
+                    <button onclick="closeWorkspaceSettingsModal()" class="p-1 text-light-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <input type="hidden" id="settingsWorkspaceId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">Workspace Name</label>
+                    <input type="text" id="editWorkspaceName" class="w-full px-4 py-2.5 border border-light-border dark:border-dark-border rounded-xl bg-white dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:border-light-text-secondary dark:focus:border-dark-text-secondary">
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closeWorkspaceSettingsModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium">Cancel</button>
+                    <button onclick="submitRenameWorkspace()" class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-white dark:text-dark-bg rounded-xl hover:opacity-90 font-medium">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar JS (shared module) -->
+    <script src="/static/js/navbar.js"></script>
+
     <script>
-        let currentWorkspaceId = null;
-        let workspaces = [];
+        // ========================
+        // PAGE STATE
+        // ========================
         let pendingFiles = [];
         let fileOcrSettings = {};
-        let authToken = localStorage.getItem('learnforge_token');
 
+        // ========================
+        // INIT
+        // ========================
         async function init() {
-            if (!authToken) {
+            if (!Auth.isAuthenticated()) {
                 window.location.href = '/signin';
                 return;
             }
-            await loadWorkspaces();
 
+            // Initialize navbar (loads user and workspaces)
+            await Navbar.init();
+
+            // Register workspace switch callback
+            Navbar.onWorkspaceSwitch(async (workspace, updateUrl = true) => {
+                if (updateUrl) {
+                    window.history.pushState({}, '', `/uploads/${workspace.id}`);
+                }
+                updateNavLinks();
+                loadDocuments();
+                loadChatHistory();
+            });
+
+            // Check URL for workspace ID
             const pathParts = window.location.pathname.split('/');
             if (pathParts.length > 2 && pathParts[2]) {
-                currentWorkspaceId = pathParts[2];
-                document.getElementById('workspaceSelect').value = currentWorkspaceId;
-                loadDocuments();
+                const wsId = pathParts[2];
+                const workspaces = Navbar.getWorkspaces();
+                const ws = workspaces.find(w => w.id === wsId);
+                if (ws) {
+                    await Navbar.switchWorkspace(ws.id, false);
+                }
             }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('autoUpload') === 'true') {
-                const stored = sessionStorage.getItem('pendingUploadFiles');
-                if (stored && window.opener && window.opener.pendingUploadFiles) {
-                    handleFilesSelected(window.opener.pendingUploadFiles);
-                }
+            // Load data for current workspace
+            const currentWs = Navbar.getCurrentWorkspace();
+            if (currentWs) {
+                updateNavLinks();
+                loadDocuments();
+                loadChatHistory();
             }
         }
 
-        async function loadWorkspaces() {
+        function updateNavLinks() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (ws) {
+                document.getElementById('studyMaterialsLink').href = '/study/' + ws.id;
+                document.getElementById('quizBtn').href = '/quiz/' + ws.id;
+                document.getElementById('chatLink').href = '/chat/' + ws.id;
+            }
+        }
+
+        // ========================
+        // CHAT HISTORY
+        // ========================
+        async function loadChatHistory() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) return;
             try {
-                const response = await fetch('/api/workspaces', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await fetch(`/api/conversations?workspace_id=${currentWorkspace.id}`, {
+                    headers: Auth.getAuthHeaders()
                 });
-                const data = await response.json();
-                workspaces = data.workspaces || [];
-
-                const select = document.getElementById('workspaceSelect');
-                select.innerHTML = '<option value="">Select Workspace</option>';
-                workspaces.forEach(w => {
-                    const option = document.createElement('option');
-                    option.value = w.id;
-                    option.textContent = w.name;
-                    select.appendChild(option);
-                });
-
-                if (currentWorkspaceId) {
-                    select.value = currentWorkspaceId;
+                if (response.ok) {
+                    const data = await response.json();
+                    renderChatHistory(data.conversations || []);
                 }
             } catch (error) {
-                console.error('Failed to load workspaces:', error);
+                console.error('Failed to load chat history:', error);
+                renderChatHistory([]);
             }
         }
 
-        document.getElementById('workspaceSelect').addEventListener('change', function() {
-            currentWorkspaceId = this.value;
-            if (currentWorkspaceId) {
-                window.history.pushState({}, '', `/uploads/${currentWorkspaceId}`);
-                loadDocuments();
-            } else {
-                window.history.pushState({}, '', '/uploads');
-                document.getElementById('documentsList').innerHTML = '<div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">Select a workspace to view documents</div>';
+        function renderChatHistory(chats) {
+            const list = document.getElementById('chatHistoryList');
+            if (chats.length === 0) {
+                list.innerHTML = '<p class="text-xs text-light-text-muted dark:text-dark-text-muted px-2 py-4 text-center">No chats yet</p>';
+                return;
             }
-        });
 
+            list.innerHTML = chats.map(chat => `
+                <a href="/chat/${chat.id}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200 group">
+                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm text-light-text dark:text-dark-text truncate flex-1">${escapeHtml(chat.title || 'New Chat')}</span>
+                </a>
+            `).join('');
+        }
+
+        function scrollToDocuments() {
+            document.getElementById('documentsList').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ========================
+        // DOCUMENTS
+        // ========================
         async function loadDocuments() {
-            if (!currentWorkspaceId) return;
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) return;
 
             const container = document.getElementById('documentsList');
+            const filesCountEl = document.getElementById('filesCount');
+
             container.innerHTML = '<div class="text-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-light-text dark:border-dark-text border-t-transparent mx-auto"></div></div>';
+            filesCountEl.innerHTML = '<span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>';
 
             try {
-                const response = await fetch(`/api/documents?workspace_id=${currentWorkspaceId}`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await fetch(`/api/documents?workspace_id=${currentWorkspace.id}`, {
+                    headers: Auth.getAuthHeaders()
                 });
                 const data = await response.json();
                 const docs = data.documents || [];
 
+                // Update files count in sidebar
                 if (docs.length === 0) {
+                    filesCountEl.textContent = 'No files uploaded';
                     container.innerHTML = '<div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">No documents uploaded yet</div>';
                     return;
                 }
 
+                filesCountEl.textContent = `${docs.length} file${docs.length !== 1 ? 's' : ''} uploaded`;
+
+                // Main list
                 container.innerHTML = docs.map(doc => `
                     <div class="flex items-center gap-3 p-3 bg-light-sidebar dark:bg-dark-sidebar rounded-lg border border-light-border dark:border-dark-border">
                         <div class="w-10 h-10 rounded-lg bg-light-hover dark:bg-dark-hover flex items-center justify-center flex-shrink-0">
@@ -247,17 +491,13 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-1">
-                            <button onclick="openDocumentFile('${doc.id}', 'raw')" title="Open original file" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-blue-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                </svg>
+                            <button onclick="openDocumentFile('${doc.id}', 'raw')" title="Open original" class="p-2 text-light-text-muted hover:text-blue-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <i class="fa-light fa-file-arrow-down text-base"></i>
                             </button>
-                            <button onclick="openDocumentFile('${doc.id}', 'processed')" title="Open processed markdown" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-green-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
+                            <button onclick="openDocumentFile('${doc.id}', 'processed')" title="View processed" class="p-2 text-light-text-muted hover:text-green-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <i class="fa-sharp fa-light fa-file-brackets-curly text-base"></i>
                             </button>
-                            <button onclick="deleteDocument('${doc.id}')" title="Delete document" class="p-2 text-light-text-muted dark:text-dark-text-muted hover:text-red-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                            <button onclick="deleteDocument('${doc.id}')" title="Delete" class="p-2 text-light-text-muted hover:text-red-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
@@ -267,17 +507,19 @@
                 `).join('');
             } catch (error) {
                 container.innerHTML = '<div class="text-center py-8 text-red-500">Failed to load documents</div>';
+                filesCountEl.textContent = 'Error loading files';
             }
         }
 
-        function getFileIcon(fileType) {
+        function getFileIcon(fileType, small = false) {
+            const size = small ? 'text-base' : 'text-xl';
             const icons = {
-                pdf: '<svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
-                word: '<svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
-                presentation: '<svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
-                spreadsheet: '<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>',
-                image: '<svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
-                audio: '<svg class="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>',
+                pdf: `<i class="fa-light fa-file-pdf ${size} text-red-500"></i>`,
+                word: `<i class="fa-light fa-file-doc ${size} text-blue-500"></i>`,
+                presentation: `<i class="fa-light fa-file-ppt ${size} text-orange-500"></i>`,
+                spreadsheet: `<i class="fa-light fa-file-xls ${size} text-green-500"></i>`,
+                image: `<i class="fa-light fa-file-png ${size} text-purple-500"></i>`,
+                audio: `<i class="fa-light fa-file-mp3 ${size} text-pink-500"></i>`,
             };
             return icons[fileType] || icons.pdf;
         }
@@ -288,6 +530,9 @@
             return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
+        // ========================
+        // FILE UPLOAD
+        // ========================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('dragover');
@@ -312,8 +557,9 @@
         }
 
         async function handleFilesSelected(files) {
-            if (!currentWorkspaceId) {
-                alert('Please select a workspace first');
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) {
+                showToast('Please select a workspace first', 'error');
                 return;
             }
 
@@ -328,7 +574,7 @@
             try {
                 const response = await fetch('/api/upload/analyze', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    headers: Auth.getAuthHeaders(),
                     body: formData
                 });
                 const data = await response.json();
@@ -366,11 +612,11 @@
                             </div>
                             ${f.supported ? ocrToggle : `<p class="text-xs text-red-500 mt-2">${f.error}</p>`}
                             <div id="progress_${i}" class="hidden mt-2 flex items-center gap-2">
-                                <svg class="w-4 h-4 animate-spin text-light-text-muted dark:text-dark-text-muted spinner" fill="none" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 animate-spin text-light-text-muted spinner" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                <p class="text-xs text-light-text-muted dark:text-dark-text-muted status-text">Processing...</p>
+                                <p class="text-xs text-light-text-muted status-text">Processing...</p>
                             </div>
                         </div>
                     `;
@@ -383,6 +629,7 @@
         }
 
         async function startUpload() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
             const btn = document.getElementById('startUploadBtn');
             btn.disabled = true;
             btn.textContent = 'Uploading...';
@@ -390,13 +637,11 @@
             for (let i = 0; i < pendingFiles.length; i++) {
                 const file = pendingFiles[i];
                 const progressEl = document.getElementById(`progress_${i}`);
-                if (progressEl) {
-                    progressEl.classList.remove('hidden');
-                }
+                if (progressEl) progressEl.classList.remove('hidden');
 
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('workspace_id', currentWorkspaceId);
+                formData.append('workspace_id', currentWorkspace.id);
                 if (fileOcrSettings[file.name] !== undefined) {
                     formData.append('use_ocr', fileOcrSettings[file.name] ? 'true' : 'false');
                 }
@@ -404,10 +649,9 @@
                 try {
                     const response = await fetch('/api/upload', {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        headers: Auth.getAuthHeaders(),
                         body: formData
                     });
-
                     const data = await response.json();
 
                     if (progressEl) {
@@ -416,12 +660,10 @@
                         if (data.success) {
                             spinner.classList.add('hidden');
                             statusText.textContent = 'Complete!';
-                            statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
                             statusText.classList.add('text-green-500');
                         } else {
                             spinner.classList.add('hidden');
                             statusText.textContent = 'Failed: ' + data.error;
-                            statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
                             statusText.classList.add('text-red-500');
                         }
                     }
@@ -431,7 +673,6 @@
                         const statusText = progressEl.querySelector('.status-text');
                         spinner.classList.add('hidden');
                         statusText.textContent = 'Error: ' + error.message;
-                        statusText.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
                         statusText.classList.add('text-red-500');
                     }
                 }
@@ -455,15 +696,12 @@
 
         async function openDocumentFile(docId, fileType) {
             if (fileType === 'processed') {
-                // Open processed markdown in viewer page
                 window.open(`/view/${docId}`, '_blank');
             } else {
-                // Open raw file via presigned URL
                 try {
                     const response = await fetch(`/api/documents/${docId}/url/${fileType}`, {
-                        headers: { 'Authorization': `Bearer ${authToken}` }
+                        headers: Auth.getAuthHeaders()
                     });
-
                     if (response.ok) {
                         const data = await response.json();
                         window.open(data.url, '_blank');
@@ -483,9 +721,8 @@
             try {
                 const response = await fetch(`/api/documents/${docId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                    headers: Auth.getAuthHeaders()
                 });
-
                 if (response.ok) {
                     loadDocuments();
                 } else {
@@ -497,12 +734,42 @@
             }
         }
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            const isDark = html.classList.contains('dark');
-            html.classList.remove('light', 'dark');
-            html.classList.add(isDark ? 'light' : 'dark');
-            localStorage.setItem('learnforge_theme', isDark ? 'light' : 'dark');
+        // ========================
+        // WORKSPACE SETTINGS (page-specific)
+        // ========================
+        function closeWorkspaceSettingsModal() {
+            document.getElementById('workspaceSettingsModal').classList.add('hidden');
+        }
+
+        async function submitRenameWorkspace() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const newName = document.getElementById('editWorkspaceName').value.trim();
+            if (!newName) {
+                showToast('Please enter a workspace name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+
+                if (response.ok) {
+                    closeWorkspaceSettingsModal();
+                    await Navbar.init(); // Reload workspaces
+                    showToast('Workspace renamed', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to rename workspace', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to rename workspace', 'error');
+            }
         }
 
         init();

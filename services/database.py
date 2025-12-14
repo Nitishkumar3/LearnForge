@@ -684,3 +684,26 @@ def delete_quiz(quiz_id, user_id):
         (quiz_id, user_id),
         fetch_one=True
     )
+
+
+# =============================================
+# DOCUMENT SUMMARY QUERIES
+# =============================================
+
+def get_document_summary(doc_id, user_id):
+    """Get summary for a document."""
+    result = execute_query(
+        "SELECT summary FROM documents WHERE id = %s AND user_id = %s",
+        (doc_id, user_id),
+        fetch_one=True
+    )
+    return result['summary'] if result else None
+
+
+def save_document_summary(doc_id, user_id, summary):
+    """Save summary for a document."""
+    return execute_query(
+        "UPDATE documents SET summary = %s WHERE id = %s AND user_id = %s RETURNING id",
+        (summary, doc_id, user_id),
+        fetch_one=True
+    )

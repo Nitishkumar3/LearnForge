@@ -665,18 +665,37 @@
 
                     <!-- Input View (shown when no syllabus) -->
                     <div id="syllabusInputView">
-                        <textarea id="syllabusInput" rows="6" placeholder="Paste your syllabus here...
-
-Example:
-Module 1: Introduction to ML    15 Hours
-Machine Learning - Types of ML - Supervised Learning..."
+                        <textarea id="syllabusInput" rows="6" placeholder="Paste your Syllabus here..."
                                   class="w-full px-4 py-2.5 border border-light-border dark:border-dark-border rounded-xl bg-white dark:bg-dark-bg text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-light-text-secondary dark:focus:border-dark-text-secondary transition-colors duration-200 text-sm resize-none"></textarea>
                         <div class="flex gap-2 mt-2">
-                            <button onclick="parseSyllabus()" id="parseSyllabusBtn" class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                            <button onclick="parseSyllabus()" id="parseSyllabusBtn" class="flex-1 px-3 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
-                                Parse & Save
+                                Parse
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview/Edit View (shown after parsing, before saving) -->
+                    <div id="syllabusPreviewView" class="hidden">
+                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted mb-2">Review and edit the parsed syllabus:</p>
+                        <div id="syllabusVisualEditor" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar border border-light-border dark:border-dark-border rounded-lg p-3 bg-light-sidebar dark:bg-dark-sidebar">
+                            <!-- Modules will be rendered here -->
+                        </div>
+                        <button onclick="addModule()" class="w-full mt-2 px-3 py-2 border border-dashed border-light-border dark:border-dark-border text-light-text-muted dark:text-dark-text-muted rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover text-xs font-medium transition-colors duration-200 flex items-center justify-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Add Module
+                        </button>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="cancelSyllabusPreview()" class="flex-1 px-3 py-2 border border-light-border dark:border-dark-border text-light-text dark:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover text-sm font-medium transition-colors duration-200">
+                                Cancel
+                            </button>
+                            <button onclick="saveParsedSyllabus()" id="saveSyllabusBtn" class="flex-1 px-3 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Save
                             </button>
                         </div>
                     </div>
@@ -961,6 +980,110 @@ Machine Learning - Types of ML - Supervised Learning..."
             }
         }
 
+        let pendingSyllabus = null;
+
+        function renderVisualEditor(syllabus) {
+            const editor = document.getElementById('syllabusVisualEditor');
+            if (!syllabus || !syllabus.modules || syllabus.modules.length === 0) {
+                editor.innerHTML = '<p class="text-xs text-light-text-muted dark:text-dark-text-muted text-center py-4">No modules yet. Click "Add Module" to start.</p>';
+                return;
+            }
+
+            editor.innerHTML = syllabus.modules.map((module, moduleIndex) => `
+                <div class="module-item bg-light-bg dark:bg-dark-bg rounded-lg p-3 border border-light-border dark:border-dark-border" data-module-index="${moduleIndex}">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-semibold text-light-text-muted dark:text-dark-text-muted">Module ${moduleIndex + 1}</span>
+                        <button onclick="removeModule(${moduleIndex})" class="ml-auto text-red-500 hover:text-red-600 p-1" title="Remove module">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
+                    <input type="text" value="${escapeHtml(module.name)}"
+                           class="module-name w-full px-2 py-1.5 text-sm bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded text-light-text dark:text-dark-text focus:outline-none focus:border-light-text-muted dark:focus:border-dark-text-muted mb-2"
+                           placeholder="Module name">
+                    <div class="subtopics-container space-y-1.5 ml-3">
+                        ${module.subtopics.map((subtopic, subtopicIndex) => `
+                            <div class="subtopic-item flex items-center gap-1.5" data-subtopic-index="${subtopicIndex}">
+                                <span class="text-xs text-light-text-muted dark:text-dark-text-muted">•</span>
+                                <input type="text" value="${escapeHtml(subtopic)}"
+                                       class="subtopic-name flex-1 px-2 py-1 text-xs bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded text-light-text dark:text-dark-text focus:outline-none focus:border-light-text-muted dark:focus:border-dark-text-muted"
+                                       placeholder="Subtopic">
+                                <button onclick="removeSubtopic(${moduleIndex}, ${subtopicIndex})" class="text-red-400 hover:text-red-500 p-0.5" title="Remove subtopic">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button onclick="addSubtopic(${moduleIndex})" class="mt-2 ml-3 text-xs text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Add subtopic
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getVisualEditorData() {
+            const modules = [];
+            document.querySelectorAll('#syllabusVisualEditor .module-item').forEach(moduleEl => {
+                const name = moduleEl.querySelector('.module-name').value.trim();
+                const subtopics = [];
+                moduleEl.querySelectorAll('.subtopic-item .subtopic-name').forEach(input => {
+                    const value = input.value.trim();
+                    if (value) subtopics.push(value);
+                });
+                if (name) {
+                    modules.push({ name, subtopics });
+                }
+            });
+            return { modules };
+        }
+
+        function addModule() {
+            if (!pendingSyllabus) pendingSyllabus = { modules: [] };
+            pendingSyllabus.modules.push({ name: '', subtopics: [''] });
+            renderVisualEditor(pendingSyllabus);
+            // Focus the new module name input
+            const inputs = document.querySelectorAll('#syllabusVisualEditor .module-name');
+            if (inputs.length > 0) inputs[inputs.length - 1].focus();
+        }
+
+        function removeModule(moduleIndex) {
+            if (!pendingSyllabus || !pendingSyllabus.modules) return;
+            // Save current state from visual editor before modifying
+            pendingSyllabus = getVisualEditorData();
+            pendingSyllabus.modules.splice(moduleIndex, 1);
+            renderVisualEditor(pendingSyllabus);
+        }
+
+        function addSubtopic(moduleIndex) {
+            // Save current state from visual editor
+            pendingSyllabus = getVisualEditorData();
+            if (pendingSyllabus.modules[moduleIndex]) {
+                pendingSyllabus.modules[moduleIndex].subtopics.push('');
+                renderVisualEditor(pendingSyllabus);
+                // Focus the new subtopic input
+                const moduleEl = document.querySelectorAll('#syllabusVisualEditor .module-item')[moduleIndex];
+                if (moduleEl) {
+                    const inputs = moduleEl.querySelectorAll('.subtopic-name');
+                    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+                }
+            }
+        }
+
+        function removeSubtopic(moduleIndex, subtopicIndex) {
+            // Save current state from visual editor
+            pendingSyllabus = getVisualEditorData();
+            if (pendingSyllabus.modules[moduleIndex]) {
+                pendingSyllabus.modules[moduleIndex].subtopics.splice(subtopicIndex, 1);
+                renderVisualEditor(pendingSyllabus);
+            }
+        }
+
         async function parseSyllabus() {
             const syllabusText = document.getElementById('syllabusInput').value.trim();
             if (!syllabusText) {
@@ -968,13 +1091,12 @@ Machine Learning - Types of ML - Supervised Learning..."
                 return;
             }
 
-            const workspaceId = document.getElementById('settingsWorkspaceId').value;
             const btn = document.getElementById('parseSyllabusBtn');
             btn.disabled = true;
             btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Parsing...';
 
             try {
-                const response = await fetch(`/api/workspaces/${workspaceId}/syllabus/parse`, {
+                const response = await fetch('/api/syllabus/parse', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -985,10 +1107,12 @@ Machine Learning - Types of ML - Supervised Learning..."
 
                 if (response.ok) {
                     const data = await response.json();
-                    currentSyllabus = data.syllabus;
-                    updateSyllabusView();
-                    renderModules();
-                    showToast('Syllabus parsed and saved', 'success');
+                    pendingSyllabus = data.syllabus;
+                    // Show visual editor for editing
+                    renderVisualEditor(pendingSyllabus);
+                    document.getElementById('syllabusInputView').classList.add('hidden');
+                    document.getElementById('syllabusPreviewView').classList.remove('hidden');
+                    showToast('Syllabus parsed! Review and save.', 'success');
                 } else {
                     const error = await response.json();
                     showToast(error.error || 'Failed to parse syllabus', 'error');
@@ -997,7 +1121,58 @@ Machine Learning - Types of ML - Supervised Learning..."
                 showToast('Failed to parse syllabus', 'error');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Parse & Save';
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Parse';
+            }
+        }
+
+        function cancelSyllabusPreview() {
+            pendingSyllabus = null;
+            document.getElementById('syllabusPreviewView').classList.add('hidden');
+            document.getElementById('syllabusInputView').classList.remove('hidden');
+        }
+
+        async function saveParsedSyllabus() {
+            const workspaceId = document.getElementById('settingsWorkspaceId').value;
+            const btn = document.getElementById('saveSyllabusBtn');
+
+            // Get data from visual editor
+            const syllabusToSave = getVisualEditorData();
+
+            if (!syllabusToSave.modules || syllabusToSave.modules.length === 0) {
+                showToast('Please add at least one module', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+
+            try {
+                const response = await fetch(`/api/workspaces/${workspaceId}/syllabus`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ syllabus: syllabusToSave })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentSyllabus = data.syllabus;
+                    pendingSyllabus = null;
+                    document.getElementById('syllabusPreviewView').classList.add('hidden');
+                    updateSyllabusView();
+                    renderModules();
+                    showToast('Syllabus saved', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to save syllabus', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save syllabus', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Save';
             }
         }
 

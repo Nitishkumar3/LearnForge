@@ -567,15 +567,10 @@ def delete_workspace_route(workspace_id):
 # SYLLABUS ROUTES
 # ===================
 
-@app.route('/api/workspaces/<workspace_id>/syllabus', methods=['PUT'])
+@app.route('/api/syllabus/parse', methods=['POST'])
 @auth_required
-def save_syllabus(workspace_id):
-    """Parse and save syllabus for a workspace."""
-    # Verify workspace belongs to user
-    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
-    if not workspace:
-        return jsonify({'error': 'Workspace not found'}), 404
-
+def parse_syllabus_only():
+    """Parse syllabus text without saving (preview mode)."""
     data = request.json
     syllabus_text = data.get('syllabus_text', '').strip()
 
@@ -587,6 +582,38 @@ def save_syllabus(workspace_id):
 
     if 'error' in parsed:
         return jsonify({'error': parsed['error']}), 400
+
+    return jsonify({
+        'success': True,
+        'syllabus': parsed
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/syllabus', methods=['PUT'])
+@auth_required
+def save_syllabus(workspace_id):
+    """Save syllabus for a workspace (accepts pre-parsed JSON or raw text)."""
+    # Verify workspace belongs to user
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    data = request.json
+
+    # Check if pre-parsed syllabus JSON is provided
+    if 'syllabus' in data and isinstance(data['syllabus'], dict):
+        parsed = data['syllabus']
+    else:
+        # Fall back to parsing raw text
+        syllabus_text = data.get('syllabus_text', '').strip()
+        if not syllabus_text:
+            return jsonify({'error': 'Syllabus text or parsed syllabus is required'}), 400
+
+        # Parse syllabus using LLM
+        parsed = generation.parse_syllabus(syllabus_text)
+
+        if 'error' in parsed:
+            return jsonify({'error': parsed['error']}), 400
 
     # Save to database
     db.update_workspace_syllabus(workspace_id, parsed)
@@ -1087,6 +1114,7 @@ def conversation_chat(conversation_id):
     use_thinking = data.get('use_thinking', False)
     use_rag = data.get('use_rag', False)
     use_deep_search = data.get('use_deep_search', False)
+    use_mindmap = data.get('use_mindmap', False)
     attached_doc_id = data.get('attached_doc_id')
     is_regenerate = data.get('regenerate', False)
 
@@ -1148,17 +1176,33 @@ def conversation_chat(conversation_id):
             full_thinking = ""
             sources = []
 
-            for event in generation.generate_answer_stream(
-                query=question,
-                chunks=chunks,
-                metadatas=metadatas,
-                chat_history=chat_history,
-                use_search=use_search,
-                use_thinking=use_thinking,
-                web_context=web_context,
-                attached_doc_context=attached_doc_context,
-                attached_doc_name=attached_doc_name
-            ):
+            # Choose generator based on mindmap mode
+            if use_mindmap:
+                # Use Mind Map generator (ZAI GLM model)
+                stream_generator = generation.generate_mindmap_stream(
+                    query=question,
+                    chunks=chunks,
+                    metadatas=metadatas,
+                    chat_history=chat_history,
+                    web_context=web_context,
+                    attached_doc_context=attached_doc_context,
+                    attached_doc_name=attached_doc_name
+                )
+            else:
+                # Use regular answer generator
+                stream_generator = generation.generate_answer_stream(
+                    query=question,
+                    chunks=chunks,
+                    metadatas=metadatas,
+                    chat_history=chat_history,
+                    use_search=use_search,
+                    use_thinking=use_thinking,
+                    web_context=web_context,
+                    attached_doc_context=attached_doc_context,
+                    attached_doc_name=attached_doc_name
+                )
+
+            for event in stream_generator:
                 if event["type"] == "thinking":
                     full_thinking += event.get("content", "")
                     yield f"data: {json.dumps(event)}\n\n"
@@ -1738,6 +1782,59 @@ def get_document_content(doc_id):
             "num_pages": doc.get('num_pages'),
             "processing_method": doc.get('processing_method', 'direct'),
             "content": content
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/documents/<doc_id>/summary', methods=['GET'])
+@auth_required
+def get_document_summary(doc_id):
+    """Get or generate summary for a document."""
+    try:
+        doc = db.get_document_by_id_and_user(doc_id, request.user_id)
+
+        if not doc:
+            return jsonify({"error": "Document not found"}), 404
+
+        # Check if regenerate is requested
+        regenerate = request.args.get('regenerate', 'false').lower() == 'true'
+
+        # Check if summary already exists (skip if regenerating)
+        if not regenerate:
+            existing_summary = db.get_document_summary(doc_id, request.user_id)
+
+            if existing_summary:
+                return jsonify({
+                    "id": str(doc['id']),
+                    "filename": doc['original_filename'],
+                    "summary": existing_summary,
+                    "cached": True
+                })
+
+        # No summary exists or regenerating - generate one
+        processed_key = doc.get('processed_storage_key')
+        if not processed_key:
+            return jsonify({"error": "No processed content available to summarize"}), 404
+
+        # Get the processed content
+        content = storage.download_text(processed_key)
+
+        # Generate summary
+        result = generation.generate_document_summary(content, doc['original_filename'])
+
+        if result.get('error'):
+            return jsonify({"error": result['error']}), 500
+
+        # Save summary to database
+        db.save_document_summary(doc_id, request.user_id, result['summary'])
+
+        return jsonify({
+            "id": str(doc['id']),
+            "filename": doc['original_filename'],
+            "summary": result['summary'],
+            "cached": False
         })
 
     except Exception as e:

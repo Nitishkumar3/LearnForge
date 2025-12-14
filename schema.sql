@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS documents (
     num_chunks INTEGER,
     status TEXT DEFAULT 'pending',
     error_message TEXT,
+    summary TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     processed_at TIMESTAMPTZ
 );

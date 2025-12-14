@@ -15,6 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fa71.pages.dev/css/all.css">
     <script>
         (function() {
             const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
@@ -150,6 +151,20 @@
             margin: 0;
             border-radius: 0 0 0.5rem 0.5rem;
         }
+        /* Shimmer animation */
+        .shimmer {
+            background: linear-gradient(90deg, #E5E5E5 25%, #F0F0F0 50%, #E5E5E5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        .dark .shimmer {
+            background: linear-gradient(90deg, #2F2F2F 25%, #3E3E3E 50%, #2F2F2F 75%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
 <body class="bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text min-h-screen">
@@ -184,7 +199,13 @@
         <div class="max-w-4xl mx-auto p-6">
             <!-- Document Info -->
             <div id="docInfo" class="mb-6 pb-4 border-b border-light-border dark:border-dark-border hidden">
-                <h1 id="docFilename" class="text-2xl font-semibold mb-2"></h1>
+                <div class="flex items-center justify-between">
+                    <h1 id="docFilename" class="text-2xl font-semibold mb-2"></h1>
+                    <button id="regenerateBtn" onclick="regenerateSummary()" class="hidden items-center gap-2 px-3 py-1.5 text-sm text-light-text-muted dark:text-dark-text-muted border border-light-border dark:border-dark-border rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover hover:text-light-text dark:hover:text-dark-text transition-colors">
+                        <i class="fa-light fa-arrows-rotate"></i>
+                        <span>Regenerate</span>
+                    </button>
+                </div>
                 <div class="flex items-center gap-4 text-sm text-light-text-muted dark:text-dark-text-muted">
                     <span id="docType"></span>
                     <span id="docPages"></span>
@@ -193,9 +214,38 @@
             </div>
 
             <!-- Loading -->
-            <div id="loading" class="text-center py-12">
-                <div class="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-light-text dark:border-dark-text border-t-transparent animate-spin"></div>
-                <p class="text-light-text-muted dark:text-dark-text-muted">Loading document...</p>
+            <div id="loading" class="py-8">
+                <!-- Header skeleton -->
+                <div class="mb-6 pb-4 border-b border-light-border dark:border-dark-border">
+                    <div class="shimmer h-8 w-3/4 mb-3 rounded"></div>
+                    <div class="flex items-center gap-4">
+                        <div class="shimmer h-4 w-16 rounded"></div>
+                        <div class="shimmer h-4 w-20 rounded"></div>
+                    </div>
+                </div>
+
+                <!-- Content skeleton -->
+                <div class="space-y-4">
+                    <div class="shimmer h-6 w-1/3 rounded"></div>
+                    <div class="space-y-2">
+                        <div class="shimmer h-4 w-full rounded"></div>
+                        <div class="shimmer h-4 w-full rounded"></div>
+                        <div class="shimmer h-4 w-5/6 rounded"></div>
+                    </div>
+                    <div class="shimmer h-6 w-1/4 rounded mt-6"></div>
+                    <div class="space-y-2">
+                        <div class="shimmer h-4 w-full rounded"></div>
+                        <div class="shimmer h-4 w-4/5 rounded"></div>
+                        <div class="shimmer h-4 w-full rounded"></div>
+                        <div class="shimmer h-4 w-3/4 rounded"></div>
+                    </div>
+                    <div class="shimmer h-6 w-2/5 rounded mt-6"></div>
+                    <div class="space-y-2">
+                        <div class="shimmer h-4 w-full rounded"></div>
+                        <div class="shimmer h-4 w-5/6 rounded"></div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Error -->
@@ -232,8 +282,17 @@
                 return;
             }
 
+            // Check if this is a summary view
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewType = urlParams.get('type');
+            const isSummary = viewType === 'summary';
+
             try {
-                const response = await fetch(`/api/documents/${docId}/content`, {
+                const endpoint = isSummary
+                    ? `/api/documents/${docId}/summary`
+                    : `/api/documents/${docId}/content`;
+
+                const response = await fetch(endpoint, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -244,31 +303,47 @@
                 }
 
                 const data = await response.json();
-                displayDocument(data);
+                displayDocument(data, isSummary);
 
             } catch (error) {
                 showError('Failed to load document: ' + error.message);
             }
         }
 
-        function displayDocument(doc) {
+        function displayDocument(doc, isSummary = false) {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('docInfo').classList.remove('hidden');
             document.getElementById('content').classList.remove('hidden');
 
+            // Get content based on view type
+            const content = isSummary ? doc.summary : doc.content;
+            const titleSuffix = isSummary ? ' - Summary' : '';
+
             // Update title
-            document.title = `${doc.filename} - LearnForge`;
-            document.getElementById('docTitle').textContent = doc.filename;
-            document.getElementById('docFilename').textContent = doc.filename;
-            document.getElementById('docType').textContent = doc.file_type.toUpperCase();
-            document.getElementById('docPages').textContent = doc.num_pages ? `${doc.num_pages} pages` : '';
-            document.getElementById('docMethod').innerHTML = doc.processing_method === 'ocr'
-                ? '<span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded text-xs">OCR</span>'
-                : '';
+            document.title = `${doc.filename}${titleSuffix} - LearnForge`;
+            document.getElementById('docTitle').textContent = doc.filename + titleSuffix;
+            document.getElementById('docFilename').textContent = doc.filename + titleSuffix;
+
+            // Update doc info based on view type
+            if (isSummary) {
+                document.getElementById('docType').innerHTML = '<span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded text-xs">SUMMARY</span>';
+                document.getElementById('docPages').textContent = '';
+                document.getElementById('docMethod').innerHTML = '';
+                // Show regenerate button for summary
+                document.getElementById('regenerateBtn').classList.remove('hidden');
+                document.getElementById('regenerateBtn').classList.add('flex');
+            } else {
+                document.getElementById('docType').textContent = doc.file_type ? doc.file_type.toUpperCase() : '';
+                document.getElementById('docPages').textContent = doc.num_pages ? `${doc.num_pages} pages` : '';
+                document.getElementById('docMethod').innerHTML = doc.processing_method === 'ocr'
+                    ? '<span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded text-xs">OCR</span>'
+                    : '';
+                document.getElementById('regenerateBtn').classList.add('hidden');
+            }
 
             // Render markdown content
             const contentDiv = document.getElementById('content');
-            contentDiv.innerHTML = renderMarkdown(doc.content);
+            contentDiv.innerHTML = renderMarkdown(content);
 
             // Apply syntax highlighting
             highlightCode();
@@ -279,6 +354,42 @@
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('error').classList.remove('hidden');
             document.getElementById('errorMessage').textContent = message;
+        }
+
+        async function regenerateSummary() {
+            const pathParts = window.location.pathname.split('/');
+            const docId = pathParts[pathParts.length - 1];
+
+            // Update button to show loading state
+            const btn = document.getElementById('regenerateBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-light fa-spinner-third animate-spin"></i><span>Regenerating...</span>';
+            btn.disabled = true;
+
+            // Show loading skeleton
+            document.getElementById('docInfo').classList.add('hidden');
+            document.getElementById('content').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/api/documents/${docId}/summary?regenerate=true`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to regenerate summary');
+                }
+
+                const data = await response.json();
+                displayDocument(data, true);
+
+            } catch (error) {
+                showError('Failed to regenerate: ' + error.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         }
 
         function renderMarkdown(text) {

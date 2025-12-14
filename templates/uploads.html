@@ -243,8 +243,8 @@
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto custom-scrollbar bg-light-bg dark:bg-dark-bg">
             <div class="max-w-4xl mx-auto p-6">
-                <h1 class="text-2xl font-semibold mb-2">Upload Documents</h1>
-                <p class="text-light-text-secondary dark:text-dark-text-secondary mb-6">
+                <h1 class="text-2xl font-semibold mb-2 text-light-text dark:text-dark-text">Upload Documents</h1>
+                <p class="text-light-text-secondary dark:text-dark-text-muted mb-6">
                     Upload documents to your workspace. Supported formats: PDF, Word, PowerPoint, Excel, Images, Audio.
                 </p>
 
@@ -260,22 +260,22 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
                     </div>
-                    <p class="text-lg font-medium mb-1">Drop files here or click to browse</p>
+                    <p class="text-lg font-medium mb-1 text-light-text dark:text-dark-text">Drop files here or click to browse</p>
                     <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Maximum 3 files at a time</p>
                     <div class="mt-4 flex flex-wrap justify-center gap-2">
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PDF</span>
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">DOCX</span>
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">PPTX</span>
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">XLSX</span>
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Images</span>
-                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded">Audio</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">PDF</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">DOCX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">PPTX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">XLSX</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">Images</span>
+                        <span class="px-2 py-1 text-xs bg-light-hover dark:bg-dark-hover rounded text-light-text dark:text-dark-text">Audio</span>
                     </div>
                 </div>
                 <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.tif,.mp3,.wav,.ogg,.m4a,.flac,.webm" class="hidden" onchange="handleFileSelect(event)">
 
                 <!-- Uploaded Files List -->
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-lg font-semibold">Uploaded Documents</h2>
+                    <h2 class="text-lg font-semibold text-light-text dark:text-dark-text">Uploaded Documents</h2>
                 </div>
                 <div id="documentsList" class="space-y-2">
                     <div class="text-center py-8 text-light-text-muted dark:text-dark-text-muted">
@@ -484,7 +484,7 @@
                             ${getFileIcon(doc.file_type)}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium truncate">${doc.original_filename}</p>
+                            <p class="font-medium truncate text-light-text dark:text-dark-text">${doc.original_filename}</p>
                             <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
                                 ${doc.file_type.toUpperCase()} ${doc.num_pages ? `• ${doc.num_pages} pages` : ''} • ${formatFileSize(doc.file_size_bytes)}
                                 ${doc.processing_method === 'ocr' ? '<span class="ml-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded text-xs">OCR</span>' : ''}
@@ -496,6 +496,9 @@
                             </button>
                             <button onclick="openDocumentFile('${doc.id}', 'processed')" title="View processed" class="p-2 text-light-text-muted hover:text-green-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
                                 <i class="fa-sharp fa-light fa-file-brackets-curly text-base"></i>
+                            </button>
+                            <button onclick="viewDocumentSummary('${doc.id}')" title="View summary" class="p-2 text-light-text-muted hover:text-purple-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
+                                <i class="fa-light fa-clipboard-list text-base"></i>
                             </button>
                             <button onclick="deleteDocument('${doc.id}')" title="Delete" class="p-2 text-light-text-muted hover:text-red-500 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -732,6 +735,10 @@
             } catch (error) {
                 alert('Failed to delete document');
             }
+        }
+
+        function viewDocumentSummary(docId) {
+            window.open(`/view/${docId}?type=summary`, '_blank');
         }
 
         // ========================

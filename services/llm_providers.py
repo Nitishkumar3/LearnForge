@@ -339,6 +339,75 @@ def generate_study_material_stream(prompt):
     print(f"[STUDY-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
 
 
+# Summary Generation (always uses Cerebras GPT OSS 120B)
+def generate_summary(prompt):
+    """Generate document summary using Cerebras GPT OSS 120B."""
+    import time
+    print(f"[SUMMARY-GPT-OSS] Starting summary generation...")
+    start = time.time()
+
+    provider = get_provider("cerebras")
+    response = provider["client"].chat.completions.create(
+        model="gpt-oss-120b",
+        messages=[
+            {"role": "system", "content": "You are a concise summarizer. Output only the summary, no preamble."},
+            {"role": "user", "content": prompt}
+        ],
+        max_completion_tokens=2048,
+        temperature=0.3,
+        top_p=1
+    )
+
+    elapsed = time.time() - start
+    content = response.choices[0].message.content
+    print(f"[SUMMARY-GPT-OSS] Completed in {elapsed:.2f}s, {len(content)} chars")
+    return content
+
+
+# Mind Map Generation (always uses Cerebras Qwen 3 235B)
+def generate_mindmap_stream(prompt):
+    """Stream mind map generation using Cerebras Qwen 3 235B."""
+    import time
+    print(f"[MINDMAP-QWEN] Starting mind map generation...")
+    start = time.time()
+    first_chunk_time = None
+    chunk_count = 0
+    total_chars = 0
+
+    provider = get_provider("cerebras")
+    print(f"[MINDMAP-QWEN] Got provider, calling API...")
+
+    stream = provider["client"].chat.completions.create(
+        model="qwen-3-235b-a22b-instruct-2507",
+        messages=[
+            {"role": "system", "content": "You are a mind map generator. Generate clear, well-structured Mermaid mindmap diagrams."},
+            {"role": "user", "content": prompt}
+        ],
+        max_completion_tokens=20000,
+        temperature=0.7,
+        top_p=0.8,
+        stream=True
+    )
+    print(f"[MINDMAP-QWEN] Stream created, iterating...")
+
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            if first_chunk_time is None:
+                first_chunk_time = time.time() - start
+                print(f"[MINDMAP-QWEN] First chunk after {first_chunk_time:.2f}s")
+
+            chunk_count += 1
+            total_chars += len(chunk.choices[0].delta.content)
+
+            if chunk_count % 50 == 0:
+                print(f"[MINDMAP-QWEN] Chunk {chunk_count}, {total_chars} chars so far...")
+
+            yield {"type": "text", "content": chunk.choices[0].delta.content}
+
+    elapsed = time.time() - start
+    print(f"[MINDMAP-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
+
+
 # Quiz Generation (always uses Cerebras gpt-oss-120b with JSON format)
 def generate_quiz(prompt):
     """Generate quiz questions using Cerebras gpt-oss-120b with JSON response format (20k tokens)."""

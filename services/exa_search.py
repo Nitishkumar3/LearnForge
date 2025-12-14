@@ -7,7 +7,7 @@ from exa_py import Exa
 import os
 
 # Initialize Exa client
-EXA_API_KEY = os.getenv("EXA_API_KEY", "46d60840-fc00-46d7-a3d4-da10f3146e68")
+EXA_API_KEY = os.getenv("EXA_API_KEY")
 exa = Exa(api_key=EXA_API_KEY)
 
 

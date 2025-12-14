@@ -175,7 +175,7 @@ def generate_answer(query, chunks, metadatas, chat_history=None, use_search=Fals
     }
 
 
-def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_search=False, use_thinking=False, web_context=""):
+def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_search=False, use_thinking=False, web_context="", attached_doc_context="", attached_doc_name=""):
     history_text = build_history(chat_history)
 
     # Build prompt based on whether we have RAG context
@@ -185,6 +185,18 @@ def generate_answer_stream(query, chunks, metadatas, chat_history=None, use_sear
     else:
         # No RAG - direct conversation with LLM
         prompt = build_direct_prompt(query, history_text)
+
+    # Append attached document context if available
+    if attached_doc_context:
+        # Truncate if too long (keep first 15000 chars to leave room for other context)
+        truncated_doc = attached_doc_context[:15000] + ("..." if len(attached_doc_context) > 15000 else "")
+        prompt = prompt.replace(
+            "Provide your response:",
+            f"""ATTACHED DOCUMENT ({attached_doc_name}):
+{truncated_doc}
+
+Provide your response:"""
+        )
 
     # Append web context from Deep Search if available
     if web_context:

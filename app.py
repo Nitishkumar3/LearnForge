@@ -1087,6 +1087,7 @@ def conversation_chat(conversation_id):
     use_thinking = data.get('use_thinking', False)
     use_rag = data.get('use_rag', False)
     use_deep_search = data.get('use_deep_search', False)
+    attached_doc_id = data.get('attached_doc_id')
     is_regenerate = data.get('regenerate', False)
 
     if not question:
@@ -1100,6 +1101,19 @@ def conversation_chat(conversation_id):
         user_docs = db.get_documents_by_workspace(workspace_id, user_id)
         if not user_docs:
             return jsonify({'error': 'No documents uploaded. Please upload documents or disable RAG.'}), 400
+
+    # Fetch attached document content if provided
+    attached_doc_context = ""
+    attached_doc_name = ""
+    if attached_doc_id:
+        doc = db.get_document_by_id_and_user(attached_doc_id, user_id)
+        if doc and doc.get('processed_s3_key'):
+            try:
+                content = storage.get_file_content(doc['processed_s3_key'])
+                attached_doc_context = content.decode('utf-8') if isinstance(content, bytes) else content
+                attached_doc_name = doc.get('filename', 'Attached Document')
+            except Exception as e:
+                print(f"Error fetching attached document: {e}")
 
     # Save user message (skip if regenerating - user message already exists)
     if not is_regenerate:
@@ -1141,7 +1155,9 @@ def conversation_chat(conversation_id):
                 chat_history=chat_history,
                 use_search=use_search,
                 use_thinking=use_thinking,
-                web_context=web_context
+                web_context=web_context,
+                attached_doc_context=attached_doc_context,
+                attached_doc_name=attached_doc_name
             ):
                 if event["type"] == "thinking":
                     full_thinking += event.get("content", "")

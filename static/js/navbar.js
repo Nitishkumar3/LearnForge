@@ -90,38 +90,8 @@ function toggleTheme() {
     html.classList.remove('light', 'dark');
     html.classList.add(newTheme);
     localStorage.setItem('learnforge_theme', newTheme);
-
-    // Update highlight.js theme if present
-    const lightStyle = document.getElementById('hljs-light');
-    const darkStyle = document.getElementById('hljs-dark');
-    if (lightStyle && darkStyle) {
-        if (newTheme === 'dark') {
-            lightStyle.disabled = true;
-            darkStyle.disabled = false;
-        } else {
-            lightStyle.disabled = false;
-            darkStyle.disabled = true;
-        }
-    }
+    // Note: Code blocks always use dark theme (github-dark) regardless of page theme
 }
-
-function initializeTheme() {
-    const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
-    const lightStyle = document.getElementById('hljs-light');
-    const darkStyle = document.getElementById('hljs-dark');
-    if (lightStyle && darkStyle) {
-        if (savedTheme === 'dark') {
-            lightStyle.disabled = true;
-            darkStyle.disabled = false;
-        } else {
-            lightStyle.disabled = false;
-            darkStyle.disabled = true;
-        }
-    }
-}
-
-// Initialize theme immediately
-initializeTheme();
 
 // ===========================================
 // NAVBAR MODULE

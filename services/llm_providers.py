@@ -58,6 +58,16 @@ MODELS = {
         "supports_search": False,
         "supports_thinking": False
     },
+    "ZAI GLM 4.6": {
+        "provider": "cerebras",
+        "model_id": "zai-glm-4.6",
+        "description": "ZAI GLM 4.6 - best in coding",
+        "supports_search": False,
+        "supports_thinking": False,
+        "max_tokens": 40960,
+        "temperature": 0.6,
+        "top_p": 0.95
+    },
     "Nova Canvas": {
         "provider": "nova",
         "model_id": "bedrock-amazon.nova-canvas-v1-0",
@@ -157,7 +167,7 @@ def generate(prompt, use_search=False, use_thinking=False):
     elif provider["type"] == "mistral":
         return mistral_generate(provider["client"], model_id, prompt, search)
     elif provider["type"] == "cerebras":
-        return cerebras_generate(provider["client"], model_id, prompt)
+        return cerebras_generate(provider["client"], model_id, prompt, model_info)
 
 
 def generate_stream(prompt, use_search=False, use_thinking=False):
@@ -175,7 +185,7 @@ def generate_stream(prompt, use_search=False, use_thinking=False):
     elif provider["type"] == "mistral":
         yield from mistral_stream(provider["client"], model_id, prompt, search)
     elif provider["type"] == "cerebras":
-        yield from cerebras_stream(provider["client"], model_id, prompt)
+        yield from cerebras_stream(provider["client"], model_id, prompt, model_info)
 
 
 def generate_image(prompt, aspect_ratio="1:1"):
@@ -356,24 +366,34 @@ def generate_quiz(prompt):
 
 
 # Cerebras
-def cerebras_generate(client, model_id, prompt):
+def cerebras_generate(client, model_id, prompt, model_config=None):
+    # Use model-specific params or defaults
+    max_tokens = model_config.get("max_tokens", 4096) if model_config else 4096
+    temperature = model_config.get("temperature", 0.2) if model_config else 0.2
+    top_p = model_config.get("top_p", 1) if model_config else 1
+
     response = client.chat.completions.create(
         model=model_id,
         messages=[{"role": "user", "content": prompt}],
-        max_completion_tokens=4096,
-        temperature=0.2,
-        top_p=1
+        max_completion_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p
     )
     return response.choices[0].message.content
 
 
-def cerebras_stream(client, model_id, prompt):
+def cerebras_stream(client, model_id, prompt, model_config=None):
+    # Use model-specific params or defaults
+    max_tokens = model_config.get("max_tokens", 4096) if model_config else 4096
+    temperature = model_config.get("temperature", 0.2) if model_config else 0.2
+    top_p = model_config.get("top_p", 1) if model_config else 1
+
     stream = client.chat.completions.create(
         model=model_id,
         messages=[{"role": "user", "content": prompt}],
-        max_completion_tokens=4096,
-        temperature=0.2,
-        top_p=1,
+        max_completion_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p,
         stream=True
     )
     for chunk in stream:

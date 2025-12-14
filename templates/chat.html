@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled>
+    <!-- Highlight.js for code syntax highlighting (always dark) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
     <!-- Google Sans Flex Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fa71.pages.dev/css/all.css">
     <script>
         // Initialize theme before page renders to prevent flash
         (function() {
@@ -369,21 +369,10 @@
         .answer-text .code-block-wrapper + .code-block-wrapper {
             margin-top: 1rem;
         }
-        .dark .answer-text .code-block-wrapper {
-            border-color: #3E3E3E;
-        }
-        .dark .answer-text .code-block-header {
-            background: #1a1a1a;
-            border-bottom-color: #3E3E3E;
-        }
-        .dark .answer-text pre {
-            background: #0D0D0D;
-        }
         .answer-text pre code {
-            background: transparent;
+            background: transparent !important;
             padding: 0;
             border: none;
-            color: #E5E5E5;
             font-size: 0.875rem;
             line-height: 1.6;
         }
@@ -1562,6 +1551,19 @@
                 <div class="max-w-3xl mx-auto px-4 pointer-events-auto">
                     <!-- Main Input Container - Rectangular with border only -->
                     <div class="relative flex flex-col bg-[#F4F4F4] dark:bg-[#2F2F2F] border border-[#E5E5E5] dark:border-[#424242] rounded-2xl focus-within:border-[#CDCDCD] dark:focus-within:border-[#5A5A5A] transition-colors overflow-hidden shadow-sm">
+                        <!-- Attached file indicator (above textarea) -->
+                        <div id="attachedFileIndicator" class="hidden px-3 pt-3">
+                            <div class="flex items-center gap-2 px-3 py-2 bg-light-bg dark:bg-dark-bg rounded-lg border border-light-border dark:border-dark-border">
+                                <span id="attachedFileIcon"><i class="fa-light fa-file text-light-text-muted dark:text-dark-text-muted"></i></span>
+                                <span id="attachedFileName" class="text-sm text-light-text dark:text-dark-text truncate flex-1"></span>
+                                <button onclick="removeAttachedFile()" class="p-1 hover:bg-light-hover dark:hover:bg-dark-hover rounded transition-colors" title="Remove">
+                                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Textarea area -->
                         <div class="px-4 pt-3 pb-2">
                             <textarea
@@ -1577,6 +1579,18 @@
                         <div class="flex items-center justify-between px-3 pb-3 pt-1">
                             <!-- Left side: Feature buttons -->
                             <div class="flex items-center gap-1">
+                                <!-- Attach File Button -->
+                                <button
+                                    id="attachFileBtn"
+                                    onclick="openAttachModal()"
+                                    class="toolbar-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+                                    title="Attach File"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                </button>
+
                                 <!-- Deep Search Button (Exa.ai) -->
                                 <button
                                     id="deepSearchToggleBtn"
@@ -2245,6 +2259,11 @@
 
             if (documentCount > 0) {
                 btn.disabled = false;
+                // Auto-enable RAG when documents are available
+                if (!ragEnabled) {
+                    ragEnabled = true;
+                    btn.classList.add('active');
+                }
                 btn.title = ragEnabled
                     ? 'Knowledge Base Search (RAG) - ON'
                     : 'Knowledge Base Search (RAG) - Click to enable';
@@ -2668,16 +2687,16 @@
         }
 
         function getFileIconSvg(fileType) {
-            const colors = {
-                pdf: 'text-red-500',
-                word: 'text-blue-500',
-                presentation: 'text-orange-500',
-                spreadsheet: 'text-green-500',
-                image: 'text-purple-500',
-                audio: 'text-pink-500',
+            // Font Awesome icons with colors matching file types
+            const icons = {
+                pdf: '<i class="fa-light fa-file-pdf text-xl text-red-500"></i>',
+                word: '<i class="fa-light fa-file-doc text-xl text-blue-500"></i>',
+                presentation: '<i class="fa-light fa-file-ppt text-xl text-orange-500"></i>',
+                spreadsheet: '<i class="fa-light fa-file-xls text-xl text-green-500"></i>',
+                image: '<i class="fa-light fa-file-png text-xl text-pink-500"></i>',
+                audio: '<i class="fa-light fa-file-mp3 text-xl text-purple-500"></i>',
             };
-            const color = colors[fileType] || colors.pdf;
-            return `<svg class="w-5 h-5 ${color}" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>`;
+            return icons[fileType] || icons.pdf;
         }
 
         function formatFileSize(bytes) {
@@ -2775,7 +2794,9 @@
                 }
             }
 
-            addUserMessage(question);
+            // Capture attached file info before it might be cleared
+            const currentAttachment = attachedFile ? { ...attachedFile } : null;
+            addUserMessage(question, currentAttachment);
             const messageId = addStreamingMessage();
             const isFirstMessage = document.getElementById('chatMessages').querySelectorAll('.flex.justify-end').length === 1;
 
@@ -2791,7 +2812,8 @@
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled,
                         use_rag: ragEnabled,
-                        use_deep_search: deepSearchEnabled
+                        use_deep_search: deepSearchEnabled,
+                        attached_doc_id: attachedFile?.docId || null
                     })
                 });
 
@@ -2834,6 +2856,8 @@
                                 } else if (data.type === 'done') {
                                     // Final message with processed content, sources, and thinking
                                     finalizeStreamingMessage(messageId, data.content, data.sources || [], data.thinking || '', data.web_sources || []);
+                                    // Clear attached file after successful send
+                                    removeAttachedFile();
                                 } else if (data.type === 'error') {
                                     removeStreamingMessage(messageId);
                                     addErrorMessage(data.message);
@@ -3288,7 +3312,7 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        function addUserMessage(text) {
+        function addUserMessage(text, attachedFileInfo = null) {
             const messagesDiv = document.getElementById('chatMessages');
             const messageId = 'user-msg-' + Date.now();
 
@@ -3297,10 +3321,25 @@
                 messagesDiv.innerHTML = '';
             }
 
+            // Build attached file HTML if present
+            let attachedFileHtml = '';
+            if (attachedFileInfo) {
+                const fileType = attachedFileInfo.fileType || 'pdf';
+                attachedFileHtml = `
+                    <div class="flex items-center gap-2 mb-2 px-3 py-2 bg-light-bg/50 dark:bg-dark-bg/50 rounded-lg border border-light-border/50 dark:border-dark-border/50">
+                        <div class="w-8 h-8 rounded-lg ${getFileColorClass(fileType)} flex items-center justify-center flex-shrink-0">
+                            ${getFileIconSvg(fileType)}
+                        </div>
+                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary truncate">${escapeHtml(attachedFileInfo.name)}</span>
+                    </div>
+                `;
+            }
+
             const html = `
                 <div id="${messageId}" class="user-message-wrapper max-w-3xl mx-auto mb-6" data-user-text="${escapeHtml(text)}">
                     <div class="flex justify-end">
                         <div class="max-w-[70%] bg-[#F4F4F4] dark:bg-[#2F2F2F] text-light-text dark:text-dark-text px-4 py-3 rounded-xl">
+                            ${attachedFileHtml}
                             <p class="user-message-text text-[15px] leading-relaxed" style="font-family: 'Google Sans Flex', sans-serif;">${escapeHtml(text)}</p>
                         </div>
                     </div>
@@ -3645,7 +3684,8 @@
                         question: newText,
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled,
-                        use_deep_search: deepSearchEnabled
+                        use_deep_search: deepSearchEnabled,
+                        attached_doc_id: attachedFile?.docId || null
                     })
                 });
 
@@ -3802,6 +3842,7 @@
                         use_search: searchEnabled,
                         use_thinking: thinkingEnabled,
                         use_deep_search: deepSearchEnabled,
+                        attached_doc_id: attachedFile?.docId || null,
                         regenerate: true
                     })
                 });
@@ -4103,8 +4144,402 @@
             });
         }
 
+        // ========================
+        // FILE ATTACHMENT FUNCTIONS
+        // ========================
+        let attachedFile = null;  // { type: 'new'|'existing', file: File|null, docId: string|null, name: string, content: string }
+        let pendingAttachFile = null;
+        let attachAnalysisData = null;
+
+        function openAttachModal() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            if (!currentWorkspace) {
+                showToast('Please select a workspace first', 'error');
+                return;
+            }
+            document.getElementById('attachFileModal').classList.remove('hidden');
+            switchAttachTab('upload');
+            clearAttachSelection();
+        }
+
+        function closeAttachModal() {
+            document.getElementById('attachFileModal').classList.add('hidden');
+            clearAttachSelection();
+            pendingAttachFile = null;
+            attachAnalysisData = null;
+        }
+
+        function switchAttachTab(tab) {
+            const uploadTab = document.getElementById('attachUploadTab');
+            const existingTab = document.getElementById('attachExistingTab');
+            const tabUploadBtn = document.getElementById('tabUploadNew');
+            const tabExistingBtn = document.getElementById('tabExisting');
+
+            if (tab === 'upload') {
+                uploadTab.classList.remove('hidden');
+                existingTab.classList.add('hidden');
+                tabUploadBtn.classList.add('border-b-2', 'border-light-text', 'dark:border-dark-text', 'text-light-text', 'dark:text-dark-text', '-mb-px');
+                tabUploadBtn.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
+                tabExistingBtn.classList.remove('border-b-2', 'border-light-text', 'dark:border-dark-text', '-mb-px');
+                tabExistingBtn.classList.add('text-light-text-muted', 'dark:text-dark-text-muted');
+            } else {
+                uploadTab.classList.add('hidden');
+                existingTab.classList.remove('hidden');
+                tabExistingBtn.classList.add('border-b-2', 'border-light-text', 'dark:border-dark-text', 'text-light-text', 'dark:text-dark-text', '-mb-px');
+                tabExistingBtn.classList.remove('text-light-text-muted', 'dark:text-dark-text-muted');
+                tabUploadBtn.classList.remove('border-b-2', 'border-light-text', 'dark:border-dark-text', '-mb-px');
+                tabUploadBtn.classList.add('text-light-text-muted', 'dark:text-dark-text-muted');
+                loadExistingFiles();
+            }
+            // Clear selection when switching tabs
+            clearAttachSelection();
+        }
+
+        async function loadExistingFiles() {
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+            const listEl = document.getElementById('attachExistingList');
+            listEl.innerHTML = '<p class="text-sm text-light-text-muted dark:text-dark-text-muted text-center py-4">Loading files...</p>';
+
+            try {
+                const response = await fetch(`/api/documents?workspace_id=${currentWorkspace.id}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                const data = await response.json();
+
+                if (!data.documents || data.documents.length === 0) {
+                    listEl.innerHTML = '<p class="text-sm text-light-text-muted dark:text-dark-text-muted text-center py-4">No files uploaded yet</p>';
+                    return;
+                }
+
+                listEl.innerHTML = data.documents.map(doc => `
+                    <div class="existing-file-item p-3 rounded-lg border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover cursor-pointer transition-colors"
+                         onclick="selectExistingFile('${doc.id}', '${escapeHtml(doc.filename)}', '${doc.file_type || 'pdf'}')"
+                         data-doc-id="${doc.id}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg ${getFileColorClass(doc.file_type)} flex items-center justify-center flex-shrink-0">
+                                ${getFileIconSvg(doc.file_type)}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium truncate text-light-text dark:text-dark-text">${escapeHtml(doc.filename)}</p>
+                                <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                                    ${doc.file_type ? doc.file_type.toUpperCase() : 'FILE'}
+                                    ${doc.num_pages ? ` • ${doc.num_pages} pages` : ''}
+                                    ${doc.file_size_bytes ? ` • ${formatFileSize(doc.file_size_bytes)}` : ''}
+                                    ${doc.processing_method === 'ocr' ? ' • OCR' : ''}
+                                </p>
+                            </div>
+                            <div class="selected-check hidden">
+                                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                listEl.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load files</p>';
+            }
+        }
+
+        function selectExistingFile(docId, filename, fileType = 'pdf') {
+            // Clear previous selection
+            document.querySelectorAll('.existing-file-item').forEach(el => {
+                el.classList.remove('bg-light-hover', 'dark:bg-dark-hover', 'border-light-text', 'dark:border-dark-text');
+                el.querySelector('.selected-check')?.classList.add('hidden');
+            });
+
+            // Select this file
+            const item = document.querySelector(`.existing-file-item[data-doc-id="${docId}"]`);
+            if (item) {
+                item.classList.add('bg-light-hover', 'dark:bg-dark-hover', 'border-light-text', 'dark:border-dark-text');
+                item.querySelector('.selected-check')?.classList.remove('hidden');
+            }
+
+            pendingAttachFile = { type: 'existing', docId, name: filename, fileType };
+            document.getElementById('attachConfirmBtn').disabled = false;
+        }
+
+        async function handleAttachFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            pendingAttachFile = { type: 'new', file, name: file.name };
+
+            // Show file info
+            document.getElementById('attachSelectedFile').classList.remove('hidden');
+            document.getElementById('attachSelectedFileName').textContent = file.name;
+            document.getElementById('attachSelectedFileSize').textContent = formatFileSize(file.size);
+            document.getElementById('attachDropZone').classList.add('hidden');
+
+            // Analyze file for OCR recommendation
+            const formData = new FormData();
+            formData.append('files', file);
+
+            try {
+                const response = await fetch('/api/upload/analyze', {
+                    method: 'POST',
+                    headers: Auth.getAuthHeaders(),
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.files && data.files[0]) {
+                    attachAnalysisData = data.files[0];
+                    if (attachAnalysisData.ocr_available) {
+                        document.getElementById('attachOcrOption').classList.remove('hidden');
+                        document.getElementById('attachUseOcr').checked = attachAnalysisData.ocr_recommended;
+                        document.getElementById('attachOcrReason').textContent = attachAnalysisData.ocr_recommended ? '(recommended)' : '';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to analyze file:', error);
+            }
+
+            document.getElementById('attachConfirmBtn').disabled = false;
+        }
+
+        function clearAttachSelection() {
+            pendingAttachFile = null;
+            attachAnalysisData = null;
+            document.getElementById('attachFileInput').value = '';
+            document.getElementById('attachSelectedFile').classList.add('hidden');
+            document.getElementById('attachDropZone').classList.remove('hidden');
+            document.getElementById('attachOcrOption').classList.add('hidden');
+            document.getElementById('attachUploadProgress').classList.add('hidden');
+            document.getElementById('attachConfirmBtn').disabled = true;
+
+            // Clear existing file selection
+            document.querySelectorAll('.existing-file-item').forEach(el => {
+                el.classList.remove('bg-light-hover', 'dark:bg-dark-hover', 'border-light-text', 'dark:border-dark-text');
+                el.querySelector('.selected-check')?.classList.add('hidden');
+            });
+        }
+
+        async function confirmAttachment() {
+            if (!pendingAttachFile) return;
+
+            const currentWorkspace = Navbar.getCurrentWorkspace();
+
+            if (pendingAttachFile.type === 'new') {
+                // Upload and process new file
+                document.getElementById('attachUploadProgress').classList.remove('hidden');
+                document.getElementById('attachUploadStatus').textContent = 'Uploading...';
+                document.getElementById('attachConfirmBtn').disabled = true;
+
+                const formData = new FormData();
+                formData.append('file', pendingAttachFile.file);
+                formData.append('workspace_id', currentWorkspace.id);
+                if (attachAnalysisData?.ocr_available) {
+                    formData.append('use_ocr', document.getElementById('attachUseOcr').checked ? 'true' : 'false');
+                }
+
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: Auth.getAuthHeaders(),
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        document.getElementById('attachUploadStatus').textContent = 'Processing complete!';
+                        attachedFile = {
+                            type: 'new',
+                            docId: data.document_id,
+                            name: pendingAttachFile.name,
+                            fileType: data.file_type || getFileTypeFromName(pendingAttachFile.name)
+                        };
+                        showAttachedFileIndicator();
+                        setTimeout(() => closeAttachModal(), 500);
+                    } else {
+                        document.getElementById('attachUploadStatus').textContent = 'Failed: ' + data.error;
+                        document.getElementById('attachConfirmBtn').disabled = false;
+                    }
+                } catch (error) {
+                    document.getElementById('attachUploadStatus').textContent = 'Error: ' + error.message;
+                    document.getElementById('attachConfirmBtn').disabled = false;
+                }
+            } else {
+                // Use existing file
+                attachedFile = {
+                    type: 'existing',
+                    docId: pendingAttachFile.docId,
+                    name: pendingAttachFile.name,
+                    fileType: pendingAttachFile.fileType || 'pdf'
+                };
+                showAttachedFileIndicator();
+                closeAttachModal();
+            }
+        }
+
+        function getFileTypeFromName(filename) {
+            const ext = filename.toLowerCase().split('.').pop();
+            const typeMap = {
+                'pdf': 'pdf',
+                'doc': 'word', 'docx': 'word',
+                'ppt': 'presentation', 'pptx': 'presentation',
+                'xls': 'spreadsheet', 'xlsx': 'spreadsheet',
+                'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 'webp': 'image',
+                'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio', 'm4a': 'audio'
+            };
+            return typeMap[ext] || 'pdf';
+        }
+
+        function showAttachedFileIndicator() {
+            if (!attachedFile) return;
+            document.getElementById('attachedFileIndicator').classList.remove('hidden');
+            document.getElementById('attachedFileName').textContent = attachedFile.name;
+            // Set the icon based on file type
+            const iconEl = document.getElementById('attachedFileIcon');
+            iconEl.innerHTML = getFileIconSvg(attachedFile.fileType || 'pdf');
+            // Update attach button to show active state
+            const attachBtn = document.getElementById('attachFileBtn');
+            attachBtn.classList.add('active');
+        }
+
+        function removeAttachedFile() {
+            attachedFile = null;
+            document.getElementById('attachedFileIndicator').classList.add('hidden');
+            document.getElementById('attachedFileName').textContent = '';
+            // Remove active state from attach button
+            const attachBtn = document.getElementById('attachFileBtn');
+            attachBtn.classList.remove('active');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Setup drag and drop for attachment modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('attachDropZone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                        const input = document.getElementById('attachFileInput');
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        input.files = dt.files;
+                        handleAttachFileSelect({ target: input });
+                    }
+                });
+            }
+        });
+
 
     </script>
+
+    <!-- File Attachment Modal -->
+    <div id="attachFileModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeAttachModal()"></div>
+
+            <!-- Modal -->
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-lg w-full p-6 z-10 border border-light-border dark:border-dark-border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">Attach File</h3>
+                    <button onclick="closeAttachModal()" class="p-1 text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-2 mb-4 border-b border-light-border dark:border-dark-border">
+                    <button id="tabUploadNew" onclick="switchAttachTab('upload')" class="px-4 py-2 text-sm font-medium border-b-2 border-light-text dark:border-dark-text text-light-text dark:text-dark-text -mb-px">
+                        Upload New
+                    </button>
+                    <button id="tabExisting" onclick="switchAttachTab('existing')" class="px-4 py-2 text-sm font-medium text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text">
+                        Existing Files
+                    </button>
+                </div>
+
+                <!-- Upload New Tab -->
+                <div id="attachUploadTab">
+                    <!-- Drop zone -->
+                    <div id="attachDropZone"
+                         class="upload-zone border-light-border dark:border-dark-border rounded-xl p-8 text-center cursor-pointer hover:border-light-text-muted dark:hover:border-dark-text-muted"
+                         onclick="document.getElementById('attachFileInput').click()">
+                        <input type="file" id="attachFileInput" class="hidden" onchange="handleAttachFileSelect(event)" accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx">
+                        <svg class="w-12 h-12 mx-auto text-light-text-muted dark:text-dark-text-muted mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-1">Click to upload or drag & drop</p>
+                        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">PDF, DOC, DOCX, TXT, MD, PPT (max 50MB)</p>
+                    </div>
+
+                    <!-- Selected file info -->
+                    <div id="attachSelectedFile" class="hidden mt-4 p-3 bg-light-sidebar dark:bg-dark-sidebar rounded-lg border border-light-border dark:border-dark-border">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-light-hover dark:bg-dark-hover flex items-center justify-center flex-shrink-0">
+                                <i class="fa-light fa-file text-light-text-muted dark:text-dark-text-muted"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p id="attachSelectedFileName" class="font-medium truncate text-light-text dark:text-dark-text"></p>
+                                <p id="attachSelectedFileSize" class="text-xs text-light-text-muted dark:text-dark-text-muted"></p>
+                            </div>
+                            <button onclick="clearAttachSelection()" class="p-1 hover:bg-light-hover dark:hover:bg-dark-hover rounded">
+                                <svg class="w-4 h-4 text-light-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- OCR Option -->
+                        <div id="attachOcrOption" class="hidden mt-3 flex items-center gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="attachUseOcr" class="w-4 h-4 rounded border-light-border dark:border-dark-border">
+                                <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary">Enable OCR</span>
+                            </label>
+                            <span id="attachOcrReason" class="text-xs text-light-text-muted dark:text-dark-text-muted"></span>
+                        </div>
+                        <!-- Upload progress -->
+                        <div id="attachUploadProgress" class="hidden mt-3">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin text-light-text-muted" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span id="attachUploadStatus" class="text-xs text-light-text-muted dark:text-dark-text-muted">Processing...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Existing Files Tab -->
+                <div id="attachExistingTab" class="hidden">
+                    <div id="attachExistingList" class="max-h-64 overflow-y-auto custom-scrollbar space-y-2">
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted text-center py-4">Loading files...</p>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeAttachModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button id="attachConfirmBtn" onclick="confirmAttachment()" disabled class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-white dark:text-dark-bg rounded-xl hover:bg-[#333333] dark:hover:bg-[#cccccc] font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Attach
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Create Workspace Modal -->
     <div id="createWorkspaceModal" class="hidden fixed inset-0 z-50 overflow-y-auto">

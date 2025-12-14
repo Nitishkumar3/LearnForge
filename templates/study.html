@@ -10,14 +10,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled>
+    <!-- Highlight.js for code syntax highlighting (always dark) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
     <!-- Google Sans Flex Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://fa71.pages.dev/css/all.css">
     <script>
         (function() {
             const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
@@ -193,8 +194,7 @@
             display: block;
             padding: 1rem;
             overflow-x: auto;
-            background: #0D0D0D;
-            color: #D4D4D4;
+            background: #0D0D0D !important;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
             font-size: 0.875rem;
             line-height: 1.5;
@@ -484,7 +484,21 @@
             </div>
 
             <!-- Subtopic Content View (hidden by default) -->
-            <div id="subtopicContentView" class="hidden flex-1 overflow-y-auto custom-scrollbar">
+            <div id="subtopicContentView" class="hidden flex-1 overflow-y-auto custom-scrollbar relative">
+                <!-- Floating Scroll Navigation Buttons -->
+                <div class="fixed bottom-8 right-8 flex flex-col gap-2 z-20">
+                    <button id="scrollToTopBtn" onclick="scrollToTop()" class="hidden w-9 h-9 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg" title="Scroll to top">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                        </svg>
+                    </button>
+                    <button id="scrollToBottomBtn" onclick="scrollToBottom()" class="hidden w-9 h-9 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover text-light-text-secondary dark:text-dark-text-secondary rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg" title="Scroll to bottom">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+
                 <div class="max-w-4xl mx-auto px-6 py-8">
                     <!-- Header with navigation -->
                     <div class="flex items-center gap-4 mb-6">
@@ -1124,18 +1138,19 @@ Machine Learning - Types of ML - Supervised Learning..."
             }
 
             list.innerHTML = documents.map(doc => {
-                const ext = doc.filename.split('.').pop().toLowerCase();
-                const iconColor = getFileIconColor(ext);
+                const fileType = doc.file_type || getFileTypeFromExt(doc.filename);
                 return `
-                    <div class="flex items-center gap-3 p-3 rounded-xl bg-light-hover dark:bg-dark-hover group">
-                        <div class="w-10 h-10 rounded-lg ${iconColor} flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                            </svg>
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover group transition-colors">
+                        <div class="w-10 h-10 rounded-lg ${getFileColorClass(fileType)} flex items-center justify-center flex-shrink-0">
+                            ${getFileIconSvg(fileType)}
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-light-text dark:text-dark-text truncate">${escapeHtml(doc.filename)}</p>
-                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">${formatFileSize(doc.file_size_bytes)}</p>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                                ${fileType ? fileType.toUpperCase() : 'FILE'}
+                                ${doc.num_pages ? ` • ${doc.num_pages} pages` : ''}
+                                ${doc.file_size_bytes ? ` • ${formatFileSize(doc.file_size_bytes)}` : ''}
+                            </p>
                         </div>
                         <button onclick="deleteDocument('${doc.id}')" class="opacity-0 group-hover:opacity-100 p-2 hover:bg-light-border dark:hover:bg-dark-border rounded-lg transition-all">
                             <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted hover:text-accent-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1147,16 +1162,41 @@ Machine Learning - Types of ML - Supervised Learning..."
             }).join('');
         }
 
-        function getFileIconColor(ext) {
-            const colors = {
-                pdf: 'bg-red-500',
-                doc: 'bg-blue-500', docx: 'bg-blue-500',
-                ppt: 'bg-orange-500', pptx: 'bg-orange-500',
-                xls: 'bg-green-500', xlsx: 'bg-green-500', csv: 'bg-green-500',
-                png: 'bg-purple-500', jpg: 'bg-purple-500', jpeg: 'bg-purple-500', gif: 'bg-purple-500',
-                mp3: 'bg-pink-500', wav: 'bg-pink-500', ogg: 'bg-pink-500', m4a: 'bg-pink-500'
+        function getFileTypeFromExt(filename) {
+            const ext = filename.toLowerCase().split('.').pop();
+            const typeMap = {
+                'pdf': 'pdf',
+                'doc': 'word', 'docx': 'word',
+                'ppt': 'presentation', 'pptx': 'presentation',
+                'xls': 'spreadsheet', 'xlsx': 'spreadsheet', 'csv': 'spreadsheet',
+                'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 'webp': 'image',
+                'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio', 'm4a': 'audio'
             };
-            return colors[ext] || 'bg-gray-500';
+            return typeMap[ext] || 'pdf';
+        }
+
+        function getFileColorClass(fileType) {
+            const colors = {
+                pdf: 'bg-red-50 dark:bg-red-900/30',
+                word: 'bg-blue-50 dark:bg-blue-900/30',
+                presentation: 'bg-orange-50 dark:bg-orange-900/30',
+                spreadsheet: 'bg-green-50 dark:bg-green-900/30',
+                image: 'bg-pink-50 dark:bg-pink-900/30',
+                audio: 'bg-purple-50 dark:bg-purple-900/30',
+            };
+            return colors[fileType] || colors.pdf;
+        }
+
+        function getFileIconSvg(fileType) {
+            const icons = {
+                pdf: '<i class="fa-light fa-file-pdf text-xl text-red-500"></i>',
+                word: '<i class="fa-light fa-file-doc text-xl text-blue-500"></i>',
+                presentation: '<i class="fa-light fa-file-ppt text-xl text-orange-500"></i>',
+                spreadsheet: '<i class="fa-light fa-file-xls text-xl text-green-500"></i>',
+                image: '<i class="fa-light fa-file-png text-xl text-pink-500"></i>',
+                audio: '<i class="fa-light fa-file-mp3 text-xl text-purple-500"></i>',
+            };
+            return icons[fileType] || icons.pdf;
         }
 
         function formatFileSize(bytes) {
@@ -1336,6 +1376,9 @@ Machine Learning - Types of ML - Supervised Learning..."
             if (!urlParams.workspaceId && currentWorkspace) {
                 history.replaceState({ workspaceId: currentWorkspace.id }, '', buildStudyUrl(currentWorkspace.id));
             }
+
+            // Setup scroll listener for content view
+            setupScrollListener();
         }
 
         async function loadSyllabus() {
@@ -1705,6 +1748,45 @@ Machine Learning - Types of ML - Supervised Learning..."
             document.getElementById('subtopicContentView').classList.add('hidden');
             document.getElementById('studyMaterialsView').classList.remove('hidden');
             renderModules();
+        }
+
+        // Scroll navigation functions
+        function setupScrollListener() {
+            const contentView = document.getElementById('subtopicContentView');
+            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+            const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+            contentView.addEventListener('scroll', () => {
+                const scrollTop = contentView.scrollTop;
+                const scrollHeight = contentView.scrollHeight;
+                const clientHeight = contentView.clientHeight;
+                const isAtTop = scrollTop < 50;
+                const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+                // Show/hide scroll to top button
+                if (isAtTop) {
+                    scrollToTopBtn.classList.add('hidden');
+                } else {
+                    scrollToTopBtn.classList.remove('hidden');
+                }
+
+                // Show/hide scroll to bottom button
+                if (isAtBottom) {
+                    scrollToBottomBtn.classList.add('hidden');
+                } else {
+                    scrollToBottomBtn.classList.remove('hidden');
+                }
+            });
+        }
+
+        function scrollToTop() {
+            const contentView = document.getElementById('subtopicContentView');
+            contentView.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function scrollToBottom() {
+            const contentView = document.getElementById('subtopicContentView');
+            contentView.scrollTo({ top: contentView.scrollHeight, behavior: 'smooth' });
         }
 
         function showWelcomeContent() {

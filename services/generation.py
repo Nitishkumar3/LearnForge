@@ -572,6 +572,89 @@ Generate summary:"""
 
 
 # =============================================
+# FLASH CARDS GENERATION
+# =============================================
+
+def build_flashcards_prompt(subtopic, module_name, context=None):
+    """Build prompt for flash card generation."""
+    context_section = ""
+    if context:
+        context_section = f"""
+Use the following reference material to create accurate flash cards:
+---
+{context[:8000]}
+---
+"""
+
+    return f"""Generate educational flash cards for studying the following topic.
+
+TOPIC: {subtopic}
+MODULE: {module_name}
+{context_section}
+RULES:
+1. Generate 1-25 flash cards based on the topic's depth and complexity, covering key concepts, definitions, and important facts
+2. Each card should have a clear question/prompt on the front and a concise answer on the back
+3. Front should be a question, term, or concept to recall
+4. Back should be the answer, definition, or explanation (keep it concise but complete)
+5. Cover the most important aspects of the topic
+6. Vary the types of cards: definitions, concepts, examples, comparisons
+7. Make cards suitable for memorization and active recall
+
+Return ONLY valid JSON with no markdown formatting:
+{{
+  "cards": [
+    {{
+      "front": "What is [concept]?",
+      "back": "Definition or explanation here"
+    }},
+    {{
+      "front": "Term or concept to recall",
+      "back": "Answer or explanation"
+    }}
+  ]
+}}"""
+
+
+def generate_flashcards(subtopic, module_name, rag_context=None):
+    """
+    Generate flash cards for a subtopic.
+
+    Args:
+        subtopic: The subtopic to generate cards for
+        module_name: Name of the module
+        rag_context: Optional RAG context from documents
+
+    Returns:
+        {"cards": [...], "error": None} or {"cards": None, "error": str}
+    """
+    try:
+        prompt = build_flashcards_prompt(subtopic, module_name, rag_context)
+
+        print(f"[FLASHCARDS] Generating flash cards for: {subtopic}")
+
+        result = llm.generate_flashcards(prompt)
+
+        # Parse JSON response
+        try:
+            data = json.loads(result)
+            cards = data.get("cards", [])
+
+            if not cards:
+                return {"cards": None, "error": "No flash cards generated"}
+
+            print(f"[FLASHCARDS] Generated {len(cards)} cards for {subtopic}")
+            return {"cards": cards, "error": None}
+
+        except json.JSONDecodeError as e:
+            print(f"[FLASHCARDS] JSON parse error: {e}")
+            return {"cards": None, "error": f"Failed to parse response: {str(e)}"}
+
+    except Exception as e:
+        print(f"[FLASHCARDS] Generation error: {e}")
+        return {"cards": None, "error": str(e)}
+
+
+# =============================================
 # QUIZ GENERATION
 # =============================================
 

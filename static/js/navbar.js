@@ -149,8 +149,10 @@ const Navbar = (function() {
         // Update navigation links with workspace_id
         if (currentWorkspace) {
             const studyLink = document.getElementById('studyMaterialsLink');
+            const flashCardsLink = document.getElementById('flashCardsLink');
             const quizLink = document.getElementById('quizBtn');
             if (studyLink) studyLink.href = '/study/' + currentWorkspace.id;
+            if (flashCardsLink) flashCardsLink.href = '/flashcards/' + currentWorkspace.id;
             if (quizLink) quizLink.href = '/quiz/' + currentWorkspace.id;
         }
     }

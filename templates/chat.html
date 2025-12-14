@@ -1507,6 +1507,14 @@
                 <span>Study Materials</span>
             </a>
 
+            <!-- Flash Cards Link -->
+            <a href="/flashcards" id="flashCardsLink" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <span>Flash Cards</span>
+            </a>
+
             <!-- Quiz Button -->
             <a href="/quiz" id="quizBtn" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
                 <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4382,16 +4390,33 @@
                     content.style.top = 'auto';
                     content.style.transform = 'none';
 
-                    // Center the content
+                    // Auto-fit the diagram to container
                     setTimeout(() => {
-                        const container = wrapper.querySelector('.mermaid-container');
+                        const containerEl = wrapper.querySelector('.mermaid-container');
                         const svgEl = content.querySelector('svg');
-                        if (svgEl && container) {
-                            const containerRect = container.getBoundingClientRect();
-                            const svgRect = svgEl.getBoundingClientRect();
-                            const offsetX = (containerRect.width - svgRect.width) / 2;
-                            const offsetY = (containerRect.height - svgRect.height) / 2;
+                        if (svgEl && containerEl) {
+                            // Get actual SVG dimensions
+                            const svgWidth = svgEl.getBBox ? svgEl.getBBox().width : svgEl.clientWidth || svgEl.scrollWidth;
+                            const svgHeight = svgEl.getBBox ? svgEl.getBBox().height : svgEl.clientHeight || svgEl.scrollHeight;
+                            const containerWidth = containerEl.clientWidth - 40; // padding
+                            const containerHeight = containerEl.clientHeight - 40; // padding
+
+                            // Calculate scale to fit entire diagram
+                            const scaleX = containerWidth / svgWidth;
+                            const scaleY = containerHeight / svgHeight;
+                            const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+
+                            // Apply zoom and center
+                            const scaledWidth = svgWidth * scale;
+                            const scaledHeight = svgHeight * scale;
+                            const offsetX = (containerEl.clientWidth - scaledWidth) / 2;
+                            const offsetY = (containerEl.clientHeight - scaledHeight) / 2;
+
+                            pz.zoomAbs(0, 0, scale);
                             pz.moveTo(offsetX, offsetY);
+
+                            // Store initial transform for reset
+                            wrapper.initialTransform = { scale, offsetX, offsetY };
                         }
                     }, 100);
 
@@ -4549,18 +4574,35 @@
         function resetMermaidZoom(btn) {
             const wrapper = btn.closest('.mermaid-wrapper');
             if (wrapper && wrapper.panzoomInstance) {
-                const container = wrapper.querySelector('.mermaid-container');
-                const content = wrapper.querySelector('.mermaid-content');
-                const svgEl = content.querySelector('svg');
-
-                wrapper.panzoomInstance.zoomAbs(0, 0, 1);
-
-                if (svgEl && container) {
-                    const containerRect = container.getBoundingClientRect();
-                    const svgRect = svgEl.getBoundingClientRect();
-                    const offsetX = (containerRect.width - svgRect.width) / 2;
-                    const offsetY = (containerRect.height - svgRect.height) / 2;
+                // Use stored initial transform if available
+                if (wrapper.initialTransform) {
+                    const { scale, offsetX, offsetY } = wrapper.initialTransform;
+                    wrapper.panzoomInstance.zoomAbs(0, 0, scale);
                     wrapper.panzoomInstance.moveTo(offsetX, offsetY);
+                } else {
+                    // Fallback to recalculating fit
+                    const containerEl = wrapper.querySelector('.mermaid-container');
+                    const content = wrapper.querySelector('.mermaid-content');
+                    const svgEl = content.querySelector('svg');
+
+                    if (svgEl && containerEl) {
+                        const svgWidth = svgEl.getBBox ? svgEl.getBBox().width : svgEl.clientWidth;
+                        const svgHeight = svgEl.getBBox ? svgEl.getBBox().height : svgEl.clientHeight;
+                        const containerWidth = containerEl.clientWidth - 40;
+                        const containerHeight = containerEl.clientHeight - 40;
+
+                        const scaleX = containerWidth / svgWidth;
+                        const scaleY = containerHeight / svgHeight;
+                        const scale = Math.min(scaleX, scaleY, 1);
+
+                        const scaledWidth = svgWidth * scale;
+                        const scaledHeight = svgHeight * scale;
+                        const offsetX = (containerEl.clientWidth - scaledWidth) / 2;
+                        const offsetY = (containerEl.clientHeight - scaledHeight) / 2;
+
+                        wrapper.panzoomInstance.zoomAbs(0, 0, scale);
+                        wrapper.panzoomInstance.moveTo(offsetX, offsetY);
+                    }
                 }
             }
         }

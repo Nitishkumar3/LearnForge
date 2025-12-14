@@ -194,6 +194,13 @@ def study(workspace_id=None, module_id=None, subtopic_index=None):
     return render_template('study.html')
 
 
+@app.route('/flashcards')
+@app.route('/flashcards/<workspace_id>')
+def flashcards(workspace_id=None):
+    """Render the flash cards page."""
+    return render_template('flashcards.html')
+
+
 @app.route('/quiz')
 @app.route('/quiz/<workspace_id>')
 @app.route('/quiz/<workspace_id>/<quiz_id>')
@@ -869,6 +876,136 @@ def generate_study_material_stream_route(workspace_id):
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
     return Response(generate(), mimetype='text/event-stream')
+
+
+# ===================
+# FLASH CARDS ROUTES
+# ===================
+
+@app.route('/api/workspaces/<workspace_id>/flash-cards', methods=['GET'])
+@auth_required
+def get_flash_cards(workspace_id):
+    """Get all generated flash card sets for a workspace."""
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    flash_cards = db.get_all_flash_cards(workspace_id)
+
+    return jsonify({
+        'flash_cards': [{
+            'id': str(fc['id']),
+            'module_id': fc['module_id'],
+            'module_name': fc['module_name'],
+            'subtopic': fc['subtopic'],
+            'card_count': len(fc['cards']) if fc['cards'] else 0,
+            'created_at': fc['created_at'].isoformat() if fc['created_at'] else None
+        } for fc in flash_cards]
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/flash-cards/<int:module_id>/<path:subtopic>', methods=['GET'])
+@auth_required
+def get_flash_card_set(workspace_id, module_id, subtopic):
+    """Get flash cards for a specific subtopic."""
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    from urllib.parse import unquote
+    subtopic = unquote(subtopic)
+
+    flash_card = db.get_flash_card(workspace_id, module_id, subtopic)
+
+    if not flash_card:
+        return jsonify({'error': 'Flash cards not found'}), 404
+
+    return jsonify({
+        'flash_card': {
+            'id': str(flash_card['id']),
+            'module_id': flash_card['module_id'],
+            'module_name': flash_card['module_name'],
+            'subtopic': flash_card['subtopic'],
+            'cards': flash_card['cards'],
+            'created_at': flash_card['created_at'].isoformat() if flash_card['created_at'] else None
+        }
+    })
+
+
+@app.route('/api/workspaces/<workspace_id>/flash-cards/generate', methods=['POST'])
+@auth_required
+def generate_flash_cards_route(workspace_id):
+    """Generate flash cards for a subtopic."""
+    workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
+    if not workspace:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    data = request.json
+    module_id = data.get('module_id')
+    module_name = data.get('module_name')
+    subtopic = data.get('subtopic')
+    regenerate = data.get('regenerate', False)
+
+    if not module_id or not module_name or not subtopic:
+        return jsonify({'error': 'module_id, module_name, and subtopic are required'}), 400
+
+    # Check if already exists (unless regenerate)
+    if not regenerate:
+        existing = db.get_flash_card(workspace_id, module_id, subtopic)
+        if existing:
+            return jsonify({
+                'success': True,
+                'flash_card': {
+                    'id': str(existing['id']),
+                    'module_id': existing['module_id'],
+                    'module_name': existing['module_name'],
+                    'subtopic': existing['subtopic'],
+                    'cards': existing['cards'],
+                    'created_at': existing['created_at'].isoformat() if existing['created_at'] else None
+                },
+                'cached': True
+            })
+
+    # Try to get RAG context
+    rag_context = None
+    try:
+        documents = db.get_documents_by_workspace(workspace_id, request.user_id)
+        if documents:
+            search_query = f"{module_name} {subtopic}"
+            result = retrieve(search_query, request.user_id, workspace_id)
+            if result and result.get('chunks'):
+                rag_context = "\n\n".join(result['chunks'])
+    except Exception as e:
+        print(f"RAG retrieval error: {e}")
+
+    # Generate flash cards
+    result = generation.generate_flashcards(subtopic, module_name, rag_context)
+
+    if result.get('error'):
+        return jsonify({'error': result['error']}), 500
+
+    # Save to database
+    saved = db.save_flash_card(
+        workspace_id,
+        request.user_id,
+        module_id,
+        module_name,
+        subtopic,
+        result['cards']
+    )
+
+    return jsonify({
+        'success': True,
+        'flash_card': {
+            'id': str(saved['id']),
+            'module_id': saved['module_id'],
+            'module_name': saved['module_name'],
+            'subtopic': saved['subtopic'],
+            'cards': saved['cards'],
+            'created_at': saved['created_at'].isoformat() if saved['created_at'] else None
+        },
+        'cached': False
+    })
 
 
 # ===================

@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Cards - LearnForge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fa71.pages.dev/css/all.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(savedTheme);
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'light-bg': '#FFFFFF',
+                        'light-sidebar': '#F9F9F9',
+                        'light-hover': '#ECECEC',
+                        'light-border': '#E5E5E5',
+                        'light-text': '#0D0D0D',
+                        'light-text-secondary': '#666666',
+                        'light-text-muted': '#999999',
+                        'dark-bg': '#212121',
+                        'dark-sidebar': '#171717',
+                        'dark-hover': '#2F2F2F',
+                        'dark-border': '#3E3E3E',
+                        'dark-text': '#ECECEC',
+                        'dark-text-secondary': '#B4B4B4',
+                        'dark-text-muted': '#8E8E8E',
+                        'accent-success': '#10B981',
+                        'accent-warning': '#F59E0B',
+                        'accent-error': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Google Sans Flex', sans-serif; }
+
+        .shimmer {
+            background: linear-gradient(90deg, #E5E5E5 25%, #F5F5F5 50%, #E5E5E5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        .dark .shimmer {
+            background: linear-gradient(90deg, #2F2F2F 25%, #3E3E3E 50%, #2F2F2F 75%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 3px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+
+        .theme-toggle {
+            width: 36px; height: 36px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; background: transparent;
+        }
+        .theme-toggle:hover { background: #ECECEC; }
+        .dark .theme-toggle:hover { background: #2F2F2F; }
+        .theme-toggle svg { width: 20px; height: 20px; color: #666666; }
+        .dark .theme-toggle svg { color: #B4B4B4; }
+
+        /* Flash Card Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 600px;
+            height: 350px;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .flashcard-front {
+            background: linear-gradient(135deg, #2d2d2d 0%, #0d0d0d 100%);
+            color: white;
+        }
+        .flashcard-back {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .dark .flashcard-front {
+            background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
+        }
+        .dark .flashcard-back {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        /* Subtopic Card Styles */
+        .subtopic-card {
+            transition: all 0.2s ease;
+        }
+        .subtopic-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .dark .subtopic-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg h-screen overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="bg-light-bg dark:bg-dark-sidebar border-b border-light-border dark:border-dark-border z-50 flex-shrink-0">
+        <div class="px-4 sm:px-6">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-4">
+                    <a href="/chat" class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center">
+                            <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-semibold text-light-text dark:text-dark-text tracking-tight">LearnForge</h1>
+                            <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Smart Document Assistant</p>
+                        </div>
+                    </a>
+
+                    <div class="relative ml-4">
+                        <button id="workspaceSwitcher" onclick="toggleWorkspaceDropdown()"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200 border border-light-border dark:border-dark-border">
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                            <span id="currentWorkspaceName" class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary max-w-32 truncate">
+                                <span class="shimmer inline-block h-4 w-20 align-middle"></span>
+                            </span>
+                            <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="workspaceDropdownContainer" class="hidden absolute left-0 mt-2 w-64 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar" id="workspaceDropdown">
+                                <div class="shimmer-skeleton space-y-2">
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                            </div>
+                            <div class="border-t border-light-border dark:border-dark-border p-2">
+                                <button onclick="openCreateWorkspaceModal()" class="w-full flex items-center gap-2 p-2 text-light-text dark:text-dark-text hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    New Workspace
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleTheme()" class="theme-toggle" title="Toggle theme">
+                        <svg class="hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg class="block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+                    <div class="relative">
+                        <button id="userMenuButton" onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200">
+                            <div class="w-8 h-8 rounded-full bg-light-text dark:bg-dark-text flex items-center justify-center">
+                                <span id="userInitial" class="text-sm font-semibold text-light-bg dark:text-dark-bg">U</span>
+                            </div>
+                        </button>
+                        <div id="userDropdownContainer" class="hidden absolute right-0 mt-2 w-56 bg-light-bg dark:bg-dark-sidebar rounded-xl shadow-lg border border-light-border dark:border-dark-border z-50">
+                            <div class="p-3 border-b border-light-border dark:border-dark-border">
+                                <p id="userName" class="text-sm font-medium text-light-text dark:text-dark-text">User</p>
+                                <p id="userEmail" class="text-xs text-light-text-muted dark:text-dark-text-muted">user@email.com</p>
+                            </div>
+                            <div class="p-2">
+                                <button onclick="Auth.logout()" class="w-full flex items-center gap-2 p-2 text-accent-error hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <!-- Left Sidebar -->
+        <aside class="w-80 bg-light-sidebar dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border flex-shrink-0 flex flex-col overflow-hidden">
+            <a href="/study" id="studyMaterialsLink" class="mx-4 mt-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                <span>Study Materials</span>
+            </a>
+
+            <a href="/flashcards" id="flashCardsLink" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-bg dark:text-dark-bg bg-light-text dark:bg-dark-text border border-transparent rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <span>Flash Cards</span>
+            </a>
+
+            <a href="/quiz" id="quizLink" class="mx-4 mb-2 flex items-center gap-3 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-sidebar rounded-xl transition-all duration-200">
+                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Quiz</span>
+            </a>
+
+            <div class="p-4 pt-2">
+                <a href="/chat" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-light-text dark:text-dark-text bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border hover:bg-light-border dark:hover:bg-dark-border rounded-lg transition-all duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Go to Chat
+                </a>
+            </div>
+
+            <!-- Chat History - Internal Scroll Only -->
+            <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <p class="px-4 py-1.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted">Your chats</p>
+                <div class="flex-1 overflow-y-auto custom-scrollbar px-2">
+                    <div id="chatHistoryList" class="pb-2">
+                        <div class="shimmer-skeleton space-y-2 px-2">
+                            <div class="shimmer h-8 w-full"></div>
+                            <div class="shimmer h-8 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files Section - Fixed at Bottom of Sidebar -->
+            <div class="border-t border-light-border dark:border-dark-border bg-light-sidebar/50 dark:bg-dark-sidebar/50 p-4">
+                <!-- Files Button - Opens Uploads Page -->
+                <button id="filesButton" onclick="goToUploads()" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-light-hover dark:bg-dark-hover group-hover:bg-light-border dark:group-hover:bg-dark-border flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="text-sm font-medium text-light-text dark:text-dark-text">Files</p>
+                        <p id="filesCount" class="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            <span class="shimmer inline-block h-3 w-24 rounded align-middle"></span>
+                        </p>
+                    </div>
+                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+
+                <!-- Upload Button -->
+                <button onclick="goToUploads()" class="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text border border-dashed border-light-border dark:border-dark-border hover:border-light-text-muted dark:hover:border-dark-text-muted rounded-xl transition-all duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="text-xs font-medium">Upload or drop files</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-light-bg dark:bg-dark-bg overflow-hidden min-h-0">
+            <!-- Module List View -->
+            <div id="moduleListView" class="flex-1 overflow-y-auto custom-scrollbar">
+                <div class="max-w-5xl mx-auto px-6 py-8">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-semibold text-light-text dark:text-dark-text">Flash Cards</h1>
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted">Interactive flash cards based on your syllabus</p>
+                    </div>
+
+                    <!-- No Syllabus Message -->
+                    <div id="noSyllabusMessage" class="hidden text-center py-16">
+                        <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-light-hover dark:bg-dark-hover border border-light-border dark:border-dark-border flex items-center justify-center">
+                            <svg class="w-10 h-10 text-light-text-muted dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">No Syllabus Added</h3>
+                        <p class="text-sm text-light-text-muted dark:text-dark-text-muted mb-4 max-w-md mx-auto">Add a syllabus to your workspace to generate flash cards.</p>
+                        <a href="/chat" class="inline-block px-4 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg hover:opacity-90 text-sm font-medium transition-colors">
+                            Go to Chat
+                        </a>
+                    </div>
+
+                    <!-- Loading Shimmer -->
+                    <div id="modulesShimmer" class="space-y-8">
+                        <!-- Module 1 Shimmer -->
+                        <div class="module-section">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="shimmer w-8 h-8 rounded-lg"></div>
+                                <div class="shimmer h-6 w-64 rounded"></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="shimmer h-5 w-3/4 mb-3 rounded"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                                <div class="bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="shimmer h-5 w-2/3 mb-3 rounded"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                                <div class="bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="shimmer h-5 w-4/5 mb-3 rounded"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Module 2 Shimmer -->
+                        <div class="module-section">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="shimmer w-8 h-8 rounded-lg"></div>
+                                <div class="shimmer h-6 w-48 rounded"></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="shimmer h-5 w-2/3 mb-3 rounded"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                                <div class="bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="shimmer h-5 w-3/4 mb-3 rounded"></div>
+                                    <div class="shimmer h-10 w-full rounded-lg"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modules Container -->
+                    <div id="modulesContainer" class="space-y-8 hidden">
+                        <!-- Modules will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Card Study View (hidden by default) -->
+            <div id="flashCardView" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div class="max-w-3xl mx-auto px-6 py-8">
+                        <!-- Header -->
+                        <div class="flex items-center gap-4 mb-8">
+                            <button onclick="backToModules()" class="p-2 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg transition-colors">
+                                <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <div class="flex-1">
+                                <p class="text-xs text-light-text-muted dark:text-dark-text-muted mb-1" id="flashcardModuleName">Module 1</p>
+                                <h1 class="text-xl font-semibold text-light-text dark:text-dark-text" id="flashcardSubtopic">Topic Name</h1>
+                            </div>
+                            <div class="text-sm text-light-text-muted dark:text-dark-text-muted">
+                                <span id="currentCardNum">1</span> / <span id="totalCards">10</span>
+                            </div>
+                        </div>
+
+                        <!-- Flash Card -->
+                        <div class="flashcard-container mb-8" onclick="flipCard()">
+                            <div class="flashcard" id="flashcard">
+                                <div class="flashcard-face flashcard-front">
+                                    <div class="text-xs uppercase tracking-wider mb-4 opacity-70">Question</div>
+                                    <div class="text-xl font-medium" id="cardFront">Loading...</div>
+                                </div>
+                                <div class="flashcard-face flashcard-back">
+                                    <div class="text-xs uppercase tracking-wider mb-4 opacity-70">Answer</div>
+                                    <div class="text-lg" id="cardBack">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-center text-sm text-light-text-muted dark:text-dark-text-muted mb-6">Click the card to flip</p>
+
+                        <!-- Navigation -->
+                        <div class="flex items-center justify-center gap-4">
+                            <button onclick="prevCard()" id="prevCardBtn" class="flex items-center gap-2 px-6 py-3 bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text rounded-xl hover:bg-light-border dark:hover:bg-dark-border transition-colors font-medium">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                Previous
+                            </button>
+                            <button onclick="nextCard()" id="nextCardBtn" class="flex items-center gap-2 px-6 py-3 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl hover:opacity-90 transition-colors font-medium">
+                                Next
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="mt-8">
+                            <div class="h-2 bg-light-hover dark:bg-dark-hover rounded-full overflow-hidden">
+                                <div id="progressBar" class="h-full bg-light-text dark:bg-dark-text rounded-full transition-all duration-300" style="width: 10%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Workspace Modal -->
+    <div id="createWorkspaceModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCreateWorkspaceModal()"></div>
+            <div class="relative bg-white dark:bg-dark-bg rounded-2xl shadow-xl max-w-md w-full p-6 z-10 border border-light-border dark:border-dark-border">
+                <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-4">Create New Workspace</h3>
+                <input type="text" id="newWorkspaceName" placeholder="Workspace name"
+                    class="w-full px-4 py-3 border border-light-border dark:border-dark-border rounded-xl bg-light-bg dark:bg-dark-sidebar text-light-text dark:text-dark-text placeholder-light-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-light-text-muted dark:focus:border-dark-text-muted transition-colors"
+                    onkeypress="if(event.key === 'Enter') createWorkspace()">
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeCreateWorkspaceModal()" class="flex-1 px-4 py-2.5 border border-light-border dark:border-dark-border text-light-text-secondary dark:text-dark-text-secondary rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover font-medium transition-colors duration-200 text-sm">Cancel</button>
+                    <button onclick="createWorkspace()" class="flex-1 px-4 py-2.5 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-xl hover:opacity-90 font-medium transition-colors duration-200 text-sm">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/navbar.js"></script>
+
+    <script>
+        // State (currentWorkspace is declared in navbar.js)
+        let syllabus = null;
+        let flashCardsData = {};
+        let currentCards = [];
+        let currentCardIndex = 0;
+        let currentModuleId = null;
+        let currentSubtopic = null;
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const newTheme = html.classList.contains('dark') ? 'light' : 'dark';
+            html.classList.remove('light', 'dark');
+            html.classList.add(newTheme);
+            localStorage.setItem('learnforge_theme', newTheme);
+        }
+
+        function toggleUserDropdown() {
+            document.getElementById('userDropdownContainer').classList.toggle('hidden');
+        }
+
+        function toggleWorkspaceDropdown() {
+            document.getElementById('workspaceDropdownContainer').classList.toggle('hidden');
+        }
+
+        function openCreateWorkspaceModal() {
+            document.getElementById('createWorkspaceModal').classList.remove('hidden');
+            document.getElementById('newWorkspaceName').focus();
+            document.getElementById('workspaceDropdownContainer').classList.add('hidden');
+        }
+
+        function closeCreateWorkspaceModal() {
+            document.getElementById('createWorkspaceModal').classList.add('hidden');
+            document.getElementById('newWorkspaceName').value = '';
+        }
+
+        async function createWorkspace() {
+            const name = document.getElementById('newWorkspaceName').value.trim();
+            if (!name) return;
+            try {
+                const response = await fetch('/api/workspaces', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...Auth.getAuthHeaders() },
+                    body: JSON.stringify({ name })
+                });
+                if (response.ok) {
+                    const workspace = await response.json();
+                    closeCreateWorkspaceModal();
+                    Navbar.switchWorkspace(workspace.id);
+                }
+            } catch (error) {
+                console.error('Failed to create workspace:', error);
+            }
+        }
+
+        // Render modules with subtopic cards
+        function renderModules() {
+            const container = document.getElementById('modulesContainer');
+            const noSyllabusMsg = document.getElementById('noSyllabusMessage');
+            const shimmer = document.getElementById('modulesShimmer');
+
+            // Hide shimmer
+            shimmer.classList.add('hidden');
+
+            if (!syllabus || !syllabus.modules || syllabus.modules.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                noSyllabusMsg.classList.remove('hidden');
+                return;
+            }
+
+            noSyllabusMsg.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            container.innerHTML = syllabus.modules.map((module, moduleIndex) => `
+                <div class="module-section">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-8 h-8 rounded-lg bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg flex items-center justify-center text-sm font-semibold">${moduleIndex + 1}</span>
+                        <h2 class="text-lg font-semibold text-light-text dark:text-dark-text">${escapeHtml(module.name)}</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${module.subtopics.map((subtopic, subtopicIndex) => {
+                            const key = `${moduleIndex + 1}-${subtopic}`;
+                            const cardData = flashCardsData[key];
+                            const hasCards = cardData ? true : false;
+                            const cardCount = Array.isArray(cardData) ? cardData.length : (cardData?.count || 0);
+                            return `
+                                <div class="subtopic-card bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border rounded-xl p-4">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <h3 class="text-sm font-medium text-light-text dark:text-dark-text line-clamp-2 flex-1 pr-2">${escapeHtml(subtopic)}</h3>
+                                        ${hasCards ? `<span class="text-xs px-2 py-0.5 bg-accent-success/10 text-accent-success rounded-full">${cardCount} cards</span>` : ''}
+                                    </div>
+                                    <button onclick="openFlashCards(${moduleIndex + 1}, '${escapeHtml(module.name)}', '${escapeHtml(subtopic)}')"
+                                        class="w-full flex items-center justify-center gap-2 px-3 py-2 ${hasCards ? 'bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg' : 'bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text border border-light-border dark:border-dark-border'} rounded-lg text-sm font-medium hover:opacity-90 transition-all">
+                                        ${hasCards ? `
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Study Now
+                                        ` : `
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                            </svg>
+                                            Generate Cards
+                                        `}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Open flash cards for a subtopic
+        async function openFlashCards(moduleId, moduleName, subtopic) {
+            const key = `${moduleId}-${subtopic}`;
+            currentModuleId = moduleId;
+            currentSubtopic = subtopic;
+
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            const originalClass = btn.className;
+
+            // Update button to loading state
+            btn.className = 'w-full flex items-center justify-center gap-2 px-3 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg text-sm font-medium transition-all cursor-wait';
+            btn.innerHTML = '<div class="spinner"></div><span>Loading...</span>';
+            btn.disabled = true;
+
+            // Check if we have cached cards (already fetched array)
+            if (Array.isArray(flashCardsData[key])) {
+                showFlashCardView(moduleName, subtopic, flashCardsData[key]);
+                btn.className = originalClass;
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                return;
+            }
+
+            // Cards exist in DB (marked as object with exists:true) - fetch them
+            if (flashCardsData[key]?.exists) {
+                try {
+                    const ws = Navbar.getCurrentWorkspace();
+                    const response = await fetch(`/api/workspaces/${ws.id}/flash-cards/${moduleId}/${encodeURIComponent(subtopic)}`, {
+                        headers: Auth.getAuthHeaders()
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        flashCardsData[key] = data.flash_card.cards;
+                        showFlashCardView(moduleName, subtopic, data.flash_card.cards);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching cards:', error);
+                    btn.className = originalClass;
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
+            // Cards don't exist - generate them directly
+            await generateFlashCards(moduleId, moduleName, subtopic, btn);
+        }
+
+        // Generate flash cards
+        async function generateFlashCards(moduleId, moduleName, subtopic, btn) {
+            const originalContent = btn.innerHTML;
+            const originalClass = btn.className;
+
+            // Update button to generating state with dark background
+            btn.className = 'w-full flex items-center justify-center gap-2 px-3 py-2 bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg rounded-lg text-sm font-medium transition-all cursor-wait';
+            btn.innerHTML = '<div class="spinner"></div><span>Generating...</span>';
+            btn.disabled = true;
+
+            try {
+                const ws = Navbar.getCurrentWorkspace();
+                const response = await fetch(`/api/workspaces/${ws.id}/flash-cards/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...Auth.getAuthHeaders() },
+                    body: JSON.stringify({
+                        module_id: moduleId,
+                        module_name: moduleName,
+                        subtopic: subtopic
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate flash cards');
+                }
+
+                const data = await response.json();
+                const key = `${moduleId}-${subtopic}`;
+                flashCardsData[key] = data.flash_card.cards;
+
+                // Refresh the modules to show the new card count
+                renderModules();
+
+                // Show the flash card view
+                showFlashCardView(moduleName, subtopic, data.flash_card.cards);
+            } catch (error) {
+                console.error('Generation error:', error);
+                btn.className = originalClass;
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                alert('Failed to generate flash cards. Please try again.');
+            }
+        }
+
+        // Show flash card study view
+        function showFlashCardView(moduleName, subtopic, cards) {
+            currentCards = cards;
+            currentCardIndex = 0;
+
+            document.getElementById('flashcardModuleName').textContent = moduleName;
+            document.getElementById('flashcardSubtopic').textContent = subtopic;
+            document.getElementById('totalCards').textContent = cards.length;
+
+            document.getElementById('moduleListView').classList.add('hidden');
+            document.getElementById('flashCardView').classList.remove('hidden');
+
+            displayCurrentCard();
+        }
+
+        // Display current card
+        function displayCurrentCard() {
+            if (currentCards.length === 0) return;
+
+            const card = currentCards[currentCardIndex];
+            document.getElementById('cardFront').textContent = card.front;
+            document.getElementById('cardBack').textContent = card.back;
+            document.getElementById('currentCardNum').textContent = currentCardIndex + 1;
+
+            // Reset flip state
+            document.getElementById('flashcard').classList.remove('flipped');
+
+            // Update progress
+            const progress = ((currentCardIndex + 1) / currentCards.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            // Update buttons
+            document.getElementById('prevCardBtn').disabled = currentCardIndex === 0;
+            document.getElementById('nextCardBtn').disabled = currentCardIndex === currentCards.length - 1;
+        }
+
+        // Flip card
+        function flipCard() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+
+        // Navigation
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                displayCurrentCard();
+            }
+        }
+
+        function nextCard() {
+            if (currentCardIndex < currentCards.length - 1) {
+                currentCardIndex++;
+                displayCurrentCard();
+            }
+        }
+
+        // Back to modules
+        function backToModules() {
+            document.getElementById('flashCardView').classList.add('hidden');
+            document.getElementById('moduleListView').classList.remove('hidden');
+            // Re-render modules to restore button states
+            renderModules();
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load flash cards data
+        async function loadSyllabus() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (!ws) return;
+            try {
+                const response = await fetch(`/api/workspaces/${ws.id}/syllabus`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    syllabus = data.syllabus;
+                }
+            } catch (error) {
+                console.error('Failed to load syllabus:', error);
+            }
+        }
+
+        async function loadFlashCardsData() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (!ws) return;
+
+            try {
+                const response = await fetch(`/api/workspaces/${ws.id}/flash-cards`, {
+                    headers: Auth.getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Build lookup map with card counts
+                    flashCardsData = {};
+                    data.flash_cards.forEach(fc => {
+                        const key = `${fc.module_id}-${fc.subtopic}`;
+                        // Store card count (will be replaced with actual cards array when opened)
+                        flashCardsData[key] = { exists: true, count: fc.card_count || 0 };
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load flash cards:', error);
+            }
+        }
+
+        async function loadChatHistory() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (!ws) return;
+            try {
+                const response = await fetch(`/api/conversations?workspace_id=${ws.id}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    renderChatHistory(data.conversations || []);
+                }
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+                renderChatHistory([]);
+            }
+        }
+
+        function renderChatHistory(chats) {
+            const list = document.getElementById('chatHistoryList');
+            if (chats.length === 0) {
+                list.innerHTML = '<p class="text-xs text-light-text-muted dark:text-dark-text-muted px-2 py-4 text-center">No chats yet</p>';
+                return;
+            }
+
+            list.innerHTML = chats.map(chat => `
+                <a href="/chat/${chat.id}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors duration-200 group">
+                    <svg class="w-4 h-4 text-light-text-muted dark:text-dark-text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-sm text-light-text dark:text-dark-text truncate flex-1">${escapeHtml(chat.title || 'New Chat')}</span>
+                </a>
+            `).join('');
+        }
+
+        // Files/Documents functions
+        let documentCount = 0;
+
+        async function loadDocuments() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (!ws) {
+                document.getElementById('filesCount').textContent = 'No workspace selected';
+                return;
+            }
+            try {
+                const response = await fetch(`/api/documents?workspace_id=${ws.id}`, {
+                    headers: Auth.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    documentCount = data.documents?.length || 0;
+                    document.getElementById('filesCount').textContent = documentCount === 0
+                        ? 'No files uploaded'
+                        : `${documentCount} file${documentCount !== 1 ? 's' : ''} uploaded`;
+                }
+            } catch (error) {
+                console.error('Failed to load documents:', error);
+                document.getElementById('filesCount').textContent = 'Failed to load files';
+            }
+        }
+
+        function goToUploads() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (ws) {
+                window.location.href = `/uploads/${ws.id}`;
+            } else {
+                window.location.href = '/uploads';
+            }
+        }
+
+        // Update nav links
+        function updateNavLinks() {
+            const ws = Navbar.getCurrentWorkspace();
+            if (ws) {
+                document.getElementById('studyMaterialsLink').href = '/study/' + ws.id;
+                document.getElementById('flashCardsLink').href = '/flashcards/' + ws.id;
+                document.getElementById('quizLink').href = '/quiz/' + ws.id;
+            }
+        }
+
+        // URL handling
+        function getUrlParams() {
+            const path = window.location.pathname;
+            const match = path.match(/^\/flashcards\/([^\/]+)$/);
+            if (match) return { workspaceId: match[1] };
+            return { workspaceId: null };
+        }
+
+        // Close dropdowns
+        document.addEventListener('click', (e) => {
+            const userBtn = document.getElementById('userMenuButton');
+            const userDropdown = document.getElementById('userDropdownContainer');
+            if (!userBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                userDropdown.classList.add('hidden');
+            }
+            const wsBtn = document.getElementById('workspaceSwitcher');
+            const wsDropdown = document.getElementById('workspaceDropdownContainer');
+            if (!wsBtn.contains(e.target) && !wsDropdown.contains(e.target)) {
+                wsDropdown.classList.add('hidden');
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('flashCardView').classList.contains('hidden')) return;
+
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                flipCard();
+            } else if (e.key === 'ArrowLeft') {
+                prevCard();
+            } else if (e.key === 'ArrowRight') {
+                nextCard();
+            } else if (e.key === 'Escape') {
+                backToModules();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const user = Auth.getUser();
+            if (user) {
+                document.getElementById('userInitial').textContent = user.name ? user.name[0].toUpperCase() : 'U';
+                document.getElementById('userName').textContent = user.name || 'User';
+                document.getElementById('userEmail').textContent = user.email || '';
+            }
+
+            await Navbar.init();
+
+            // Register workspace switch callback
+            Navbar.onWorkspaceSwitch(async (workspace, updateUrl = true) => {
+                await Promise.all([
+                    loadSyllabus(),
+                    loadFlashCardsData(),
+                    loadChatHistory(),
+                    loadDocuments()
+                ]);
+                renderModules();
+
+                if (updateUrl) {
+                    history.pushState({ workspaceId: workspace.id }, '', `/flashcards/${workspace.id}`);
+                }
+            });
+
+            // Check URL parameters
+            const params = getUrlParams();
+            const workspaces = Navbar.getWorkspaces();
+
+            // Determine workspace from URL
+            if (params.workspaceId && workspaces.length > 0) {
+                const workspaceFromUrl = workspaces.find(w => w.id === params.workspaceId);
+                if (workspaceFromUrl) {
+                    await Navbar.switchWorkspace(workspaceFromUrl.id, false);
+                }
+            }
+
+            const ws = Navbar.getCurrentWorkspace();
+            if (!ws) {
+                window.location.href = '/chat';
+                return;
+            }
+
+            // Load data
+            await Promise.all([
+                loadSyllabus(),
+                loadFlashCardsData(),
+                loadChatHistory(),
+                loadDocuments()
+            ]);
+            renderModules();
+            updateNavLinks();
+
+            // Update URL if workspace not in URL
+            if (!params.workspaceId && ws) {
+                history.replaceState({ workspaceId: ws.id }, '', `/flashcards/${ws.id}`);
+            }
+        });
+    </script>
+</body>
+</html>

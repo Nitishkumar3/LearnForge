@@ -123,6 +123,25 @@ CREATE INDEX IF NOT EXISTS idx_study_materials_workspace ON study_materials(work
 CREATE INDEX IF NOT EXISTS idx_study_materials_module ON study_materials(workspace_id, module_id);
 
 -- =============================================
+-- FLASH CARDS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS flash_cards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    module_id INTEGER NOT NULL,
+    module_name TEXT NOT NULL,
+    subtopic TEXT NOT NULL,
+    cards JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(workspace_id, module_id, subtopic)
+);
+
+CREATE INDEX IF NOT EXISTS idx_flash_cards_workspace ON flash_cards(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_flash_cards_module ON flash_cards(workspace_id, module_id);
+
+-- =============================================
 -- QUIZZES TABLE
 -- =============================================
 CREATE TABLE IF NOT EXISTS quizzes (

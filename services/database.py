@@ -619,6 +619,59 @@ def check_study_material_exists(workspace_id, module_id, subtopic):
 
 
 # =============================================
+# FLASH CARDS QUERIES
+# =============================================
+
+def save_flash_card(workspace_id, user_id, module_id, module_name, subtopic, cards):
+    """Save generated flash cards for a subtopic."""
+    import json
+    return execute_query(
+        """INSERT INTO flash_cards (workspace_id, user_id, module_id, module_name, subtopic, cards)
+           VALUES (%s, %s, %s, %s, %s, %s)
+           ON CONFLICT (workspace_id, module_id, subtopic)
+           DO UPDATE SET cards = EXCLUDED.cards, module_name = EXCLUDED.module_name, updated_at = NOW()
+           RETURNING *""",
+        (workspace_id, user_id, module_id, module_name, subtopic, json.dumps(cards)),
+        fetch_one=True
+    )
+
+
+def get_flash_card(workspace_id, module_id, subtopic):
+    """Get flash cards for a specific subtopic."""
+    return execute_query(
+        """SELECT * FROM flash_cards
+           WHERE workspace_id = %s AND module_id = %s AND subtopic = %s""",
+        (workspace_id, module_id, subtopic),
+        fetch_one=True
+    )
+
+
+def get_all_flash_cards(workspace_id):
+    """Get all generated flash card sets for a workspace."""
+    return execute_query(
+        """SELECT id, module_id, module_name, subtopic, cards, created_at
+           FROM flash_cards
+           WHERE workspace_id = %s
+           ORDER BY module_id, subtopic""",
+        (workspace_id,),
+        fetch_all=True
+    ) or []
+
+
+def check_flash_card_exists(workspace_id, module_id, subtopic):
+    """Check if flash cards exist for a subtopic."""
+    result = execute_query(
+        """SELECT EXISTS(
+               SELECT 1 FROM flash_cards
+               WHERE workspace_id = %s AND module_id = %s AND subtopic = %s
+           ) as exists""",
+        (workspace_id, module_id, subtopic),
+        fetch_one=True
+    )
+    return result['exists'] if result else False
+
+
+# =============================================
 # QUIZ QUERIES
 # =============================================
 

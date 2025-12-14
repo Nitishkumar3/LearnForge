@@ -408,6 +408,32 @@ def generate_mindmap_stream(prompt):
     print(f"[MINDMAP-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
 
 
+# Flash Cards Generation (always uses Cerebras Qwen 3 235B with JSON format)
+def generate_flashcards(prompt):
+    """Generate flash cards using Cerebras Qwen 3 235B with JSON response format."""
+    import time
+    print(f"[FLASHCARDS-QWEN] Starting flash cards generation...")
+    start = time.time()
+
+    provider = get_provider("cerebras")
+    response = provider["client"].chat.completions.create(
+        model="qwen-3-235b-a22b-instruct-2507",
+        messages=[
+            {"role": "system", "content": "You are a flash card generator. Generate educational flash cards. Always respond with valid JSON only, no markdown code blocks."},
+            {"role": "user", "content": prompt}
+        ],
+        max_completion_tokens=20000,
+        temperature=0.7,
+        top_p=0.8,
+        response_format={"type": "json_object"}
+    )
+
+    elapsed = time.time() - start
+    content = response.choices[0].message.content
+    print(f"[FLASHCARDS-QWEN] Completed in {elapsed:.2f}s, {len(content)} chars")
+    return content
+
+
 # Quiz Generation (always uses Cerebras gpt-oss-120b with JSON format)
 def generate_quiz(prompt):
     """Generate quiz questions using Cerebras gpt-oss-120b with JSON response format (20k tokens)."""

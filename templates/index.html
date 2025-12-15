@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LearnForge - Smart Campus Assistant</title>
+    <title>LearnForge - AI-Powered Learning Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
     <script>
-        // Initialize theme before page renders to prevent flash
         (function() {
             const savedTheme = localStorage.getItem('learnforge_theme') || 'light';
             document.documentElement.classList.remove('light', 'dark');
@@ -25,7 +24,6 @@
                         sans: ['Google Sans Flex', 'system-ui', 'sans-serif'],
                     },
                     colors: {
-                        // Light mode
                         'light-bg': '#FFFFFF',
                         'light-sidebar': '#F9F9F9',
                         'light-hover': '#ECECEC',
@@ -33,7 +31,6 @@
                         'light-text': '#0D0D0D',
                         'light-text-secondary': '#666666',
                         'light-text-muted': '#999999',
-                        // Dark mode
                         'dark-bg': '#212121',
                         'dark-sidebar': '#171717',
                         'dark-hover': '#2F2F2F',
@@ -41,10 +38,14 @@
                         'dark-text': '#ECECEC',
                         'dark-text-secondary': '#B4B4B4',
                         'dark-text-muted': '#8E8E8E',
-                        // Functional accents
                         'accent-success': '#10B981',
                         'accent-warning': '#F59E0B',
                         'accent-error': '#EF4444',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-delayed': 'float 6s ease-in-out 2s infinite',
+                        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
                     }
                 }
             }
@@ -58,39 +59,43 @@
         * {
             transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
-        .gradient-text {
-            background: linear-gradient(135deg, #0D0D0D 0%, #333333 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
-        .dark .gradient-text {
-            background: linear-gradient(135deg, #ECECEC 0%, #B4B4B4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .hero-gradient {
-            background: linear-gradient(135deg, #F9F9F9 0%, #ECECEC 50%, #E5E5E5 100%);
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
         }
-        .dark .hero-gradient {
-            background: linear-gradient(135deg, #171717 0%, #212121 50%, #171717 100%);
+        .animate-on-scroll.visible {
+            animation: fadeInUp 0.6s ease-out forwards;
         }
-        .card-hover {
+        .gradient-border {
+            background: linear-gradient(135deg, #0D0D0D, #333333);
+            padding: 2px;
+            border-radius: 1rem;
+        }
+        .dark .gradient-border {
+            background: linear-gradient(135deg, #ECECEC, #666666);
+        }
+        .feature-card {
             transition: all 0.3s ease;
         }
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-        .dark .card-hover:hover {
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        .feature-card:hover {
+            transform: translateY(-8px);
         }
         .btn-primary {
             background: #0D0D0D;
+            transition: all 0.3s ease;
         }
         .btn-primary:hover {
             background: #333333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .dark .btn-primary {
             background: #ECECEC;
@@ -99,11 +104,17 @@
         .dark .btn-primary:hover {
             background: #FFFFFF;
         }
+        .glow {
+            box-shadow: 0 0 60px rgba(13, 13, 13, 0.1);
+        }
+        .dark .glow {
+            box-shadow: 0 0 60px rgba(236, 236, 236, 0.1);
+        }
     </style>
 </head>
-<body class="bg-light-bg dark:bg-dark-bg min-h-screen">
+<body class="bg-light-bg dark:bg-dark-bg min-h-screen overflow-x-hidden">
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-md border-b border-light-border dark:border-dark-border z-50">
+    <nav class="fixed top-0 left-0 right-0 bg-light-bg/90 dark:bg-dark-bg/90 backdrop-blur-lg border-b border-light-border dark:border-dark-border z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
@@ -114,8 +125,11 @@
                     </div>
                     <span class="text-xl font-bold text-light-text dark:text-dark-text">LearnForge</span>
                 </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text font-medium transition-colors">Features</a>
+                    <a href="#how-it-works" class="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text font-medium transition-colors">How it Works</a>
+                </div>
                 <div class="flex items-center gap-4">
-                    <!-- Theme Toggle -->
                     <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors" title="Toggle theme">
                         <svg class="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -124,8 +138,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
                     </button>
-                    <a href="/signin" class="text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text font-medium transition-colors">Sign In</a>
-                    <a href="/signup" class="px-4 py-2 btn-primary text-white dark:text-dark-bg font-semibold rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <a href="/signin" class="hidden sm:block text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text font-medium transition-colors">Sign In</a>
+                    <a href="/signup" class="px-5 py-2.5 btn-primary text-white dark:text-dark-bg font-semibold rounded-xl">
                         Get Started
                     </a>
                 </div>
@@ -134,61 +148,184 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-gradient pt-32 pb-20 px-4">
-        <div class="max-w-7xl mx-auto text-center">
-            <div class="inline-flex items-center gap-2 px-4 py-2 bg-light-bg dark:bg-dark-bg rounded-full shadow-sm mb-8 border border-light-border dark:border-dark-border">
-                <span class="w-2 h-2 bg-accent-success rounded-full animate-pulse"></span>
-                <span class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Powered by Advanced AI</span>
+    <section class="pt-32 pb-20 px-4 relative overflow-hidden">
+        <!-- Background decoration -->
+        <div class="absolute top-20 left-10 w-72 h-72 bg-light-hover dark:bg-dark-hover rounded-full blur-3xl opacity-50 animate-float"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-light-border dark:bg-dark-border rounded-full blur-3xl opacity-30 animate-float-delayed"></div>
+
+        <div class="max-w-7xl mx-auto relative">
+            <div class="text-center max-w-4xl mx-auto">
+                <div class="inline-flex items-center gap-2 px-4 py-2 bg-light-sidebar dark:bg-dark-sidebar rounded-full mb-8 border border-light-border dark:border-dark-border">
+                    <span class="w-2 h-2 bg-accent-success rounded-full animate-pulse"></span>
+                    <span class="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">AI Powered Learning Platform</span>
+                </div>
+
+                <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-light-text dark:text-dark-text mb-6 leading-tight">
+                    Learn Smarter,<br>
+                    <span class="text-light-text-secondary dark:text-dark-text-secondary">Not Harder</span>
+                </h1>
+
+                <p class="text-lg sm:text-xl text-light-text-secondary dark:text-dark-text-secondary max-w-2xl mx-auto mb-10">
+                    Upload your syllabus, generate study materials, create flash cards, take quizzes, and chat with AI.
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                    <a href="/signup" class="w-full sm:w-auto px-8 py-4 btn-primary text-white dark:text-dark-bg font-semibold rounded-xl text-lg">
+                        Start Learning Free
+                    </a>
+                    <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-light-sidebar dark:bg-dark-sidebar text-light-text dark:text-dark-text font-semibold rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-all text-lg">
+                        Explore Features
+                    </a>
+                </div>
             </div>
 
-            <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-light-text dark:text-dark-text mb-6 leading-tight">
-                Your Smart<br>
-                <span class="gradient-text">Campus Assistant</span>
-            </h1>
-
-            <p class="text-xl text-light-text-secondary dark:text-dark-text-secondary max-w-2xl mx-auto mb-10">
-                Upload your documents, ask questions, and get instant answers with AI-powered intelligence.
-                Perfect for students, researchers, and lifelong learners.
-            </p>
-
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="/signup" class="w-full sm:w-auto px-8 py-4 btn-primary text-white dark:text-dark-bg font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    Start Learning Free
-                </a>
-                <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text font-semibold rounded-xl border-2 border-light-border dark:border-dark-border hover:border-light-text dark:hover:border-dark-text transition-all">
-                    See Features
-                </a>
-            </div>
-
-            <!-- Demo Preview -->
+            <!-- Hero Image/Preview -->
             <div class="mt-16 relative">
-                <div class="bg-light-bg dark:bg-dark-bg rounded-2xl shadow-2xl p-4 max-w-4xl mx-auto border border-light-border dark:border-dark-border">
-                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-6">
-                        <div class="flex items-start gap-4 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-light-hover dark:bg-dark-hover flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div class="bg-light-bg dark:bg-dark-bg rounded-xl px-4 py-3 shadow-sm border border-light-border dark:border-dark-border">
-                                <p class="text-light-text dark:text-dark-text">What are the key concepts in Chapter 3?</p>
-                            </div>
+                <div class="glow bg-light-bg dark:bg-dark-sidebar rounded-2xl p-1.5 max-w-5xl mx-auto border border-light-border dark:border-dark-border shadow-2xl">
+                    <!-- Window Chrome -->
+                    <div class="bg-light-hover dark:bg-dark-hover rounded-t-xl px-4 py-2.5 flex items-center gap-2">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-400"></div>
                         </div>
-                        <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 rounded-full bg-light-text dark:bg-dark-text flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                </svg>
+                        <div class="flex-1 flex justify-center">
+                            <div class="bg-light-bg dark:bg-dark-bg rounded-md px-4 py-1 text-xs text-light-text-muted dark:text-dark-text-muted">learnforge.app</div>
+                        </div>
+                    </div>
+                    <div class="bg-light-sidebar dark:bg-dark-bg rounded-b-xl overflow-hidden">
+                        <!-- Mock App UI -->
+                        <div class="flex min-h-[320px]">
+                            <!-- Sidebar Mock -->
+                            <div class="w-56 bg-light-bg dark:bg-dark-sidebar border-r border-light-border dark:border-dark-border p-3 hidden md:flex flex-col">
+                                <!-- Logo -->
+                                <div class="flex items-center gap-2 px-2 mb-4">
+                                    <div class="w-7 h-7 rounded-lg bg-light-text dark:bg-dark-text"></div>
+                                    <span class="text-sm font-semibold text-light-text dark:text-dark-text">LearnForge</span>
+                                </div>
+                                <!-- Nav Items -->
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2.5 px-3 py-2 bg-light-text dark:bg-dark-text rounded-lg">
+                                        <svg class="w-4 h-4 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                        <span class="text-xs text-light-bg dark:text-dark-bg font-medium">Study Materials</span>
+                                    </div>
+                                    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg">
+                                        <svg class="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary">Flash Cards</span>
+                                    </div>
+                                    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-light-hover dark:hover:bg-dark-hover rounded-lg">
+                                        <svg class="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary">Quiz</span>
+                                    </div>
+                                </div>
+                                <!-- Chat Button -->
+                                <div class="mt-4 px-2">
+                                    <div class="flex items-center justify-center gap-2 px-3 py-2 bg-light-hover dark:bg-dark-hover rounded-lg border border-light-border dark:border-dark-border">
+                                        <svg class="w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        <span class="text-xs text-light-text-secondary dark:text-dark-text-secondary">Go to Chat</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="bg-light-hover dark:bg-dark-hover rounded-xl px-4 py-3 flex-1">
-                                <p class="text-light-text dark:text-dark-text">Based on your document, Chapter 3 covers three key concepts: <strong>Machine Learning Fundamentals</strong>, <strong>Neural Network Architecture</strong>, and <strong>Training Optimization</strong>. Would you like me to explain any of these in detail?</p>
+                            <!-- Main Content Mock -->
+                            <div class="flex-1 p-5 bg-light-bg dark:bg-dark-bg">
+                                <div class="mb-5">
+                                    <h3 class="text-base font-semibold text-light-text dark:text-dark-text mb-1">Machine Learning</h3>
+                                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Module 1: Introduction to ML</p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <!-- Card 1 -->
+                                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-3.5 border border-light-border dark:border-dark-border">
+                                        <div class="flex items-center justify-between mb-2.5">
+                                            <span class="text-xs font-medium text-light-text dark:text-dark-text">Supervised Learning</span>
+                                            <span class="text-[10px] px-1.5 py-0.5 bg-accent-success/10 text-accent-success rounded-full">15 cards</span>
+                                        </div>
+                                        <div class="h-7 w-full bg-light-text dark:bg-dark-text rounded-md flex items-center justify-center">
+                                            <span class="text-[10px] text-light-bg dark:text-dark-bg font-medium">Study Now</span>
+                                        </div>
+                                    </div>
+                                    <!-- Card 2 -->
+                                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-3.5 border border-light-border dark:border-dark-border">
+                                        <div class="flex items-center justify-between mb-2.5">
+                                            <span class="text-xs font-medium text-light-text dark:text-dark-text">Neural Networks</span>
+                                            <span class="text-[10px] px-1.5 py-0.5 bg-accent-success/10 text-accent-success rounded-full">22 cards</span>
+                                        </div>
+                                        <div class="h-7 w-full bg-light-text dark:bg-dark-text rounded-md flex items-center justify-center">
+                                            <span class="text-[10px] text-light-bg dark:text-dark-bg font-medium">Study Now</span>
+                                        </div>
+                                    </div>
+                                    <!-- Card 3 -->
+                                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-3.5 border border-light-border dark:border-dark-border">
+                                        <div class="flex items-center justify-between mb-2.5">
+                                            <span class="text-xs font-medium text-light-text dark:text-dark-text">Deep Learning</span>
+                                        </div>
+                                        <div class="h-7 w-full bg-light-hover dark:bg-dark-hover rounded-md flex items-center justify-center border border-light-border dark:border-dark-border">
+                                            <span class="text-[10px] text-light-text-secondary dark:text-dark-text-secondary font-medium">+ Generate</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Second Row -->
+                                <div class="mt-5 mb-3">
+                                    <p class="text-xs text-light-text-muted dark:text-dark-text-muted">Module 2: Advanced Topics</p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-3.5 border border-light-border dark:border-dark-border">
+                                        <div class="flex items-center justify-between mb-2.5">
+                                            <span class="text-xs font-medium text-light-text dark:text-dark-text">Transformers</span>
+                                        </div>
+                                        <div class="h-7 w-full bg-light-hover dark:bg-dark-hover rounded-md flex items-center justify-center border border-light-border dark:border-dark-border">
+                                            <span class="text-[10px] text-light-text-secondary dark:text-dark-text-secondary font-medium">+ Generate</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-light-sidebar dark:bg-dark-sidebar rounded-xl p-3.5 border border-light-border dark:border-dark-border">
+                                        <div class="flex items-center justify-between mb-2.5">
+                                            <span class="text-xs font-medium text-light-text dark:text-dark-text">Reinforcement</span>
+                                        </div>
+                                        <div class="h-7 w-full bg-light-hover dark:bg-dark-hover rounded-md flex items-center justify-center border border-light-border dark:border-dark-border">
+                                            <span class="text-[10px] text-light-text-secondary dark:text-dark-text-secondary font-medium">+ Generate</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Decorative elements -->
-                <div class="absolute -top-4 -right-4 w-24 h-24 bg-light-border dark:bg-dark-border rounded-full opacity-50 blur-2xl"></div>
-                <div class="absolute -bottom-4 -left-4 w-32 h-32 bg-light-hover dark:bg-dark-hover rounded-full opacity-50 blur-2xl"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section id="how-it-works" class="py-20 px-4 bg-light-sidebar dark:bg-dark-sidebar">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl md:text-4xl font-bold text-light-text dark:text-dark-text mb-4">
+                    How It Works
+                </h2>
+                <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary max-w-2xl mx-auto">
+                    Get started in minutes with our simple 3-step process
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="animate-on-scroll text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">1</div>
+                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Add Your Syllabus</h3>
+                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Paste your course syllabus and upload study materials like PDFs, documents, and presentations.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="animate-on-scroll text-center" style="animation-delay: 0.2s;">
+                    <div class="w-16 h-16 rounded-2xl bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">2</div>
+                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Generate Content</h3>
+                    <p class="text-light-text-secondary dark:text-dark-text-secondary">AI automatically creates study materials, flash cards, quizzes, and mind maps for each topic.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="animate-on-scroll text-center" style="animation-delay: 0.4s;">
+                    <div class="w-16 h-16 rounded-2xl bg-light-text dark:bg-dark-text text-light-bg dark:text-dark-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
+                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Learn & Master</h3>
+                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Study with flash cards, test yourself with quizzes, and chat with AI for deeper understanding.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -196,80 +333,80 @@
     <!-- Features Section -->
     <section id="features" class="py-20 px-4 bg-light-bg dark:bg-dark-bg">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
+            <div class="text-center mb-16 animate-on-scroll">
                 <h2 class="text-3xl md:text-4xl font-bold text-light-text dark:text-dark-text mb-4">
-                    Everything you need to learn smarter
+                    Everything You Need to Excel
                 </h2>
                 <p class="text-lg text-light-text-secondary dark:text-dark-text-secondary max-w-2xl mx-auto">
-                    Powerful features designed to enhance your learning experience and boost productivity.
+                    Powerful AI-driven features designed to transform how you learn
                 </p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1: Study Materials -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Document Intelligence</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Upload PDFs and instantly search through your documents with AI-powered semantic understanding.</p>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">Study Materials</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">AI-generated comprehensive study guides for every topic in your syllabus.</p>
                 </div>
 
-                <!-- Feature 2 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Smart Chat</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Ask questions in natural language and get accurate answers with citations from your documents.</p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Feature 2: Flash Cards -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Workspaces</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Organize your documents into separate workspaces for different courses, projects, or topics.</p>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">Flash Cards</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">Interactive flip cards for effective memorization and active recall practice.</p>
                 </div>
 
-                <!-- Feature 4 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                <!-- Feature 3: Quiz -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Thinking Mode</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Watch the AI's reasoning process for complex questions to better understand how answers are derived.</p>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">Smart Quizzes</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">MCQ, fill-in-the-blank, and subjective questions to test your knowledge.</p>
                 </div>
 
-                <!-- Feature 5 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                <!-- Feature 4: AI Chat -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Web Search</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Enhance answers with real-time web search to get the most up-to-date information.</p>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">AI Chat</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">Ask questions and get instant answers from your documents with RAG technology.</p>
                 </div>
 
-                <!-- Feature 6 -->
-                <div class="card-hover bg-light-bg dark:bg-dark-sidebar rounded-2xl p-8 border border-light-border dark:border-dark-border shadow-sm">
-                    <div class="w-14 h-14 rounded-xl bg-light-hover dark:bg-dark-hover flex items-center justify-center mb-6">
-                        <svg class="w-7 h-7 text-light-text dark:text-dark-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                <!-- Feature 5: Mind Maps -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-light-text dark:text-dark-text mb-3">Image Generation</h3>
-                    <p class="text-light-text-secondary dark:text-dark-text-secondary">Create diagrams, illustrations, and visual aids to help explain complex concepts.</p>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">Mind Maps</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">Visual diagrams to understand relationships between concepts.</p>
+                </div>
+
+                <!-- Feature 6: Multi-Format -->
+                <div class="feature-card animate-on-scroll bg-light-sidebar dark:bg-dark-sidebar rounded-2xl p-6 border border-light-border dark:border-dark-border">
+                    <div class="w-12 h-12 rounded-xl bg-light-text dark:bg-dark-text flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-light-bg dark:text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-light-text dark:text-dark-text mb-2">Multi-Format Support</h3>
+                    <p class="text-sm text-light-text-secondary dark:text-dark-text-secondary">Upload PDFs, DOCX, PPTX, images, and even audio files for transcription.</p>
                 </div>
             </div>
         </div>
@@ -277,21 +414,21 @@
 
     <!-- CTA Section -->
     <section class="py-20 px-4 bg-light-text dark:bg-dark-text">
-        <div class="max-w-4xl mx-auto text-center">
+        <div class="max-w-4xl mx-auto text-center animate-on-scroll">
             <h2 class="text-3xl md:text-4xl font-bold text-light-bg dark:text-dark-bg mb-6">
-                Ready to transform your learning?
+                Ready to Transform Your Learning?
             </h2>
             <p class="text-xl text-light-text-muted dark:text-dark-text-muted mb-10">
-                Join thousands of students who are learning smarter, not harder.
+                Join students who are studying smarter with AI-powered tools.
             </p>
-            <a href="/signup" class="inline-block px-8 py-4 bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text font-semibold rounded-xl hover:bg-light-hover dark:hover:bg-dark-hover transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Get Started for Free
+            <a href="/signup" class="inline-block px-10 py-4 bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg text-lg">
+                Get Started Free
             </a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="py-12 px-4 bg-dark-sidebar">
+    <footer class="py-12 px-4 bg-dark-sidebar border-t border-dark-border">
         <div class="max-w-7xl mx-auto">
             <div class="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center gap-3">
@@ -303,7 +440,7 @@
                     <span class="text-xl font-bold text-white">LearnForge</span>
                 </div>
                 <p class="text-dark-text-muted text-sm">
-                    &copy; 2024 LearnForge. Smart Campus Assistant.
+                    &copy; 2025 LearnForge. AI Powered Learning Platform.
                 </p>
             </div>
         </div>
@@ -320,10 +457,27 @@
             localStorage.setItem('learnforge_theme', newTheme);
         }
 
-        // Check if user is already logged in, redirect to dashboard
+        // Animate on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Check if user is already logged in
         const token = localStorage.getItem('learnforge_token');
         if (token) {
-            // Verify token is valid
             fetch('/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             }).then(response => {

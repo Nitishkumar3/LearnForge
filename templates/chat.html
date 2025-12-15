@@ -5481,10 +5481,10 @@
 
                 // Render modules
                 const listEl = document.getElementById('syllabusModulesList');
-                listEl.innerHTML = currentSyllabus.modules.map(module => `
+                listEl.innerHTML = currentSyllabus.modules.map((module, index) => `
                     <div class="border border-light-border dark:border-dark-border rounded-lg p-2 bg-white dark:bg-dark-bg">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="w-6 h-6 rounded bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text text-xs font-semibold flex items-center justify-center">${module.id}</span>
+                            <span class="w-6 h-6 rounded bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text text-xs font-semibold flex items-center justify-center">${index + 1}</span>
                             <span class="text-sm font-medium text-light-text dark:text-dark-text">${escapeHtml(module.name)}</span>
                         </div>
                         <p class="text-xs text-light-text-muted dark:text-dark-text-muted pl-8">${module.subtopics.length} subtopics</p>

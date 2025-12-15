@@ -512,17 +512,18 @@
             }
 
             let html = '';
-            currentSyllabus.modules.forEach(module => {
+            currentSyllabus.modules.forEach((module, index) => {
+                const moduleId = index + 1;
                 html += `<div class="mb-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <input type="checkbox" id="module_${module.id}" class="module-checkbox rounded text-light-text dark:text-dark-text" data-module-id="${module.id}" onchange="toggleModuleSubtopics(${module.id})">
-                        <label for="module_${module.id}" class="text-sm font-medium text-light-text dark:text-dark-text cursor-pointer">${module.id}. ${escapeHtml(module.name)}</label>
+                        <input type="checkbox" id="module_${moduleId}" class="module-checkbox rounded text-light-text dark:text-dark-text" data-module-id="${moduleId}" onchange="toggleModuleSubtopics(${moduleId})">
+                        <label for="module_${moduleId}" class="text-sm font-medium text-light-text dark:text-dark-text cursor-pointer">${moduleId}. ${escapeHtml(module.name)}</label>
                     </div>
                     <div class="pl-6 space-y-1.5">`;
                 module.subtopics.forEach((subtopic, idx) => {
                     html += `<div class="flex items-center gap-2">
-                        <input type="checkbox" id="subtopic_${module.id}_${idx}" class="subtopic-checkbox rounded text-light-text dark:text-dark-text" data-module-id="${module.id}" data-module-name="${escapeHtml(module.name)}" data-subtopic="${escapeHtml(subtopic)}">
-                        <label for="subtopic_${module.id}_${idx}" class="text-sm text-light-text-secondary dark:text-dark-text-secondary cursor-pointer">${escapeHtml(subtopic)}</label>
+                        <input type="checkbox" id="subtopic_${moduleId}_${idx}" class="subtopic-checkbox rounded text-light-text dark:text-dark-text" data-module-id="${moduleId}" data-module-name="${escapeHtml(module.name)}" data-subtopic="${escapeHtml(subtopic)}">
+                        <label for="subtopic_${moduleId}_${idx}" class="text-sm text-light-text-secondary dark:text-dark-text-secondary cursor-pointer">${escapeHtml(subtopic)}</label>
                     </div>`;
                 });
                 html += `</div></div>`;

@@ -788,7 +788,7 @@
 
         // Get subtopic index within a module
         function getSubtopicIndex(moduleId, subtopicName) {
-            const module = currentSyllabus?.modules?.find(m => m.id === moduleId);
+            const module = currentSyllabus?.modules?.[moduleId - 1];
             if (module) {
                 return module.subtopics.indexOf(subtopicName);
             }
@@ -797,7 +797,7 @@
 
         // Get subtopic name from index
         function getSubtopicByIndex(moduleId, index) {
-            const module = currentSyllabus?.modules?.find(m => m.id === moduleId);
+            const module = currentSyllabus?.modules?.[moduleId - 1];
             if (module && index >= 0 && index < module.subtopics.length) {
                 return module.subtopics[index];
             }
@@ -825,7 +825,7 @@
                     switchWorkspace(workspaceId, false);
                 }
                 if (moduleId !== null && subtopicIndex !== null) {
-                    const module = currentSyllabus?.modules?.find(m => m.id === moduleId);
+                    const module = currentSyllabus?.modules?.[moduleId - 1];
                     const subtopic = getSubtopicByIndex(moduleId, subtopicIndex);
                     if (module && subtopic) {
                         loadSubtopicContent(moduleId, module.name, subtopic, false);
@@ -972,10 +972,10 @@
                 statusEl.textContent = '';
 
                 const listEl = document.getElementById('syllabusModulesList');
-                listEl.innerHTML = currentSyllabus.modules.map(module => `
+                listEl.innerHTML = currentSyllabus.modules.map((module, index) => `
                     <div class="border border-light-border dark:border-dark-border rounded-lg p-2 bg-white dark:bg-dark-bg">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="w-6 h-6 rounded bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text text-xs font-semibold flex items-center justify-center">${module.id}</span>
+                            <span class="w-6 h-6 rounded bg-light-hover dark:bg-dark-hover text-light-text dark:text-dark-text text-xs font-semibold flex items-center justify-center">${index + 1}</span>
                             <span class="text-sm font-medium text-light-text dark:text-dark-text">${escapeHtml(module.name)}</span>
                         </div>
                         <p class="text-xs text-light-text-muted dark:text-dark-text-muted pl-8">${module.subtopics.length} subtopics</p>
@@ -1547,7 +1547,7 @@
 
             // If URL has module and subtopic index, load that content
             if (urlParams.moduleId !== null && urlParams.subtopicIndex !== null && currentSyllabus?.modules) {
-                const module = currentSyllabus.modules.find(m => m.id === urlParams.moduleId);
+                const module = currentSyllabus.modules[urlParams.moduleId - 1];
                 const subtopic = getSubtopicByIndex(urlParams.moduleId, urlParams.subtopicIndex);
                 if (module && subtopic) {
                     // Expand the module and load subtopic
@@ -1615,32 +1615,33 @@
             container.innerHTML = '';
 
             currentSyllabus.modules.forEach((module, index) => {
+                const moduleId = index + 1;
                 const isExpanded = index === 0;
                 const moduleHtml = `
                     <div class="border border-light-border dark:border-dark-border rounded-xl overflow-hidden">
-                        <button onclick="toggleModule(${module.id})" class="w-full flex items-center justify-between p-4 bg-light-sidebar dark:bg-dark-sidebar hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-left">
+                        <button onclick="toggleModule(${moduleId})" class="w-full flex items-center justify-between p-4 bg-light-sidebar dark:bg-dark-sidebar hover:bg-light-hover dark:hover:bg-dark-hover transition-colors text-left">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-lg bg-light-hover dark:bg-dark-hover flex items-center justify-center text-light-text dark:text-dark-text font-semibold text-sm">
-                                    ${module.id}
+                                    ${moduleId}
                                 </div>
                                 <span class="font-medium text-light-text dark:text-dark-text">${escapeHtml(module.name)}</span>
                             </div>
-                            <svg id="moduleChevron${module.id}" class="w-5 h-5 text-light-text-muted dark:text-dark-text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg id="moduleChevron${moduleId}" class="w-5 h-5 text-light-text-muted dark:text-dark-text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div id="moduleContent${module.id}" class="${isExpanded ? '' : 'hidden'} border-t border-light-border dark:border-dark-border">
+                        <div id="moduleContent${moduleId}" class="${isExpanded ? '' : 'hidden'} border-t border-light-border dark:border-dark-border">
                             <div class="p-3 space-y-1">
                                 ${module.subtopics.map((subtopic, idx) => {
-                                    const isGenerated = isSubtopicGenerated(module.id, subtopic);
+                                    const isGenerated = isSubtopicGenerated(moduleId, subtopic);
                                     return `
                                         <div class="flex items-center justify-between p-3 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover transition-colors group">
-                                            <button onclick="openSubtopic(${module.id}, '${escapeHtml(module.name).replace(/'/g, "\\'")}', '${escapeHtml(subtopic).replace(/'/g, "\\'")}')" class="flex-1 text-left flex items-center gap-3">
+                                            <button onclick="openSubtopic(${moduleId}, '${escapeHtml(module.name).replace(/'/g, "\\'")}', '${escapeHtml(subtopic).replace(/'/g, "\\'")}')" class="flex-1 text-left flex items-center gap-3">
                                                 <span class="text-xs text-light-text-muted dark:text-dark-text-muted w-6">${idx + 1}.</span>
                                                 <span class="text-sm text-light-text dark:text-dark-text">${escapeHtml(subtopic)}</span>
                                             </button>
                                             ${!isGenerated ? `
-                                                <button onclick="event.stopPropagation(); generateSingleSubtopic(${module.id}, '${escapeHtml(module.name).replace(/'/g, "\\'")}', '${escapeHtml(subtopic).replace(/'/g, "\\'")}')" class="hidden group-hover:flex items-center gap-1 px-2 py-1 text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-border dark:hover:bg-dark-border rounded transition-colors">
+                                                <button onclick="event.stopPropagation(); generateSingleSubtopic(${moduleId}, '${escapeHtml(module.name).replace(/'/g, "\\'")}', '${escapeHtml(subtopic).replace(/'/g, "\\'")}')" class="hidden group-hover:flex items-center gap-1 px-2 py-1 text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-border dark:hover:bg-dark-border rounded transition-colors">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                                     </svg>
@@ -1985,10 +1986,11 @@
             const nextName = document.getElementById('nextSubtopicName');
 
             const allSubtopics = [];
-            currentSyllabus.modules.forEach(module => {
+            currentSyllabus.modules.forEach((module, index) => {
+                const moduleId = index + 1;
                 module.subtopics.forEach(subtopic => {
                     allSubtopics.push({
-                        moduleId: module.id,
+                        moduleId: moduleId,
                         moduleName: module.name,
                         subtopic: subtopic
                     });

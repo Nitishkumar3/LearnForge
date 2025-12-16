@@ -4,6 +4,7 @@ An AI-powered intelligent learning platform that functions as a smart campus ass
 
 ## Table of Contents
 
+- [Screenshots](SCREENSHOTS.md)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Application Setup](#application-setup)

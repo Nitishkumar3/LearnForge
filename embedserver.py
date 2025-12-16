@@ -1,4 +1,3 @@
-#$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 from flask import Flask, request, jsonify
 import onnxruntime as ort
 from transformers import AutoTokenizer
@@ -6,27 +5,22 @@ import numpy as np
 import logging
 import os
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Global variables for model and tokenizer
 session = None
 tokenizer = None
 
 def load_model():
-    """Load ONNX model and tokenizer at startup"""
     global session, tokenizer
 
     try:
         logger.info("Loading model...")
         providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
 
-        # Get the directory where this script is located
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # Go up one level to the project root and then to bge-m3-onnx folder
         model_path = os.path.join(script_dir, "bge-m3-onnx", "model.onnx")
         model_path = os.path.normpath(model_path)
 
@@ -49,7 +43,6 @@ def load_model():
         raise
 
 def generate_embedding(text):
-    """Generate embedding for a single text"""
     try:
         # Tokenize
         inputs = tokenizer(text, padding=True, truncation=True, return_tensors="np")
@@ -71,7 +64,6 @@ def generate_embedding(text):
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint"""
     return jsonify({
         "status": "healthy",
         "model": "BGE-M3",
@@ -139,38 +131,6 @@ def embed():
         logger.error(f"Error in /embed endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/', methods=['GET'])
-def index():
-    """API documentation"""
-    return jsonify({
-        "name": "BGE-M3 Embedding API",
-        "version": "1.0",
-        "endpoints": {
-            "/health": "GET - Health check",
-            "/embed": "POST - Generate embeddings",
-            "/": "GET - API documentation"
-        },
-        "usage": {
-            "single": {
-                "url": "/embed",
-                "method": "POST",
-                "body": {"text": "your text here"}
-            },
-            "batch": {
-                "url": "/embed",
-                "method": "POST",
-                "body": {"texts": ["text1", "text2"]}
-            }
-        }
-    })
-
 if __name__ == '__main__':
-    # Load model at startup
     load_model()
-
-    # Run Flask app
-    app.run(
-        host='0.0.0.0',  # Allow external connections
-        port=5001,  # Changed from 5000 to avoid conflict with main app
-        debug=False  # Set to False for production
-    )
+    app.run(host='0.0.0.0', port=5001, debug=False)

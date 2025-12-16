@@ -2,25 +2,8 @@
 
 import os
 
-
 def process(file_path, use_ocr=None):
-    """
-    Transcribe audio file to text.
-
-    Args:
-        file_path: Path to audio file
-        use_ocr: Ignored (always uses Whisper for audio)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict,
-            "duration_seconds": int
-        }
-    """
+    """Transcribe audio file to text."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Audio file not found: {file_path}")
 
@@ -48,7 +31,6 @@ def process(file_path, use_ocr=None):
         }
     }
 
-
 def format_duration(seconds):
     """Format seconds to human readable duration."""
     if seconds < 60:
@@ -62,22 +44,8 @@ def format_duration(seconds):
         mins = int((seconds % 3600) // 60)
         return f"{hours}h {mins}m"
 
-
 def analyze_audio(file_path):
-    """
-    Analyze audio file.
-
-    Args:
-        file_path: Path to audio
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str,
-            "file_size_mb": float
-        }
-    """
+    """Analyze audio file for processing compatibility."""
     try:
         file_size = os.path.getsize(file_path)
         file_size_mb = file_size / (1024 * 1024)

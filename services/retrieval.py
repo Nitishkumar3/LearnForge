@@ -5,7 +5,6 @@ import requests
 import tiktoken
 import re
 from rank_bm25 import BM25Okapi
-
 from services import vector_store
 from services import embedding
 from services import llm_providers as llm
@@ -23,20 +22,16 @@ bm25_corpus = []
 bm25_metadatas = []
 corpus_hash = None
 
-
 def count_tokens(text):
     return len(tokenizer.encode(text))
-
 
 def tokenize_for_bm25(text):
     tokens = re.findall(r'\b\w+\b', text.lower())
     return [t for t in tokens if len(t) > 2]
 
-
 def build_bm25_index(chunks):
     tokenized = [tokenize_for_bm25(chunk) for chunk in chunks]
     return BM25Okapi(tokenized)
-
 
 def get_bm25_index():
     global bm25_index, bm25_corpus, bm25_metadatas, corpus_hash
@@ -59,7 +54,6 @@ def get_bm25_index():
         corpus_hash = current_hash
 
     return bm25_index, bm25_corpus, bm25_metadatas
-
 
 def bm25_search(query, n_results, user_id=None, workspace_id=None):
     index, corpus, metadatas = get_bm25_index()
@@ -92,7 +86,6 @@ def bm25_search(query, n_results, user_id=None, workspace_id=None):
 
     return {"documents": docs, "metadatas": metas, "scores": score_list}
 
-
 def reciprocal_rank_fusion(vector_results, bm25_results, k=60):
     fused = {}
 
@@ -119,7 +112,6 @@ def reciprocal_rank_fusion(vector_results, bm25_results, k=60):
         "scores": [r["score"] for r in sorted_results]
     }
 
-
 def rewrite_query(query):
     try:
         prompt = f"""Rewrite this search query to improve document retrieval.
@@ -134,7 +126,6 @@ Rewritten query:"""
     except Exception as e:
         print(f"Error rewriting query: {e}")
         return query
-
 
 def rerank_chunks(query, chunks, metadatas):
     if not chunks:
@@ -180,7 +171,6 @@ def rerank_chunks(query, chunks, metadatas):
         print(f"Error reranking chunks: {e}")
         return select_by_tokens(chunks, metadatas)
 
-
 def select_by_tokens(chunks, metadatas):
     selected_chunks = []
     selected_metadatas = []
@@ -197,7 +187,6 @@ def select_by_tokens(chunks, metadatas):
 
     return selected_chunks, selected_metadatas
 
-
 def deduplicate(chunks, metadatas):
     seen = set()
     unique_chunks = []
@@ -211,7 +200,6 @@ def deduplicate(chunks, metadatas):
             unique_metadatas.append(meta)
 
     return unique_chunks, unique_metadatas
-
 
 def retrieve(query, user_id=None, workspace_id=None, do_rewrite=True):
     # Query rewriting
@@ -250,8 +238,6 @@ def retrieve(query, user_id=None, workspace_id=None, do_rewrite=True):
 
     return {"chunks": chunks, "metadatas": metadatas, "total_retrieved": len(chunks)}
 
-
 def invalidate_bm25_cache():
     global corpus_hash
     corpus_hash = None
-    

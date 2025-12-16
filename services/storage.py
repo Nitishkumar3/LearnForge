@@ -1,7 +1,6 @@
 """S3/R2 storage utilities."""
 
 import os
-import uuid
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -13,7 +12,6 @@ BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 REGION = os.getenv('S3_REGION', 'auto')
 
 client = None
-
 
 def get_client():
     global client
@@ -28,27 +26,6 @@ def get_client():
         )
     return client
 
-
-def generate_key(user_id, workspace_id, filename, doc_id=None):
-    if not doc_id:
-        doc_id = f"doc_{uuid.uuid4().hex[:12]}"
-    safe_filename = "".join(c for c in filename if c.isalnum() or c in '._-').strip()
-    if not safe_filename:
-        safe_filename = "document.pdf"
-    return f"{user_id}/{workspace_id}/{doc_id}_{safe_filename}"
-
-
-def get_upload_url(key, content_type='application/pdf', expires_in=3600):
-    response = get_client().generate_presigned_post(
-        Bucket=BUCKET_NAME,
-        Key=key,
-        Fields={'Content-Type': content_type},
-        Conditions=[{'Content-Type': content_type}, ['content-length-range', 1, 104857600]],
-        ExpiresIn=expires_in
-    )
-    return {'method': 'POST', 'url': response['url'], 'fields': response['fields']}
-
-
 def get_download_url(key, expires_in=3600):
     return get_client().generate_presigned_url(
         'get_object',
@@ -56,31 +33,25 @@ def get_download_url(key, expires_in=3600):
         ExpiresIn=expires_in
     )
 
-
 def upload_file(key, file_path, content_type='application/pdf'):
     get_client().upload_file(file_path, BUCKET_NAME, key, ExtraArgs={'ContentType': content_type})
     return True
-
 
 def upload_fileobj(key, file_obj, content_type='application/pdf'):
     get_client().upload_fileobj(file_obj, BUCKET_NAME, key, ExtraArgs={'ContentType': content_type})
     return True
 
-
 def download_file(key, file_path):
     get_client().download_file(BUCKET_NAME, key, file_path)
     return True
-
 
 def download_fileobj(key, file_obj):
     get_client().download_fileobj(BUCKET_NAME, key, file_obj)
     return True
 
-
 def delete_file(key):
     get_client().delete_object(Bucket=BUCKET_NAME, Key=key)
     return True
-
 
 def delete_folder(prefix):
     response = get_client().list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix)
@@ -91,7 +62,6 @@ def delete_folder(prefix):
         get_client().delete_objects(Bucket=BUCKET_NAME, Delete={'Objects': objects})
     return len(objects)
 
-
 def file_exists(key):
     try:
         get_client().head_object(Bucket=BUCKET_NAME, Key=key)
@@ -100,7 +70,6 @@ def file_exists(key):
         if e.response['Error']['Code'] == '404':
             return False
         raise
-
 
 def get_file_size(key):
     try:
@@ -111,25 +80,17 @@ def get_file_size(key):
             return None
         raise
 
-
 def generate_image_key(user_id, workspace_id, image_id, extension='png'):
-    """Generate S3 key for generated images."""
     return f"{user_id}/{workspace_id}/generatedimages/{image_id}.{extension}"
 
-
 def generate_raw_key(user_id, workspace_id, doc_uuid, extension):
-    """Generate S3 key for raw uploaded files."""
     ext = extension.lstrip('.')
     return f"{user_id}/{workspace_id}/raw_files/{doc_uuid}.{ext}"
 
-
 def generate_processed_key(user_id, workspace_id, doc_uuid):
-    """Generate S3 key for processed markdown files."""
     return f"{user_id}/{workspace_id}/processed_files/{doc_uuid}.md"
 
-
 def upload_text(key, text_content, content_type='text/markdown'):
-    """Upload text content directly to S3."""
     import io
     file_obj = io.BytesIO(text_content.encode('utf-8'))
     get_client().upload_fileobj(
@@ -140,18 +101,14 @@ def upload_text(key, text_content, content_type='text/markdown'):
     )
     return True
 
-
 def download_text(key):
-    """Download text content from S3."""
     import io
     file_obj = io.BytesIO()
     get_client().download_fileobj(BUCKET_NAME, key, file_obj)
     file_obj.seek(0)
     return file_obj.read().decode('utf-8')
 
-
 def upload_image_bytes(key, image_bytes, content_type='image/png'):
-    """Upload image bytes directly to S3."""
     import io
     file_obj = io.BytesIO(image_bytes)
     get_client().upload_fileobj(
@@ -161,13 +118,3 @@ def upload_image_bytes(key, image_bytes, content_type='image/png'):
         ExtraArgs={'ContentType': content_type}
     )
     return True
-
-
-def get_public_url(key):
-    """Get public URL for a file (if bucket is public) or generate presigned URL."""
-    # Try to generate a long-lived presigned URL (7 days max)
-    return get_client().generate_presigned_url(
-        'get_object',
-        Params={'Bucket': BUCKET_NAME, 'Key': key},
-        ExpiresIn=604800  # 7 days
-    )

@@ -3,9 +3,7 @@
 import os
 import pymupdf
 
-
 def clean_text(text):
-    """Clean extracted text."""
     text = text.replace('\x00', '')
     lines = text.split('\n')
     cleaned = []
@@ -14,7 +12,6 @@ def clean_text(text):
         if line:
             cleaned.append(line)
     return '\n'.join(cleaned)
-
 
 def get_page_image_ratio(page):
     """Calculate ratio of image area to page area."""
@@ -35,18 +32,8 @@ def get_page_image_ratio(page):
 
     return image_area / page_area
 
-
 def should_use_ocr(doc, use_ocr=None):
-    """
-    Determine if OCR should be used.
-
-    Args:
-        doc: PyMuPDF document
-        use_ocr: None (auto), True (force), False (skip)
-
-    Returns:
-        (should_ocr, reason)
-    """
+    """Determine if OCR should be used based on document content."""
     if use_ocr is True:
         return True, "User requested OCR"
 
@@ -75,7 +62,6 @@ def should_use_ocr(doc, use_ocr=None):
 
     return False, "Sufficient text content"
 
-
 def extract_text_direct(doc):
     """Extract text directly from PDF."""
     pages = []
@@ -96,19 +82,12 @@ def extract_text_direct(doc):
 
     return '\n\n'.join(text_parts), pages
 
-
 def extract_text_with_ocr(file_path, num_pages):
     """Extract text using Gemini OCR with single file upload."""
     from processors import gemini_ocr
 
-    print(f"[PDF] Starting OCR extraction for {num_pages} pages...")
-
-    # Use single file upload for entire PDF
     full_text = gemini_ocr.extract_text_from_pdf(file_path)
-    print(f"[PDF] OCR returned {len(full_text)} chars")
-
     full_text = clean_text(full_text)
-    print(f"[PDF] After cleaning: {len(full_text)} chars")
 
     # Create a single page entry for metadata
     pages = [{
@@ -119,24 +98,8 @@ def extract_text_with_ocr(file_path, num_pages):
 
     return full_text, pages
 
-
 def process(file_path, use_ocr=None):
-    """
-    Extract text from PDF and convert to Markdown.
-
-    Args:
-        file_path: Path to PDF file
-        use_ocr: None (auto-detect), True (force OCR), False (direct only)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict
-        }
-    """
+    """Extract text from PDF and convert to Markdown."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"PDF file not found: {file_path}")
 
@@ -175,22 +138,8 @@ def process(file_path, use_ocr=None):
         }
     }
 
-
 def analyze_pdf(file_path):
-    """
-    Analyze PDF to determine if OCR is recommended.
-
-    Args:
-        file_path: Path to PDF
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str,
-            "text_density": float
-        }
-    """
+    """Analyze PDF to determine if OCR is recommended."""
     try:
         doc = pymupdf.open(file_path)
         num_pages = len(doc)

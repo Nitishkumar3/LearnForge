@@ -1,6 +1,4 @@
--- =============================================
 -- USERS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -18,9 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_verification_token ON users(verification_token);
 CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token);
 
--- =============================================
 -- WORKSPACES TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS workspaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -34,9 +30,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 
 CREATE INDEX IF NOT EXISTS idx_workspaces_user_id ON workspaces(user_id);
 
--- =============================================
 -- DOCUMENTS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -69,9 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 CREATE INDEX IF NOT EXISTS idx_documents_file_type ON documents(file_type);
 CREATE INDEX IF NOT EXISTS idx_documents_content_hash ON documents(content_hash);
 
--- =============================================
 -- CONVERSATIONS TABLE (ChatGPT-style)
--- =============================================
 CREATE TABLE IF NOT EXISTS conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -85,9 +77,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 CREATE INDEX IF NOT EXISTS idx_conversations_user_workspace ON conversations(user_id, workspace_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
 
--- =============================================
 -- MESSAGES TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
@@ -104,9 +94,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
 
--- =============================================
 -- STUDY MATERIALS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS study_materials (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -122,9 +110,7 @@ CREATE TABLE IF NOT EXISTS study_materials (
 CREATE INDEX IF NOT EXISTS idx_study_materials_workspace ON study_materials(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_study_materials_module ON study_materials(workspace_id, module_id);
 
--- =============================================
 -- FLASH CARDS TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS flash_cards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -141,9 +127,7 @@ CREATE TABLE IF NOT EXISTS flash_cards (
 CREATE INDEX IF NOT EXISTS idx_flash_cards_workspace ON flash_cards(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_flash_cards_module ON flash_cards(workspace_id, module_id);
 
--- =============================================
 -- QUIZZES TABLE
--- =============================================
 CREATE TABLE IF NOT EXISTS quizzes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -165,9 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_quizzes_workspace ON quizzes(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_quizzes_user ON quizzes(user_id);
 CREATE INDEX IF NOT EXISTS idx_quizzes_status ON quizzes(status);
 
--- =============================================
 -- TRIGGERS FOR updated_at
--- =============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -206,9 +188,7 @@ BEGIN
     END IF;
 END $$;
 
--- =============================================
 -- TRIGGER: Auto-update conversation on new message
--- =============================================
 CREATE OR REPLACE FUNCTION update_conversation_on_message()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -227,9 +207,7 @@ BEGIN
     END IF;
 END $$;
 
--- =============================================
 -- TRIGGER: Auto-generate conversation title
--- =============================================
 CREATE OR REPLACE FUNCTION auto_generate_conversation_title()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -4,24 +4,8 @@ import os
 from openpyxl import load_workbook
 import csv
 
-
 def process(file_path, use_ocr=None):
-    """
-    Extract text from Excel file and convert to Markdown.
-
-    Args:
-        file_path: Path to .xlsx/.xls/.csv file
-        use_ocr: Ignored for Excel (always direct extraction)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict
-        }
-    """
+    """Extract text from Excel file and convert to Markdown."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Excel file not found: {file_path}")
 
@@ -33,9 +17,7 @@ def process(file_path, use_ocr=None):
     else:
         return process_xlsx(file_path, file_size)
 
-
 def process_xlsx(file_path, file_size):
-    """Process Excel workbook."""
     try:
         wb = load_workbook(file_path, data_only=True)
     except Exception as e:
@@ -107,9 +89,7 @@ def process_xlsx(file_path, file_size):
         }
     }
 
-
 def process_csv(file_path, file_size):
-    """Process CSV file."""
     rows = []
     encoding = 'utf-8'
 
@@ -168,21 +148,8 @@ def process_csv(file_path, file_size):
         }
     }
 
-
 def analyze_excel(file_path):
-    """
-    Analyze Excel file.
-
-    Args:
-        file_path: Path to Excel file
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str
-        }
-    """
+    """Analyze Excel file for processing."""
     ext = os.path.splitext(file_path)[1].lower()
 
     try:

@@ -17,12 +17,10 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "default")
 DEFAULT_WORKSPACE_ID = os.getenv("DEFAULT_WORKSPACE_ID", "default")
 
-
 def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     text = re.sub(r'\n\s*\n', '\n\n', text)
     return text.strip()
-
 
 def split_into_chunks(text, chunk_size=None, chunk_overlap=None):
     chunk_size = chunk_size or CHUNK_SIZE
@@ -81,7 +79,6 @@ def split_into_chunks(text, chunk_size=None, chunk_overlap=None):
 
     return chunks
 
-
 def extract_page_number(text):
     match = re.search(r'\[Page[:\s]*(\d+)\]', text, re.IGNORECASE)
     if match:
@@ -90,7 +87,6 @@ def extract_page_number(text):
     if match:
         return int(match.group(1))
     return 0
-
 
 def chunk_text(text, document_id, document_name, document_type="pdf", user_id=None, workspace_id=None):
     user_id = user_id or DEFAULT_USER_ID
@@ -125,13 +121,3 @@ def chunk_text(text, document_id, document_name, document_type="pdf", user_id=No
         chunks.append(chunk)
 
     return chunks
-
-
-def estimate_chunks(text_length, chunk_size=None, chunk_overlap=None):
-    chunk_size = chunk_size or CHUNK_SIZE
-    chunk_overlap = chunk_overlap or CHUNK_OVERLAP
-
-    if text_length <= 0:
-        return 0
-    effective_step = chunk_size - chunk_overlap
-    return max(1, (text_length + effective_step - 1) // effective_step)

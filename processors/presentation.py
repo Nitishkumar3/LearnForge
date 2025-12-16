@@ -2,12 +2,8 @@
 
 import os
 from pptx import Presentation
-from pptx.util import Inches
-import io
-
 
 def get_slide_text(slide):
-    """Extract all text from a slide."""
     texts = []
 
     for shape in slide.shapes:
@@ -22,25 +18,19 @@ def get_slide_text(slide):
 
     return '\n'.join(texts)
 
-
 def get_slide_notes(slide):
-    """Extract speaker notes from slide."""
     if slide.has_notes_slide:
         notes_slide = slide.notes_slide
         if notes_slide.notes_text_frame:
             return notes_slide.notes_text_frame.text.strip()
     return ""
 
-
 def get_slide_title(slide):
-    """Extract slide title."""
     if slide.shapes.title:
         return slide.shapes.title.text.strip()
     return ""
 
-
 def get_slide_image_ratio(slide):
-    """Calculate ratio of image shapes to total shapes."""
     total_shapes = len(slide.shapes)
     if total_shapes == 0:
         return 0
@@ -48,18 +38,8 @@ def get_slide_image_ratio(slide):
     image_shapes = sum(1 for shape in slide.shapes if shape.shape_type == 13)
     return image_shapes / total_shapes
 
-
 def should_use_ocr(prs, use_ocr=None):
-    """
-    Determine if OCR should be used.
-
-    Args:
-        prs: Presentation object
-        use_ocr: None (auto), True (force), False (skip)
-
-    Returns:
-        (should_ocr, reason)
-    """
+    """Determine if OCR should be used based on slide content."""
     if use_ocr is True:
         return True, "User requested OCR"
 
@@ -87,7 +67,6 @@ def should_use_ocr(prs, use_ocr=None):
         return True, f"Image-heavy presentation ({high_image_slides}/{total_slides} slides)"
 
     return False, "Sufficient text content"
-
 
 def extract_text_direct(prs):
     """Extract text directly from presentation."""
@@ -122,7 +101,6 @@ def extract_text_direct(prs):
 
     full_text = "# Presentation\n\n---\n\n" + "\n---\n\n".join(md_parts)
     return full_text, slides_data
-
 
 def extract_text_with_ocr(prs, file_path):
     """Extract text using OCR for each slide."""
@@ -169,24 +147,8 @@ def extract_text_with_ocr(prs, file_path):
     full_text = "# Presentation\n\n---\n\n" + "\n---\n\n".join(md_parts)
     return full_text, slides_data
 
-
 def process(file_path, use_ocr=None):
-    """
-    Extract text from presentation and convert to Markdown.
-
-    Args:
-        file_path: Path to .pptx file
-        use_ocr: None (auto-detect), True (force OCR), False (direct only)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict
-        }
-    """
+    """Extract text from presentation and convert to Markdown."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Presentation file not found: {file_path}")
 
@@ -222,21 +184,8 @@ def process(file_path, use_ocr=None):
         }
     }
 
-
 def analyze_presentation(file_path):
-    """
-    Analyze presentation to determine if OCR is recommended.
-
-    Args:
-        file_path: Path to presentation
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str
-        }
-    """
+    """Analyze presentation to determine if OCR is recommended."""
     try:
         prs = Presentation(file_path)
         num_slides = len(prs.slides)

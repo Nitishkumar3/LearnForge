@@ -2,14 +2,12 @@
 
 import os
 import hashlib
-
 from processors import pdf
 from processors import word
 from processors import presentation
 from processors import excel
 from processors import image
 from processors import audio
-
 
 FILE_TYPE_MAP = {
     '.pdf': {'type': 'pdf', 'processor': pdf, 'ocr_available': True},
@@ -71,102 +69,48 @@ MIME_TYPES = {
 
 ALLOWED_EXTENSIONS = set(FILE_TYPE_MAP.keys())
 
-
 def get_extension(filename):
-    """Get lowercase file extension."""
     return os.path.splitext(filename)[1].lower()
 
-
 def is_allowed_file(filename):
-    """Check if file extension is supported."""
     return get_extension(filename) in ALLOWED_EXTENSIONS
 
-
 def get_file_type(filename):
-    """Get file type category from filename."""
     ext = get_extension(filename)
     info = FILE_TYPE_MAP.get(ext)
     return info['type'] if info else None
 
-
 def get_mime_type(filename):
-    """Get MIME type from filename."""
     ext = get_extension(filename)
     return MIME_TYPES.get(ext, 'application/octet-stream')
 
-
 def is_ocr_available(filename):
-    """Check if OCR is available for file type."""
     ext = get_extension(filename)
     info = FILE_TYPE_MAP.get(ext)
     return info.get('ocr_available', False) if info else False
 
-
-def is_ocr_default(filename):
-    """Check if OCR is enabled by default for file type."""
-    ext = get_extension(filename)
-    info = FILE_TYPE_MAP.get(ext)
-    return info.get('ocr_default', False) if info else False
-
-
-def requires_audio_extraction(filename):
-    """Check if file is video and needs audio extraction."""
-    ext = get_extension(filename)
-    info = FILE_TYPE_MAP.get(ext)
-    return info.get('extract_audio', False) if info else False
-
-
 def get_processor(filename):
-    """Get processor module for file type."""
     ext = get_extension(filename)
     info = FILE_TYPE_MAP.get(ext)
     return info['processor'] if info else None
 
-
 def calculate_file_hash(file_path):
-    """Calculate SHA256 hash of file."""
     sha256 = hashlib.sha256()
     with open(file_path, 'rb') as f:
         for chunk in iter(lambda: f.read(8192), b''):
             sha256.update(chunk)
     return sha256.hexdigest()
 
-
 def process_file(file_path, use_ocr=None):
-    """
-    Process file and extract text.
-
-    Args:
-        file_path: Path to file
-        use_ocr: None (auto), True (force), False (skip)
-
-    Returns:
-        Processing result dict
-    """
+    """Process file and extract text."""
     processor = get_processor(file_path)
     if not processor:
         raise ValueError(f"Unsupported file type: {get_extension(file_path)}")
 
     return processor.process(file_path, use_ocr=use_ocr)
 
-
 def analyze_file(file_path):
-    """
-    Analyze file to determine processing recommendations.
-
-    Args:
-        file_path: Path to file
-
-    Returns:
-        {
-            "file_type": str,
-            "mime_type": str,
-            "ocr_available": bool,
-            "ocr_recommended": bool,
-            "ocr_reason": str,
-            "num_pages": int
-        }
-    """
+    """Analyze file to determine processing recommendations."""
     ext = get_extension(file_path)
     info = FILE_TYPE_MAP.get(ext)
 
@@ -211,9 +155,7 @@ def analyze_file(file_path):
         "num_pages": analysis.get('num_pages', 1)
     }
 
-
 def get_supported_formats():
-    """Get list of supported file formats grouped by type."""
     formats = {}
     for ext, info in FILE_TYPE_MAP.items():
         file_type = info['type']

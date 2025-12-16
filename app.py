@@ -1,10 +1,3 @@
-"""
-Core RAG Application - Flask Backend
-
-A persistent, multi-document RAG system with intelligent retrieval.
-Designed for single-user now, scalable to multi-user later.
-"""
-
 import os
 import uuid
 import json
@@ -16,9 +9,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# ===================
 # CONFIGURATION
-# ===================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CHROMA_DB_PATH = os.path.join(DATA_DIR, "chroma_db")
@@ -37,9 +28,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(CHROMA_DB_PATH, exist_ok=True)
 os.makedirs(UPLOADS_PATH, exist_ok=True)
 
-# ===================
 # IMPORTS (after config so paths are ready)
-# ===================
 from services.startup import run_startup_checks
 from services import vector_store
 from services import embedding
@@ -53,11 +42,10 @@ from services.auth import auth_required
 from services import email
 from services import storage
 from processors import file_types
-from utils import chunking
+from processors import chunking
 
 
 def allowed_file(filename):
-    """Check if file extension is allowed."""
     return file_types.is_allowed_file(filename)
 
 
@@ -114,10 +102,8 @@ def add_study_material_to_vector_db(content, user_id, workspace_id, module_index
             document_id=doc_id
         )
 
-        print(f"[STUDY] Added {len(chunks)} chunks for: {module_name} - {subtopic_name}")
         return len(chunks)
     except Exception as e:
-        print(f"[STUDY] Error adding to vector DB: {e}")
         return 0
 
 
@@ -140,16 +126,12 @@ def delete_study_material_from_vector_db(user_id, workspace_id, module_index=Non
 
         deleted = vector_store.delete_by_metadata(filters)
         invalidate_bm25_cache()
-        print(f"[STUDY] Deleted {deleted} chunks from vector DB")
         return deleted
     except Exception as e:
-        print(f"[STUDY] Error deleting from vector DB: {e}")
         return 0
 
 
-# ===================
 # STARTUP HEALTH CHECKS
-# ===================
 import os as _os
 if _os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
     if not run_startup_checks():
@@ -167,13 +149,10 @@ init_db()
 # Current conversation tracking (per request - real history is in DB)
 
 
-# ===================
 # ROUTES
-# ===================
 
 @app.route('/')
 def index():
-    """Render landing page."""
     return render_template('index.html')
 
 
@@ -181,7 +160,6 @@ def index():
 @app.route('/chat/<workspace_id>')
 @app.route('/chat/<workspace_id>/<conversation_id>')
 def chat(workspace_id=None, conversation_id=None):
-    """Render the chat page. Optionally load a specific workspace/conversation."""
     return render_template('chat.html')
 
 
@@ -190,14 +168,12 @@ def chat(workspace_id=None, conversation_id=None):
 @app.route('/study/<workspace_id>/<int:module_id>')
 @app.route('/study/<workspace_id>/<int:module_id>/<int:subtopic_index>')
 def study(workspace_id=None, module_id=None, subtopic_index=None):
-    """Render the study materials page. Optionally load specific content."""
     return render_template('study.html')
 
 
 @app.route('/flashcards')
 @app.route('/flashcards/<workspace_id>')
 def flashcards(workspace_id=None):
-    """Render the flash cards page."""
     return render_template('flashcards.html')
 
 
@@ -205,30 +181,24 @@ def flashcards(workspace_id=None):
 @app.route('/quiz/<workspace_id>')
 @app.route('/quiz/<workspace_id>/<quiz_id>')
 def quiz(workspace_id=None, quiz_id=None):
-    """Render the quiz mode page. Optionally load a specific workspace/quiz."""
     return render_template('quiz.html')
 
 
 @app.route('/uploads')
 @app.route('/uploads/<workspace_id>')
 def uploads(workspace_id=None):
-    """Render the uploads page."""
     return render_template('uploads.html')
 
 
 @app.route('/view/<doc_id>')
 def view_document(doc_id):
-    """Render the document viewer page."""
     return render_template('view.html')
 
 
-# ===================
 # AUTH ROUTES
-# ===================
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
-    """Register new user."""
     data = request.json
 
     # Validation
@@ -284,7 +254,6 @@ def signup():
 
 @app.route('/api/auth/signin', methods=['POST'])
 def signin():
-    """Sign in user."""
     data = request.json
 
     if not data.get('email') or not data.get('password'):
@@ -317,7 +286,6 @@ def signin():
 
 @app.route('/api/auth/verify-email/<token>', methods=['GET'])
 def verify_email(token):
-    """Verify email with token."""
     user = db.get_user_by_verification_token(token)
 
     if not user:
@@ -333,7 +301,6 @@ def verify_email(token):
 
 @app.route('/api/auth/forgot-password', methods=['POST'])
 def forgot_password():
-    """Request password reset."""
     data = request.json
     user_email = data.get('email', '').lower()
 
@@ -370,7 +337,6 @@ def forgot_password():
 
 @app.route('/api/auth/reset-password', methods=['POST'])
 def reset_password():
-    """Reset password with token."""
     data = request.json
 
     if not data.get('token') or not data.get('password'):
@@ -407,7 +373,6 @@ def reset_password():
 @app.route('/api/auth/me', methods=['GET'])
 @auth_required
 def get_current_user():
-    """Get current authenticated user."""
     user = db.get_user_by_id(request.user_id)
 
     if not user:
@@ -423,14 +388,11 @@ def get_current_user():
     })
 
 
-# ===================
 # WORKSPACE ROUTES
-# ===================
 
 @app.route('/api/workspaces', methods=['GET'])
 @auth_required
 def list_workspaces():
-    """List all workspaces for the authenticated user."""
     workspaces = db.get_workspaces_by_user(request.user_id)
 
     return jsonify({
@@ -446,7 +408,6 @@ def list_workspaces():
 @app.route('/api/workspaces', methods=['POST'])
 @auth_required
 def create_workspace():
-    """Create a new workspace."""
     data = request.json
 
     if not data.get('name'):
@@ -472,7 +433,6 @@ def create_workspace():
 @app.route('/api/workspaces/<workspace_id>', methods=['GET'])
 @auth_required
 def get_workspace(workspace_id):
-    """Get a specific workspace."""
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
 
     if not workspace:
@@ -491,7 +451,6 @@ def get_workspace(workspace_id):
 @app.route('/api/workspaces/<workspace_id>', methods=['PUT'])
 @auth_required
 def update_workspace_route(workspace_id):
-    """Update a workspace."""
     data = request.json
 
     workspace = db.update_workspace(
@@ -570,9 +529,7 @@ def delete_workspace_route(workspace_id):
     })
 
 
-# ===================
 # SYLLABUS ROUTES
-# ===================
 
 @app.route('/api/syllabus/parse', methods=['POST'])
 @auth_required
@@ -634,7 +591,6 @@ def save_syllabus(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/syllabus', methods=['GET'])
 @auth_required
 def get_syllabus(workspace_id):
-    """Get syllabus for a workspace."""
     # Verify workspace belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
@@ -650,7 +606,6 @@ def get_syllabus(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/syllabus', methods=['DELETE'])
 @auth_required
 def delete_syllabus(workspace_id):
-    """Clear syllabus from a workspace."""
     # Verify workspace belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
@@ -664,14 +619,11 @@ def delete_syllabus(workspace_id):
     })
 
 
-# ===================
 # STUDY MATERIALS ROUTES
-# ===================
 
 @app.route('/api/workspaces/<workspace_id>/study-materials', methods=['GET'])
 @auth_required
 def get_study_materials(workspace_id):
-    """Get all generated study materials for a workspace."""
     # Verify workspace belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
@@ -693,7 +645,6 @@ def get_study_materials(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/study-materials/<int:module_id>/<path:subtopic>', methods=['GET'])
 @auth_required
 def get_study_material_content(workspace_id, module_id, subtopic):
-    """Get content for a specific subtopic."""
     # Verify workspace belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
@@ -723,7 +674,6 @@ def get_study_material_content(workspace_id, module_id, subtopic):
 @app.route('/api/workspaces/<workspace_id>/study-materials/generate', methods=['POST'])
 @auth_required
 def generate_study_material_route(workspace_id):
-    """Generate study material for a subtopic."""
     # Verify workspace belongs to user
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
@@ -799,7 +749,6 @@ def generate_study_material_route(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/study-materials/generate-stream', methods=['POST'])
 @auth_required
 def generate_study_material_stream_route(workspace_id):
-    """Generate study material for a subtopic with streaming."""
     # Capture user_id before generator (request context won't be available inside generator)
     user_id = request.user_id
 
@@ -878,14 +827,11 @@ def generate_study_material_stream_route(workspace_id):
     return Response(generate(), mimetype='text/event-stream')
 
 
-# ===================
 # FLASH CARDS ROUTES
-# ===================
 
 @app.route('/api/workspaces/<workspace_id>/flash-cards', methods=['GET'])
 @auth_required
 def get_flash_cards(workspace_id):
-    """Get all generated flash card sets for a workspace."""
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
         return jsonify({'error': 'Workspace not found'}), 404
@@ -907,7 +853,6 @@ def get_flash_cards(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/flash-cards/<int:module_id>/<path:subtopic>', methods=['GET'])
 @auth_required
 def get_flash_card_set(workspace_id, module_id, subtopic):
-    """Get flash cards for a specific subtopic."""
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
         return jsonify({'error': 'Workspace not found'}), 404
@@ -935,7 +880,6 @@ def get_flash_card_set(workspace_id, module_id, subtopic):
 @app.route('/api/workspaces/<workspace_id>/flash-cards/generate', methods=['POST'])
 @auth_required
 def generate_flash_cards_route(workspace_id):
-    """Generate flash cards for a subtopic."""
     workspace = db.get_workspace_by_id_and_user(workspace_id, request.user_id)
     if not workspace:
         return jsonify({'error': 'Workspace not found'}), 404
@@ -1008,14 +952,11 @@ def generate_flash_cards_route(workspace_id):
     })
 
 
-# ===================
 # CONVERSATION ROUTES
-# ===================
 
 @app.route('/api/conversations', methods=['GET'])
 @auth_required
 def list_conversations():
-    """List conversations for a workspace."""
     workspace_id = request.args.get('workspace_id')
     if not workspace_id:
         return jsonify({'error': 'workspace_id required'}), 400
@@ -1033,7 +974,6 @@ def list_conversations():
 @app.route('/api/conversations', methods=['POST'])
 @auth_required
 def create_conversation():
-    """Create a new conversation."""
     data = request.json
     workspace_id = data.get('workspace_id')
 
@@ -1052,7 +992,6 @@ def create_conversation():
 @app.route('/api/conversations/<conversation_id>', methods=['GET'])
 @auth_required
 def get_conversation(conversation_id):
-    """Get conversation with messages."""
     conversation = db.get_conversation(conversation_id, request.user_id)
     if not conversation:
         return jsonify({'error': 'Conversation not found'}), 404
@@ -1085,7 +1024,6 @@ def get_conversation(conversation_id):
 @app.route('/api/conversations/<conversation_id>', methods=['PUT'])
 @auth_required
 def update_conversation(conversation_id):
-    """Update conversation title."""
     data = request.json
     title = data.get('title')
 
@@ -1102,7 +1040,6 @@ def update_conversation(conversation_id):
 @app.route('/api/conversations/<conversation_id>', methods=['DELETE'])
 @auth_required
 def delete_conversation_route(conversation_id):
-    """Delete a conversation and its S3 images."""
     from services import storage
 
     # First, get S3 keys for any images in this conversation
@@ -1124,7 +1061,6 @@ def delete_conversation_route(conversation_id):
 @app.route('/api/workspaces/<workspace_id>/conversations', methods=['DELETE'])
 @auth_required
 def delete_workspace_conversations(workspace_id):
-    """Delete all conversations in a workspace and their S3 images."""
     from services import storage
 
     # Get all conversations in this workspace
@@ -1160,7 +1096,6 @@ def delete_workspace_conversations(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/documents', methods=['DELETE'])
 @auth_required
 def delete_workspace_documents(workspace_id):
-    """Delete all documents in a workspace from S3, ChromaDB, and database."""
     # Get all documents in this workspace
     documents = db.get_documents_by_workspace(workspace_id, request.user_id)
 
@@ -1201,7 +1136,6 @@ def delete_workspace_documents(workspace_id):
 @app.route('/api/conversations/<conversation_id>/truncate', methods=['POST'])
 @auth_required
 def truncate_conversation(conversation_id):
-    """Truncate conversation messages for regeneration."""
     conversation = db.get_conversation(conversation_id, request.user_id)
     if not conversation:
         return jsonify({'error': 'Conversation not found'}), 404
@@ -1240,7 +1174,6 @@ def truncate_conversation(conversation_id):
 @app.route('/api/conversations/<conversation_id>/chat', methods=['POST'])
 @auth_required
 def conversation_chat(conversation_id):
-    """Send message in a conversation (streaming)."""
     conversation = db.get_conversation(conversation_id, request.user_id)
     if not conversation:
         return jsonify({'error': 'Conversation not found'}), 404
@@ -1376,7 +1309,6 @@ def conversation_chat(conversation_id):
 @app.route('/api/conversations/<conversation_id>/title', methods=['POST'])
 @auth_required
 def generate_conversation_title(conversation_id):
-    """Generate title for conversation using AI based on Q&A context."""
     conversation = db.get_conversation(conversation_id, request.user_id)
     if not conversation:
         return jsonify({'error': 'Conversation not found'}), 404
@@ -1451,7 +1383,6 @@ def get_user_from_token_or_query():
 
 @app.route('/api/images/<path:s3_key>', methods=['GET'])
 def serve_image(s3_key):
-    """Serve an image from S3 (proxy to avoid CORS issues)."""
     import io
     from flask import send_file
 
@@ -1480,7 +1411,6 @@ def serve_image(s3_key):
 
 @app.route('/api/images/<path:s3_key>/download', methods=['GET'])
 def download_image(s3_key):
-    """Download an image from S3 with Content-Disposition header."""
     import io
     from flask import send_file
 
@@ -1516,7 +1446,6 @@ def download_image(s3_key):
 @app.route('/api/conversations/<conversation_id>/image', methods=['POST'])
 @auth_required
 def conversation_image(conversation_id):
-    """Generate image and save to conversation."""
     conversation = db.get_conversation(conversation_id, request.user_id)
     if not conversation:
         return jsonify({'error': 'Conversation not found'}), 404
@@ -1583,14 +1512,11 @@ def conversation_image(conversation_id):
         return jsonify({'error': str(e)}), 500
 
 
-# ===================
 # DOCUMENT ROUTES
-# ===================
 
 @app.route('/api/documents', methods=['GET'])
 @auth_required
 def list_documents():
-    """List documents for the current user/workspace."""
     workspace_id = request.args.get('workspace_id')
 
     if workspace_id:
@@ -1681,15 +1607,11 @@ def upload_document():
 
         temp_file_path = os.path.join(UPLOADS_PATH, f"temp_{doc_uuid}{extension}")
         file.save(temp_file_path)
-        print(f"[UPLOAD] File saved to: {temp_file_path}")
 
         file_size = os.path.getsize(temp_file_path)
         content_hash = file_types.calculate_file_hash(temp_file_path)
-        print(f"[UPLOAD] File size: {file_size}, hash: {content_hash[:16]}..., use_ocr: {use_ocr}")
 
-        print(f"[UPLOAD] Starting file processing...")
         result = file_types.process_file(temp_file_path, use_ocr=use_ocr)
-        print(f"[UPLOAD] Processing complete. Method: {result.get('processing_method')}, text length: {len(result.get('text', ''))}")
 
         raw_key = storage.generate_raw_key(request.user_id, workspace_id, doc_uuid, extension)
         storage.upload_file(raw_key, temp_file_path, mime_type)
@@ -1823,14 +1745,12 @@ def analyze_upload():
 
 @app.route('/api/upload/formats', methods=['GET'])
 def get_supported_formats():
-    """Get list of supported file formats."""
     return jsonify(file_types.get_supported_formats())
 
 
 @app.route('/api/documents/<doc_id>', methods=['DELETE'])
 @auth_required
 def delete_document(doc_id):
-    """Delete a document from vector store, S3/local storage, and database."""
     try:
         # Get document info (with ownership check)
         doc = db.get_document_by_id_and_user(doc_id, request.user_id)
@@ -1866,7 +1786,6 @@ def delete_document(doc_id):
 @app.route('/api/documents/<doc_id>/url/<file_type>', methods=['GET'])
 @auth_required
 def get_document_url(doc_id, file_type):
-    """Get presigned URL for document file (raw or processed)."""
     try:
         doc = db.get_document_by_id_and_user(doc_id, request.user_id)
 
@@ -1898,7 +1817,6 @@ def get_document_url(doc_id, file_type):
 @app.route('/api/documents/<doc_id>/content', methods=['GET'])
 @auth_required
 def get_document_content(doc_id):
-    """Get document metadata and processed content."""
     try:
         doc = db.get_document_by_id_and_user(doc_id, request.user_id)
 
@@ -1928,7 +1846,6 @@ def get_document_content(doc_id):
 @app.route('/api/documents/<doc_id>/summary', methods=['GET'])
 @auth_required
 def get_document_summary(doc_id):
-    """Get or generate summary for a document."""
     try:
         doc = db.get_document_by_id_and_user(doc_id, request.user_id)
 
@@ -1980,17 +1897,6 @@ def get_document_summary(doc_id):
 
 @app.route('/api/generate-image', methods=['POST'])
 def generate_image():
-    """
-    Generate an image using Imagen model.
-
-    Expects JSON:
-        - prompt: Image description/prompt
-        - aspect_ratio: Optional aspect ratio (1:1, 9:16, 16:9, 4:3, 3:4)
-
-    Returns:
-        - image_base64: Base64 encoded image
-        - mime_type: Image MIME type
-    """
     data = request.json
     prompt = data.get('prompt', '').strip()
     aspect_ratio = data.get('aspect_ratio', '1:1')
@@ -2026,7 +1932,6 @@ def generate_image():
 @app.route('/api/stats', methods=['GET'])
 @auth_required
 def get_stats():
-    """Get statistics for user's workspace."""
     workspace_id = request.args.get('workspace_id')
 
     if workspace_id:
@@ -2047,7 +1952,6 @@ def get_stats():
 
 @app.route('/api/models', methods=['GET'])
 def list_models():
-    """List all available LLM models."""
     return jsonify({
         "models": llm.list_models(),
         "current": llm.get_current_model()
@@ -2056,7 +1960,6 @@ def list_models():
 
 @app.route('/api/models/switch', methods=['POST'])
 def switch_model():
-    """Switch to a different LLM model."""
     data = request.json
     model_name = data.get('model')
 
@@ -2073,13 +1976,10 @@ def switch_model():
         return jsonify({"error": f"Unknown model: {model_name}"}), 400
 
 
-# ===================
 # ERROR HANDLERS
-# ===================
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    """Handle file too large error."""
     max_mb = MAX_CONTENT_LENGTH / (1024 * 1024)
     return jsonify({
         "error": f"File too large. Maximum size is {max_mb}MB"
@@ -2088,53 +1988,41 @@ def request_entity_too_large(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle internal server errors."""
     return jsonify({
         "error": "An internal error occurred. Please try again."
     }), 500
 
 
-# ===================
 # RUN
-# ===================
 
 
-# ===================
 # AUTH PAGE ROUTES
-# ===================
 
 @app.route('/signin')
 def signin_page():
-    """Render sign in page."""
     return render_template('signin.html')
 
 
 @app.route('/signup')
 def signup_page():
-    """Render sign up page."""
     return render_template('signup.html')
 
 
 @app.route('/forgotpassword')
 def forgotpassword_page():
-    """Render forgot password page."""
     return render_template('forgotpassword.html')
 
 
 @app.route('/resetpassword')
 def resetpassword_page():
-    """Render reset password page."""
     return render_template('resetpassword.html')
 
 
-# ===================
 # QUIZ ROUTES
-# ===================
 
 @app.route('/api/workspaces/<workspace_id>/quiz/generate', methods=['POST'])
 @auth_required
 def generate_quiz(workspace_id):
-    """Generate a new quiz for the workspace."""
     data = request.json
 
     topics_data = data.get('topics')
@@ -2184,21 +2072,17 @@ def generate_quiz(workspace_id):
             if result and result.get('chunks'):
                 rag_context = "\n\n".join(result['chunks'][:10])
     except Exception as e:
-        print(f"RAG retrieval error for quiz: {e}")
+        pass
 
     # Generate questions
     try:
-        print(f"[QUIZ] Generating {num_questions} {quiz_type} questions for topics: {topics[:3]}...")
         result = generation.generate_quiz_questions(topics, quiz_type, num_questions, rag_context)
 
         if result['error']:
-            print(f"[QUIZ] Generation error: {result['error']}")
             return jsonify({'error': result['error']}), 500
 
         questions = result['questions']
-        print(f"[QUIZ] Generated {len(questions)} questions successfully")
     except Exception as e:
-        print(f"[QUIZ] Exception during generation: {e}")
         return jsonify({'error': f'Quiz generation failed: {str(e)}'}), 500
 
     # Save quiz to database
@@ -2212,7 +2096,6 @@ def generate_quiz(workspace_id):
             questions=questions
         )
     except Exception as e:
-        print(f"[QUIZ] Database error: {e}")
         return jsonify({'error': f'Failed to save quiz: {str(e)}'}), 500
 
     # Return quiz without correct answers (for MCQ/FITB)
@@ -2237,7 +2120,6 @@ def generate_quiz(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/quiz', methods=['GET'])
 @auth_required
 def list_quizzes(workspace_id):
-    """List all quizzes for a workspace."""
     quizzes = db.get_workspace_quizzes(workspace_id, request.user_id)
 
     return jsonify({
@@ -2258,7 +2140,6 @@ def list_quizzes(workspace_id):
 @app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>', methods=['GET'])
 @auth_required
 def get_quiz(workspace_id, quiz_id):
-    """Get a specific quiz."""
     quiz = db.get_quiz(quiz_id, request.user_id)
 
     if not quiz:
@@ -2291,11 +2172,9 @@ def get_quiz(workspace_id, quiz_id):
         }
     })
 
-
 @app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>/submit', methods=['POST'])
 @auth_required
 def submit_quiz(workspace_id, quiz_id):
-    """Submit quiz answers and get results."""
     data = request.json
     answers = data.get('answers', [])
 
@@ -2337,11 +2216,9 @@ def submit_quiz(workspace_id, quiz_id):
         }
     })
 
-
 @app.route('/api/workspaces/<workspace_id>/quiz/<quiz_id>', methods=['DELETE'])
 @auth_required
 def delete_quiz_route(workspace_id, quiz_id):
-    """Delete a quiz."""
     result = db.delete_quiz(quiz_id, request.user_id)
 
     if not result:
@@ -2349,48 +2226,5 @@ def delete_quiz_route(workspace_id, quiz_id):
 
     return jsonify({'success': True, 'message': 'Quiz deleted'})
 
-
-# ===================
-# TEST ENDPOINTS (TEMP)
-# ===================
-
-@app.route('/test/vector/<user_id>/<workspace_id>')
-def test_vector_contents(user_id, workspace_id):
-    """Temporary endpoint to check vector DB contents for a workspace."""
-    try:
-        coll = vector_store.get_collection()
-        results = coll.get(
-            where={"$and": [{"user_id": user_id}, {"workspace_id": workspace_id}]},
-            include=["metadatas", "documents"]
-        )
-
-        chunks = []
-        for i, doc in enumerate(results["documents"] or []):
-            meta = results["metadatas"][i] if results["metadatas"] else {}
-            chunks.append({
-                "text_preview": doc[:200] + "..." if len(doc) > 200 else doc,
-                "type": meta.get("type", "document"),
-                "document_name": meta.get("document_name"),
-                "module_name": meta.get("module_name"),
-                "subtopic_name": meta.get("subtopic_name"),
-                "chunk_index": meta.get("chunk_index")
-            })
-
-        return jsonify({
-            "total_chunks": len(chunks),
-            "chunks": chunks
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ===================
-# RUN APP
-# ===================
-
 if __name__ == '__main__':
-    app.run(
-        host=FLASK_HOST,
-        port=FLASK_PORT,
-        debug=FLASK_DEBUG
-    )
+    app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)

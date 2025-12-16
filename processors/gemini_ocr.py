@@ -4,7 +4,7 @@ import os
 from google import genai
 from google.genai import types
 
-_client = None
+client = None
 
 MODEL = "gemini-flash-latest"
 PROMPT = """Extract all text from this document and convert it into well-structured Markdown format.
@@ -20,63 +20,33 @@ Instructions:
 
 Output clean, readable, well-structured Markdown that a student would find easy to study from."""
 
-
 def get_client():
     """Get or create Gemini client."""
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
-    return _client
-
+    global client
+    if client is None:
+        client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+    return client
 
 def extract_text_from_pdf(file_path):
-    """
-    Extract text from PDF using Gemini Flash with file upload.
+    """Extract text from PDF using Gemini Flash with file upload."""
+    client = get_client()
+    uploaded_file = client.files.upload(file=file_path)
 
-    Args:
-        file_path: Path to PDF file
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_uri(
+                    file_uri=uploaded_file.uri,
+                    mime_type="application/pdf",
+                ),
+                types.Part.from_text(text=PROMPT),
+            ],
+        ),
+    ]
 
-    Returns:
-        Extracted text as string
-    """
-    print(f"[OCR] Starting PDF extraction for: {file_path}")
-
-    try:
-        client = get_client()
-        print(f"[OCR] Got Gemini client, uploading file...")
-
-        # Upload entire PDF as a single file
-        uploaded_file = client.files.upload(file=file_path)
-        print(f"[OCR] File uploaded. URI: {uploaded_file.uri}")
-
-        contents = [
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_uri(
-                        file_uri=uploaded_file.uri,
-                        mime_type="application/pdf",
-                    ),
-                    types.Part.from_text(text=PROMPT),
-                ],
-            ),
-        ]
-
-        config = types.GenerateContentConfig(
-            temperature=1.0,
-            max_output_tokens=65536,
-        )
-
-        print(f"[OCR] Calling Gemini API with model: {MODEL}")
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=contents,
-            config=config,
-        )
-        print(f"[OCR] Got response, text length: {len(response.text) if response.text else 0}")
-    except Exception as e:
-        print(f"[OCR] ERROR: {type(e).__name__}: {e}")
-        raise
+    config = types.GenerateContentConfig(temperature=1.0, max_output_tokens=65536,)
+    response = client.models.generate_content(model=MODEL, contents=contents, config=config,)
 
     # Clean up uploaded file
     try:
@@ -86,18 +56,8 @@ def extract_text_from_pdf(file_path):
 
     return response.text
 
-
 def extract_text_from_image(image_bytes, mime_type='image/png'):
-    """
-    Extract text from image using Gemini Flash vision.
-
-    Args:
-        image_bytes: Raw image bytes
-        mime_type: MIME type of image
-
-    Returns:
-        Extracted text as string
-    """
+    """Extract text from image using Gemini Flash vision."""
     client = get_client()
 
     contents = [
@@ -110,15 +70,6 @@ def extract_text_from_image(image_bytes, mime_type='image/png'):
         ),
     ]
 
-    config = types.GenerateContentConfig(
-        temperature=1.0,
-        max_output_tokens=65536,
-    )
-
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=contents,
-        config=config,
-    )
-
+    config = types.GenerateContentConfig(temperature=1.0, max_output_tokens=65536,)
+    response = client.models.generate_content(model=MODEL, contents=contents, config=config,)
     return response.text

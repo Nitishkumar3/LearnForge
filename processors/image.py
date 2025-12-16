@@ -4,24 +4,8 @@ import os
 from PIL import Image
 import io
 
-
 def process(file_path, use_ocr=None):
-    """
-    Extract text from image using OCR.
-
-    Args:
-        file_path: Path to image file
-        use_ocr: Ignored (always uses OCR for images)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict
-        }
-    """
+    """Extract text from image using OCR."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Image file not found: {file_path}")
 
@@ -86,7 +70,6 @@ def process(file_path, use_ocr=None):
         }
     }
 
-
 def process_multiframe(file_path, img, file_size):
     """Process multi-frame images (GIF, TIFF)."""
     from processors import gemini_ocr
@@ -132,21 +115,8 @@ def process_multiframe(file_path, img, file_size):
         }
     }
 
-
 def analyze_image(file_path):
-    """
-    Analyze image file.
-
-    Args:
-        file_path: Path to image
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str
-        }
-    """
+    """Analyze image file for processing."""
     try:
         img = Image.open(file_path)
         n_frames = getattr(img, 'n_frames', 1)

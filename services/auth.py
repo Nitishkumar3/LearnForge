@@ -1,5 +1,3 @@
-"""Authentication utilities using JWT and bcrypt."""
-
 import os
 import jwt
 import bcrypt
@@ -11,19 +9,13 @@ from flask import request, jsonify
 SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 TOKEN_EXPIRY_HOURS = 24 * 7
 
-
 def hash_password(password):
-    """Hash password using bcrypt."""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-
 def verify_password(password, password_hash):
-    """Verify password against hash."""
     return bcrypt.checkpw(password.encode(), password_hash.encode())
 
-
 def generate_token(user_id):
-    """Generate JWT access token."""
     payload = {
         'user_id': str(user_id),
         'exp': datetime.utcnow() + timedelta(hours=TOKEN_EXPIRY_HOURS),
@@ -31,9 +23,7 @@ def generate_token(user_id):
     }
     return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
-
 def decode_token(token):
-    """Decode and validate JWT token."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
     except jwt.ExpiredSignatureError:
@@ -41,19 +31,13 @@ def decode_token(token):
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
 
-
 def generate_verification_token():
-    """Generate email verification token."""
     return secrets.token_urlsafe(32)
-
 
 def generate_reset_token():
-    """Generate password reset token."""
     return secrets.token_urlsafe(32)
 
-
 def auth_required(f):
-    """Decorator to require authentication."""
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None

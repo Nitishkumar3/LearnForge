@@ -83,7 +83,6 @@ DEFAULT_MODEL = "Mistral Medium"
 providers = {}
 current_model = DEFAULT_MODEL
 
-
 def get_provider(name):
     global providers
     if name not in providers:
@@ -111,14 +110,12 @@ def get_provider(name):
             providers[name] = {"cookies": cookies, "type": "nova", "base_url": "https://partyrock.aws"}
     return providers[name]
 
-
 def set_model(model_name):
     global current_model
     if model_name not in MODELS:
         return False
     current_model = model_name
     return True
-
 
 def get_current_model():
     info = MODELS[current_model]
@@ -133,7 +130,6 @@ def get_current_model():
         "type": info.get("type", "text"),
         "aspect_ratios": info.get("aspect_ratios", [])
     }
-
 
 def list_models():
     return [
@@ -150,7 +146,6 @@ def list_models():
         }
         for name, info in MODELS.items()
     ]
-
 
 def generate(prompt, use_search=False, use_thinking=False):
     model_info = MODELS[current_model]
@@ -169,7 +164,6 @@ def generate(prompt, use_search=False, use_thinking=False):
     elif provider["type"] == "cerebras":
         return cerebras_generate(provider["client"], model_id, prompt, model_info)
 
-
 def generate_stream(prompt, use_search=False, use_thinking=False):
     model_info = MODELS[current_model]
     provider = get_provider(model_info["provider"])
@@ -187,7 +181,6 @@ def generate_stream(prompt, use_search=False, use_thinking=False):
     elif provider["type"] == "cerebras":
         yield from cerebras_stream(provider["client"], model_id, prompt, model_info)
 
-
 def generate_image(prompt, aspect_ratio="1:1"):
     model_info = MODELS[current_model]
     if model_info.get("type") != "image":
@@ -195,7 +188,6 @@ def generate_image(prompt, aspect_ratio="1:1"):
 
     provider = get_provider(model_info["provider"])
     return nova_generate_image(provider, model_info["model_id"], prompt, aspect_ratio)
-
 
 # Gemini
 def gemini_generate(client, model_id, prompt, use_search, use_thinking):
@@ -206,7 +198,6 @@ def gemini_generate(client, model_id, prompt, use_search, use_thinking):
         config["tools"] = tools
     response = client.models.generate_content(model=model_id, contents=prompt, config=types.GenerateContentConfig(**config))
     return response.text
-
 
 def gemini_stream(client, model_id, prompt, use_search, use_thinking):
     from google.genai import types
@@ -223,19 +214,16 @@ def gemini_stream(client, model_id, prompt, use_search, use_thinking):
             elif part.text:
                 yield {"type": "text", "content": part.text}
 
-
 # Groq
 def groq_generate(client, model_id, prompt):
     response = client.chat.completions.create(model=model_id, messages=[{"role": "user", "content": prompt}])
     return response.choices[0].message.content
-
 
 def groq_stream(client, model_id, prompt):
     stream = client.chat.completions.create(model=model_id, messages=[{"role": "user", "content": prompt}], stream=True)
     for chunk in stream:
         if chunk.choices[0].delta.content:
             yield {"type": "text", "content": chunk.choices[0].delta.content}
-
 
 # Mistral
 def mistral_generate(client, model_id, prompt, use_search):
@@ -265,7 +253,6 @@ def mistral_generate(client, model_id, prompt, use_search):
                     return ''.join(parts)
     return str(response)
 
-
 def mistral_stream(client, model_id, prompt, use_search):
     if use_search:
         result = mistral_generate(client, model_id, prompt, True)
@@ -276,14 +263,9 @@ def mistral_stream(client, model_id, prompt, use_search):
             if event.data.choices[0].delta.content:
                 yield {"type": "text", "content": event.data.choices[0].delta.content}
 
-
 # Study Material Generation (always uses Cerebras qwen-3-235b)
 def generate_study_material(prompt):
     """Generate study material using Cerebras qwen-3-235b (20k tokens)."""
-    import time
-    print(f"[STUDY-QWEN] Starting non-stream generation...")
-    start = time.time()
-
     provider = get_provider("cerebras")
     response = provider["client"].chat.completions.create(
         model="qwen-3-235b-a22b-instruct-2507",
@@ -292,24 +274,11 @@ def generate_study_material(prompt):
         temperature=0.7,
         top_p=0.8
     )
-
-    elapsed = time.time() - start
-    content = response.choices[0].message.content
-    print(f"[STUDY-QWEN] Completed in {elapsed:.2f}s, {len(content)} chars")
-    return content
-
+    return response.choices[0].message.content
 
 def generate_study_material_stream(prompt):
     """Stream study material generation using Cerebras qwen-3-235b (20k tokens)."""
-    import time
-    print(f"[STUDY-QWEN] Starting stream generation...")
-    start = time.time()
-    first_chunk_time = None
-    chunk_count = 0
-    total_chars = 0
-
     provider = get_provider("cerebras")
-    print(f"[STUDY-QWEN] Got provider, calling API...")
 
     stream = provider["client"].chat.completions.create(
         model="qwen-3-235b-a22b-instruct-2507",
@@ -319,33 +288,14 @@ def generate_study_material_stream(prompt):
         top_p=0.8,
         stream=True
     )
-    print(f"[STUDY-QWEN] Stream created, iterating...")
 
     for chunk in stream:
         if chunk.choices[0].delta.content:
-            if first_chunk_time is None:
-                first_chunk_time = time.time() - start
-                print(f"[STUDY-QWEN] First chunk after {first_chunk_time:.2f}s")
-
-            chunk_count += 1
-            total_chars += len(chunk.choices[0].delta.content)
-
-            if chunk_count % 50 == 0:
-                print(f"[STUDY-QWEN] Chunk {chunk_count}, {total_chars} chars so far...")
-
             yield {"type": "text", "content": chunk.choices[0].delta.content}
-
-    elapsed = time.time() - start
-    print(f"[STUDY-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
-
 
 # Summary Generation (always uses Cerebras GPT OSS 120B)
 def generate_summary(prompt):
     """Generate document summary using Cerebras GPT OSS 120B."""
-    import time
-    print(f"[SUMMARY-GPT-OSS] Starting summary generation...")
-    start = time.time()
-
     provider = get_provider("cerebras")
     response = provider["client"].chat.completions.create(
         model="gpt-oss-120b",
@@ -357,25 +307,12 @@ def generate_summary(prompt):
         temperature=0.3,
         top_p=1
     )
-
-    elapsed = time.time() - start
-    content = response.choices[0].message.content
-    print(f"[SUMMARY-GPT-OSS] Completed in {elapsed:.2f}s, {len(content)} chars")
-    return content
-
+    return response.choices[0].message.content
 
 # Mind Map Generation (always uses Cerebras Qwen 3 235B)
 def generate_mindmap_stream(prompt):
     """Stream mind map generation using Cerebras Qwen 3 235B."""
-    import time
-    print(f"[MINDMAP-QWEN] Starting mind map generation...")
-    start = time.time()
-    first_chunk_time = None
-    chunk_count = 0
-    total_chars = 0
-
     provider = get_provider("cerebras")
-    print(f"[MINDMAP-QWEN] Got provider, calling API...")
 
     stream = provider["client"].chat.completions.create(
         model="qwen-3-235b-a22b-instruct-2507",
@@ -388,33 +325,14 @@ def generate_mindmap_stream(prompt):
         top_p=0.8,
         stream=True
     )
-    print(f"[MINDMAP-QWEN] Stream created, iterating...")
 
     for chunk in stream:
         if chunk.choices[0].delta.content:
-            if first_chunk_time is None:
-                first_chunk_time = time.time() - start
-                print(f"[MINDMAP-QWEN] First chunk after {first_chunk_time:.2f}s")
-
-            chunk_count += 1
-            total_chars += len(chunk.choices[0].delta.content)
-
-            if chunk_count % 50 == 0:
-                print(f"[MINDMAP-QWEN] Chunk {chunk_count}, {total_chars} chars so far...")
-
             yield {"type": "text", "content": chunk.choices[0].delta.content}
-
-    elapsed = time.time() - start
-    print(f"[MINDMAP-QWEN] Stream done: {chunk_count} chunks, {total_chars} chars, {elapsed:.2f}s total")
-
 
 # Flash Cards Generation (always uses Cerebras Qwen 3 235B with JSON format)
 def generate_flashcards(prompt):
     """Generate flash cards using Cerebras Qwen 3 235B with JSON response format."""
-    import time
-    print(f"[FLASHCARDS-QWEN] Starting flash cards generation...")
-    start = time.time()
-
     provider = get_provider("cerebras")
     response = provider["client"].chat.completions.create(
         model="qwen-3-235b-a22b-instruct-2507",
@@ -427,20 +345,11 @@ def generate_flashcards(prompt):
         top_p=0.8,
         response_format={"type": "json_object"}
     )
-
-    elapsed = time.time() - start
-    content = response.choices[0].message.content
-    print(f"[FLASHCARDS-QWEN] Completed in {elapsed:.2f}s, {len(content)} chars")
-    return content
-
+    return response.choices[0].message.content
 
 # Quiz Generation (always uses Cerebras gpt-oss-120b with JSON format)
 def generate_quiz(prompt):
     """Generate quiz questions using Cerebras gpt-oss-120b with JSON response format (20k tokens)."""
-    import time
-    print(f"[QUIZ-GPT-OSS] Starting quiz generation...")
-    start = time.time()
-
     provider = get_provider("cerebras")
     response = provider["client"].chat.completions.create(
         model="gpt-oss-120b",
@@ -453,12 +362,7 @@ def generate_quiz(prompt):
         top_p=1,
         response_format={"type": "json_object"}
     )
-
-    elapsed = time.time() - start
-    content = response.choices[0].message.content
-    print(f"[QUIZ-GPT-OSS] Completed in {elapsed:.2f}s, {len(content)} chars")
-    return content
-
+    return response.choices[0].message.content
 
 # Cerebras
 def cerebras_generate(client, model_id, prompt, model_config=None):
@@ -475,7 +379,6 @@ def cerebras_generate(client, model_id, prompt, model_config=None):
         top_p=top_p
     )
     return response.choices[0].message.content
-
 
 def cerebras_stream(client, model_id, prompt, model_config=None):
     # Use model-specific params or defaults
@@ -494,7 +397,6 @@ def cerebras_stream(client, model_id, prompt, model_config=None):
     for chunk in stream:
         if chunk.choices[0].delta.content:
             yield {"type": "text", "content": chunk.choices[0].delta.content}
-
 
 # Nova (image generation)
 def nova_generate_image(provider, model_id, prompt, aspect_ratio):

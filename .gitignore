@@ -1,13 +1,6 @@
 0/
 data/
 cookie.txt
-action-plan.md
-todo.md
-design-guide.md
-test/
-new-todo.md
-new-action-plan.md
-frontend/
 
 # Virtual environment
 .lfenv

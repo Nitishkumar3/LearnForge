@@ -13,9 +13,7 @@ load_dotenv()
 # Reusable connection
 conn = None
 
-
 def get_connection():
-    """Get or create database connection."""
     global conn
     if conn is None or conn.closed:
         conn = psycopg2.connect(
@@ -27,22 +25,7 @@ def get_connection():
         )
     return conn
 
-
 def execute_query(query, params=None, fetch_one=False, fetch_all=False):
-    """
-    Execute SQL query and return results.
-
-    Args:
-        query: SQL query string
-        params: Tuple of parameters
-        fetch_one: Return single row
-        fetch_all: Return all rows
-
-    Returns:
-        - For SELECT: dict (fetch_one) or list of dicts (fetch_all)
-        - For INSERT/UPDATE/DELETE with RETURNING: the returned row(s)
-        - For other queries: True on success
-    """
     connection = get_connection()
     cur = connection.cursor(cursor_factory=RealDictCursor)
 
@@ -66,9 +49,7 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=False):
     finally:
         cur.close()
 
-
 def init_db():
-    """Initialize database from schema.sql."""
     schema_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "schema.sql"
@@ -86,13 +67,9 @@ def init_db():
     finally:
         cur.close()
 
-
-# =============================================
 # USER QUERIES
-# =============================================
 
 def create_user(name, email, password_hash, verification_token=None):
-    """Insert new user and return the created user."""
     return execute_query(
         """INSERT INTO users (name, email, password_hash, verification_token)
            VALUES (%s, %s, %s, %s) RETURNING *""",
@@ -100,109 +77,83 @@ def create_user(name, email, password_hash, verification_token=None):
         fetch_one=True
     )
 
-
 def get_user_by_id(user_id):
-    """Get user by ID."""
     return execute_query(
         "SELECT * FROM users WHERE id = %s",
         (user_id,),
         fetch_one=True
     )
 
-
 def get_user_by_email(email):
-    """Get user by email."""
     return execute_query(
         "SELECT * FROM users WHERE email = %s",
         (email.lower(),),
         fetch_one=True
     )
 
-
 def get_user_by_verification_token(token):
-    """Get user by verification token."""
     return execute_query(
         "SELECT * FROM users WHERE verification_token = %s",
         (token,),
         fetch_one=True
     )
 
-
 def get_user_by_reset_token(token):
-    """Get user by reset token."""
     return execute_query(
         "SELECT * FROM users WHERE reset_token = %s",
         (token,),
         fetch_one=True
     )
 
-
 def verify_user_email(user_id):
-    """Mark user email as verified."""
     return execute_query(
         "UPDATE users SET email_verified = TRUE, verification_token = NULL WHERE id = %s",
         (user_id,)
     )
 
-
 def set_reset_token(user_id, token, expires):
-    """Set password reset token."""
     return execute_query(
         "UPDATE users SET reset_token = %s, reset_token_expires = %s WHERE id = %s",
         (token, expires, user_id)
     )
 
-
 def update_password(user_id, password_hash):
-    """Update user password and clear reset token."""
     return execute_query(
         "UPDATE users SET password_hash = %s, reset_token = NULL, reset_token_expires = NULL WHERE id = %s",
         (password_hash, user_id)
     )
 
-
-# =============================================
 # WORKSPACE QUERIES
-# =============================================
 
 def create_workspace(user_id, name, description=None):
-    """Insert new workspace and return it."""
     return execute_query(
         "INSERT INTO workspaces (user_id, name, description) VALUES (%s, %s, %s) RETURNING *",
         (user_id, name, description),
         fetch_one=True
     )
 
-
 def get_workspace_by_id(workspace_id):
-    """Get workspace by ID."""
     return execute_query(
         "SELECT * FROM workspaces WHERE id = %s",
         (workspace_id,),
         fetch_one=True
     )
 
-
 def get_workspace_by_id_and_user(workspace_id, user_id):
-    """Get workspace by ID, ensuring it belongs to user."""
     return execute_query(
         "SELECT * FROM workspaces WHERE id = %s AND user_id = %s",
         (workspace_id, user_id),
         fetch_one=True
     )
 
-
 def get_workspaces_by_user(user_id):
-    """Get all workspaces for a user."""
     return execute_query(
         "SELECT * FROM workspaces WHERE user_id = %s ORDER BY created_at DESC",
         (user_id,),
         fetch_all=True
     )
 
-
 def update_workspace(workspace_id, user_id, name=None, description=None):
-    """Update workspace and return updated record."""
     if name and description:
         return execute_query(
             "UPDATE workspaces SET name = %s, description = %s WHERE id = %s AND user_id = %s RETURNING *",
@@ -223,18 +174,13 @@ def update_workspace(workspace_id, user_id, name=None, description=None):
         )
     return get_workspace_by_id(workspace_id)
 
-
 def delete_workspace(workspace_id, user_id):
-    """Delete workspace (cascades to documents)."""
     return execute_query(
         "DELETE FROM workspaces WHERE id = %s AND user_id = %s",
         (workspace_id, user_id)
     )
 
-
-# =============================================
 # DOCUMENT QUERIES
-# =============================================
 
 def create_document(workspace_id, user_id, filename, original_filename,
                     file_type, file_size_bytes, storage_key, storage_bucket,
@@ -243,7 +189,6 @@ def create_document(workspace_id, user_id, filename, original_filename,
                     processing_method='direct', content_hash=None,
                     extracted_text_length=None, mime_type=None,
                     duration_seconds=None):
-    """Insert new document and return it."""
     return execute_query(
         """INSERT INTO documents
            (workspace_id, user_id, filename, original_filename,
@@ -261,18 +206,14 @@ def create_document(workspace_id, user_id, filename, original_filename,
         fetch_one=True
     )
 
-
 def get_document_by_id_and_user(doc_id, user_id):
-    """Get document by ID, ensuring it belongs to user."""
     return execute_query(
         "SELECT * FROM documents WHERE id = %s AND user_id = %s",
         (doc_id, user_id),
         fetch_one=True
     )
 
-
 def get_documents_by_workspace(workspace_id, user_id):
-    """Get all documents in a workspace."""
     return execute_query(
         """SELECT * FROM documents
            WHERE workspace_id = %s AND user_id = %s
@@ -281,19 +222,15 @@ def get_documents_by_workspace(workspace_id, user_id):
         fetch_all=True
     )
 
-
 def get_documents_by_user(user_id):
-    """Get all documents for a user."""
     return execute_query(
         "SELECT * FROM documents WHERE user_id = %s ORDER BY created_at DESC",
         (user_id,),
         fetch_all=True
     )
 
-
 def update_document_status(doc_id, status, num_pages=None, num_chunks=None,
                            error_message=None):
-    """Update document processing status."""
     if status == 'processed':
         return execute_query(
             """UPDATE documents
@@ -312,32 +249,16 @@ def update_document_status(doc_id, status, num_pages=None, num_chunks=None,
             (status, doc_id)
         )
 
-
 def delete_document(doc_id, user_id):
-    """Delete document, return deleted doc info for cleanup."""
     return execute_query(
         "DELETE FROM documents WHERE id = %s AND user_id = %s RETURNING *",
         (doc_id, user_id),
         fetch_one=True
     )
 
-
-def get_document_count_by_workspace(workspace_id):
-    """Get document count for a workspace."""
-    result = execute_query(
-        "SELECT COUNT(*) as count FROM documents WHERE workspace_id = %s",
-        (workspace_id,),
-        fetch_one=True
-    )
-    return result['count'] if result else 0
-
-
-# =============================================
 # CONVERSATION QUERIES
-# =============================================
 
 def create_conversation(user_id, workspace_id, title="New Chat"):
-    """Create a new conversation."""
     return execute_query(
         """INSERT INTO conversations (user_id, workspace_id, title)
            VALUES (%s, %s, %s)
@@ -346,18 +267,14 @@ def create_conversation(user_id, workspace_id, title="New Chat"):
         fetch_one=True
     )
 
-
 def get_conversation(conversation_id, user_id):
-    """Get conversation by ID (with ownership check)."""
     return execute_query(
         "SELECT * FROM conversations WHERE id = %s AND user_id = %s",
         (conversation_id, user_id),
         fetch_one=True
     )
 
-
 def list_conversations(user_id, workspace_id, limit=50):
-    """List conversations for a workspace, ordered by most recent."""
     return execute_query(
         """SELECT c.*,
                   (SELECT content FROM messages
@@ -371,9 +288,7 @@ def list_conversations(user_id, workspace_id, limit=50):
         fetch_all=True
     )
 
-
 def update_conversation(conversation_id, user_id, title=None, is_archived=None):
-    """Update conversation title or archive status."""
     updates = []
     params = []
 
@@ -398,17 +313,13 @@ def update_conversation(conversation_id, user_id, title=None, is_archived=None):
         fetch_one=True
     )
 
-
 def delete_conversation(conversation_id, user_id):
-    """Delete conversation and all messages (cascade)."""
     return execute_query(
         "DELETE FROM conversations WHERE id = %s AND user_id = %s",
         (conversation_id, user_id)
     )
 
-
 def get_conversation_image_s3_keys(conversation_id):
-    """Get all S3 keys for images in a conversation's messages."""
     messages = execute_query(
         "SELECT attachments FROM messages WHERE conversation_id = %s AND attachments IS NOT NULL",
         (conversation_id,),
@@ -423,40 +334,30 @@ def get_conversation_image_s3_keys(conversation_id):
                 s3_keys.append(att['s3_key'])
     return s3_keys
 
-
 def get_workspace_conversations(workspace_id, user_id):
-    """Get all conversations in a workspace for a user."""
     return execute_query(
         "SELECT id FROM conversations WHERE workspace_id = %s AND user_id = %s",
         (workspace_id, user_id),
         fetch_all=True
     ) or []
 
-
 def delete_workspace_conversations(workspace_id, user_id):
-    """Delete all conversations in a workspace. Returns count of deleted conversations."""
     result = execute_query(
         "DELETE FROM conversations WHERE workspace_id = %s AND user_id = %s",
         (workspace_id, user_id)
     )
     return result if result else 0
 
-
 def delete_workspace_documents(workspace_id, user_id):
-    """Delete all documents in a workspace."""
     return execute_query(
         "DELETE FROM documents WHERE workspace_id = %s AND user_id = %s",
         (workspace_id, user_id)
     )
 
-
-# =============================================
 # MESSAGE QUERIES
-# =============================================
 
 def add_message(conversation_id, role, content, sources=None, attachments=None,
                 thinking=None, tokens_used=None, model_used=None):
-    """Add a message to a conversation."""
     return execute_query(
         """INSERT INTO messages
            (conversation_id, role, content, sources, attachments,
@@ -469,9 +370,7 @@ def add_message(conversation_id, role, content, sources=None, attachments=None,
         fetch_one=True
     )
 
-
 def get_messages(conversation_id, limit=100):
-    """Get all messages in a conversation."""
     return execute_query(
         """SELECT * FROM messages
            WHERE conversation_id = %s
@@ -481,9 +380,7 @@ def get_messages(conversation_id, limit=100):
         fetch_all=True
     )
 
-
 def get_recent_messages(conversation_id, limit=10):
-    """Get recent messages for context (used in RAG)."""
     messages = execute_query(
         """SELECT role, content FROM messages
            WHERE conversation_id = %s
@@ -495,9 +392,7 @@ def get_recent_messages(conversation_id, limit=10):
     # Reverse to get chronological order
     return messages[::-1] if messages else []
 
-
 def get_conversation_messages(conversation_id):
-    """Get all messages in a conversation ordered by creation time."""
     return execute_query(
         """SELECT id, role, content, created_at FROM messages
            WHERE conversation_id = %s
@@ -506,9 +401,7 @@ def get_conversation_messages(conversation_id):
         fetch_all=True
     ) or []
 
-
 def truncate_conversation_messages(conversation_id, keep_count):
-    """Delete messages after a certain point in the conversation."""
     # Get all message IDs in order
     messages = execute_query(
         """SELECT id FROM messages
@@ -533,22 +426,16 @@ def truncate_conversation_messages(conversation_id, keep_count):
 
     return len(message_ids_to_delete)
 
-
-# =============================================
 # SYLLABUS QUERIES
-# =============================================
 
 def update_workspace_syllabus(workspace_id, syllabus_json):
-    """Save or update syllabus for a workspace."""
     return execute_query(
         "UPDATE workspaces SET syllabus = %s WHERE id = %s RETURNING *",
         (Json(syllabus_json), workspace_id),
         fetch_one=True
     )
 
-
 def get_workspace_syllabus(workspace_id):
-    """Get syllabus for a workspace."""
     result = execute_query(
         "SELECT syllabus FROM workspaces WHERE id = %s",
         (workspace_id,),
@@ -556,22 +443,16 @@ def get_workspace_syllabus(workspace_id):
     )
     return result['syllabus'] if result else None
 
-
 def clear_workspace_syllabus(workspace_id):
-    """Clear syllabus from a workspace."""
     return execute_query(
         "UPDATE workspaces SET syllabus = NULL WHERE id = %s RETURNING id",
         (workspace_id,),
         fetch_one=True
     )
 
-
-# =============================================
 # STUDY MATERIALS QUERIES
-# =============================================
 
 def save_study_material(workspace_id, user_id, module_id, module_name, subtopic, content):
-    """Save generated study material for a subtopic."""
     return execute_query(
         """INSERT INTO study_materials (workspace_id, user_id, module_id, module_name, subtopic, content)
            VALUES (%s, %s, %s, %s, %s, %s)
@@ -582,9 +463,7 @@ def save_study_material(workspace_id, user_id, module_id, module_name, subtopic,
         fetch_one=True
     )
 
-
 def get_study_material(workspace_id, module_id, subtopic):
-    """Get study material for a specific subtopic."""
     return execute_query(
         """SELECT * FROM study_materials
            WHERE workspace_id = %s AND module_id = %s AND subtopic = %s""",
@@ -592,9 +471,7 @@ def get_study_material(workspace_id, module_id, subtopic):
         fetch_one=True
     )
 
-
 def get_all_study_materials(workspace_id):
-    """Get all generated study materials for a workspace."""
     return execute_query(
         """SELECT id, module_id, module_name, subtopic, created_at
            FROM study_materials
@@ -604,26 +481,9 @@ def get_all_study_materials(workspace_id):
         fetch_all=True
     ) or []
 
-
-def check_study_material_exists(workspace_id, module_id, subtopic):
-    """Check if study material exists for a subtopic."""
-    result = execute_query(
-        """SELECT EXISTS(
-               SELECT 1 FROM study_materials
-               WHERE workspace_id = %s AND module_id = %s AND subtopic = %s
-           ) as exists""",
-        (workspace_id, module_id, subtopic),
-        fetch_one=True
-    )
-    return result['exists'] if result else False
-
-
-# =============================================
 # FLASH CARDS QUERIES
-# =============================================
 
 def save_flash_card(workspace_id, user_id, module_id, module_name, subtopic, cards):
-    """Save generated flash cards for a subtopic."""
     import json
     return execute_query(
         """INSERT INTO flash_cards (workspace_id, user_id, module_id, module_name, subtopic, cards)
@@ -635,9 +495,7 @@ def save_flash_card(workspace_id, user_id, module_id, module_name, subtopic, car
         fetch_one=True
     )
 
-
 def get_flash_card(workspace_id, module_id, subtopic):
-    """Get flash cards for a specific subtopic."""
     return execute_query(
         """SELECT * FROM flash_cards
            WHERE workspace_id = %s AND module_id = %s AND subtopic = %s""",
@@ -645,9 +503,7 @@ def get_flash_card(workspace_id, module_id, subtopic):
         fetch_one=True
     )
 
-
 def get_all_flash_cards(workspace_id):
-    """Get all generated flash card sets for a workspace."""
     return execute_query(
         """SELECT id, module_id, module_name, subtopic, cards, created_at
            FROM flash_cards
@@ -657,26 +513,9 @@ def get_all_flash_cards(workspace_id):
         fetch_all=True
     ) or []
 
-
-def check_flash_card_exists(workspace_id, module_id, subtopic):
-    """Check if flash cards exist for a subtopic."""
-    result = execute_query(
-        """SELECT EXISTS(
-               SELECT 1 FROM flash_cards
-               WHERE workspace_id = %s AND module_id = %s AND subtopic = %s
-           ) as exists""",
-        (workspace_id, module_id, subtopic),
-        fetch_one=True
-    )
-    return result['exists'] if result else False
-
-
-# =============================================
 # QUIZ QUERIES
-# =============================================
 
 def create_quiz(workspace_id, user_id, quiz_type, topics, total_questions, questions):
-    """Create a new quiz and return it."""
     return execute_query(
         """INSERT INTO quizzes (workspace_id, user_id, quiz_type, topics, total_questions, questions)
            VALUES (%s, %s, %s, %s, %s, %s)
@@ -685,18 +524,14 @@ def create_quiz(workspace_id, user_id, quiz_type, topics, total_questions, quest
         fetch_one=True
     )
 
-
 def get_quiz(quiz_id, user_id):
-    """Get quiz by ID (with ownership check)."""
     return execute_query(
         "SELECT * FROM quizzes WHERE id = %s AND user_id = %s",
         (quiz_id, user_id),
         fetch_one=True
     )
 
-
 def get_workspace_quizzes(workspace_id, user_id):
-    """Get all quizzes for a workspace."""
     return execute_query(
         """SELECT id, quiz_type, topics, total_questions, score, max_score, status, created_at, completed_at
            FROM quizzes
@@ -706,9 +541,7 @@ def get_workspace_quizzes(workspace_id, user_id):
         fetch_all=True
     ) or []
 
-
 def update_quiz_answers(quiz_id, user_id, answers):
-    """Save user's answers to a quiz."""
     return execute_query(
         """UPDATE quizzes SET answers = %s
            WHERE id = %s AND user_id = %s
@@ -717,9 +550,7 @@ def update_quiz_answers(quiz_id, user_id, answers):
         fetch_one=True
     )
 
-
 def complete_quiz(quiz_id, user_id, results, score, max_score):
-    """Mark quiz as completed with results and scores."""
     return execute_query(
         """UPDATE quizzes
            SET results = %s, score = %s, max_score = %s, status = 'completed', completed_at = NOW()
@@ -729,22 +560,16 @@ def complete_quiz(quiz_id, user_id, results, score, max_score):
         fetch_one=True
     )
 
-
 def delete_quiz(quiz_id, user_id):
-    """Delete a quiz."""
     return execute_query(
         "DELETE FROM quizzes WHERE id = %s AND user_id = %s RETURNING id",
         (quiz_id, user_id),
         fetch_one=True
     )
 
-
-# =============================================
 # DOCUMENT SUMMARY QUERIES
-# =============================================
 
 def get_document_summary(doc_id, user_id):
-    """Get summary for a document."""
     result = execute_query(
         "SELECT summary FROM documents WHERE id = %s AND user_id = %s",
         (doc_id, user_id),
@@ -752,9 +577,7 @@ def get_document_summary(doc_id, user_id):
     )
     return result['summary'] if result else None
 
-
 def save_document_summary(doc_id, user_id, summary):
-    """Save summary for a document."""
     return execute_query(
         "UPDATE documents SET summary = %s WHERE id = %s AND user_id = %s RETURNING id",
         (summary, doc_id, user_id),

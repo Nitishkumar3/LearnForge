@@ -6,9 +6,7 @@ import psycopg2
 import boto3
 from botocore.config import Config
 
-
 def check_postgres():
-    """Check PostgreSQL connection."""
     try:
         conn = psycopg2.connect(
             host=os.getenv("POSTGRES_HOST"),
@@ -23,9 +21,7 @@ def check_postgres():
     except Exception as e:
         return False, str(e).split('\n')[0]
 
-
 def check_embedding_server():
-    """Check embedding server (port 5001)."""
     url = os.getenv("EMBEDDING_SERVER_URL", "http://localhost:5001")
     try:
         r = requests.get(f"{url}/health", timeout=5)
@@ -34,9 +30,7 @@ def check_embedding_server():
         print(f"Embedding server error: {e}")
         return False, "Start with: python embedserver.py"
 
-
 def check_reranker_server():
-    """Check reranker server (port 5002)."""
     url = os.getenv("RERANK_SERVER_URL", "http://localhost:5002")
     try:
         r = requests.get(f"{url}/health", timeout=5)
@@ -45,9 +39,7 @@ def check_reranker_server():
         print(f"Reranker server error: {e}")
         return False, "Start with: python rerankserver.py"
 
-
 def check_s3_storage():
-    """Check S3/R2 bucket access."""
     try:
         client = boto3.client(
             's3',
@@ -62,9 +54,7 @@ def check_s3_storage():
     except Exception as e:
         return False, str(e).split(':')[-1].strip() if ':' in str(e) else str(e)
 
-
 def run_startup_checks():
-    """Run all checks and print status. Returns False if critical service fails."""
     checks = [
         ("PostgreSQL", check_postgres, True),
         ("Embedding Server (5001)", check_embedding_server, False),

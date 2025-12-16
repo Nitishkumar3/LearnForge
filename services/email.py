@@ -1,5 +1,3 @@
-"""Email utilities using SMTP."""
-
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -11,7 +9,6 @@ SMTP_USER = os.getenv('SMTP_USER')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 FROM_EMAIL = os.getenv('FROM_EMAIL', SMTP_USER)
 APP_URL = os.getenv('APP_URL', 'http://localhost:5000')
-
 
 def send_email(to_email, subject, html_body):
     if not SMTP_USER or not SMTP_PASSWORD:
@@ -33,7 +30,6 @@ def send_email(to_email, subject, html_body):
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(FROM_EMAIL, to_email, msg.as_string())
     return True
-
 
 def send_verification_email(to_email, name, token):
     verify_url = f"{APP_URL}/api/auth/verify-email/{token}"
@@ -68,7 +64,6 @@ def send_verification_email(to_email, name, token):
     """
 
     return send_email(to_email, "Verify your LearnForge account", html)
-
 
 def send_password_reset_email(to_email, name, token):
     reset_url = f"{APP_URL}/resetpassword?token={token}"

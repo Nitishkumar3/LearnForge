@@ -5,24 +5,8 @@ from docx import Document
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-
 def process(file_path, use_ocr=None):
-    """
-    Extract text from Word document and convert to Markdown.
-
-    Args:
-        file_path: Path to .docx file
-        use_ocr: Ignored for Word docs (always direct extraction)
-
-    Returns:
-        {
-            "text": str,
-            "file_size": int,
-            "num_pages": int,
-            "processing_method": str,
-            "metadata": dict
-        }
-    """
+    """Extract text from Word document and convert to Markdown."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Word file not found: {file_path}")
 
@@ -85,7 +69,6 @@ def process(file_path, use_ocr=None):
         }
     }
 
-
 def iter_block_items(document):
     """Iterate through paragraphs and tables in document order."""
     from docx.document import Document as DocxDocument
@@ -99,9 +82,7 @@ def iter_block_items(document):
         elif child.tag == qn('w:tbl'):
             yield Table(child, document)
 
-
 def convert_table_to_markdown(table):
-    """Convert Word table to Markdown table."""
     rows = []
 
     for row in table.rows:
@@ -127,26 +108,12 @@ def convert_table_to_markdown(table):
 
     return '\n'.join(md_lines)
 
-
 def estimate_page_count(char_count):
     """Estimate page count from character count (roughly 3000 chars/page)."""
     return max(1, char_count // 3000)
 
-
 def analyze_word(file_path):
-    """
-    Analyze Word document.
-
-    Args:
-        file_path: Path to Word file
-
-    Returns:
-        {
-            "num_pages": int,
-            "ocr_recommended": bool,
-            "ocr_reason": str
-        }
-    """
+    """Analyze Word document for processing."""
     try:
         doc = Document(file_path)
         total_chars = sum(len(p.text) for p in doc.paragraphs)

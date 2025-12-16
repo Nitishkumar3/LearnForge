@@ -1,22 +1,3 @@
-"""
-Rerank Server - ONNX Cross-Encoder Model (GPU)
-
-Local reranking server using ms-marco-MiniLM-L6-v2 ONNX model.
-Scores query-document pairs for relevance ranking.
-
-Port: 5002 (separate from embedserver on 5001)
-
-Model: cross-encoder/ms-marco-MiniLM-L6-v2
-Download ONNX files to: ms-marco-MiniLM-L6-v2-onnx/
-Required files:
-  - model.onnx (use full precision for GPU)
-  - tokenizer.json
-  - tokenizer_config.json
-  - special_tokens_map.json
-  - vocab.txt
-  - config.json
-"""
-
 from flask import Flask, request, jsonify
 import onnxruntime as ort
 from transformers import AutoTokenizer
@@ -24,28 +5,21 @@ import numpy as np
 import logging
 import os
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Global variables for model and tokenizer
 session = None
 tokenizer = None
 
-
 def load_model():
-    """Load ONNX model and tokenizer at startup"""
     global session, tokenizer
 
     try:
         logger.info("Loading reranker model...")
 
-        # GPU first, fallback to CPU
         providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-
-        # Get model path
         script_dir = os.path.dirname(os.path.abspath(__file__))
         model_path = os.path.join(script_dir, "ms-marco-MiniLM-L6-v2-onnx", "model.onnx")
         model_path = os.path.normpath(model_path)
@@ -75,8 +49,7 @@ def load_model():
         logger.error(f"Error loading model: {str(e)}")
         raise
 
-
-def compute_relevance_score(query: str, document: str) -> float:
+def compute_relevance_score(query, document):
     """
     Compute relevance score for a query-document pair.
 
@@ -118,8 +91,7 @@ def compute_relevance_score(query: str, document: str) -> float:
         logger.error(f"Error computing score: {str(e)}")
         raise
 
-
-def batch_compute_scores(query: str, documents: list) -> list:
+def batch_compute_scores(query, documents):
     """
     Compute relevance scores for multiple documents against a query.
 
@@ -162,17 +134,14 @@ def batch_compute_scores(query: str, documents: list) -> list:
         logger.error(f"Error in batch scoring: {str(e)}")
         raise
 
-
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint"""
     return jsonify({
         "status": "healthy",
         "model": "ms-marco-MiniLM-L6-v2",
         "type": "cross-encoder-reranker",
         "providers": session.get_providers() if session else []
     })
-
 
 @app.route('/rerank', methods=['POST'])
 def rerank():
@@ -233,37 +202,6 @@ def rerank():
         logger.error(f"Error in /rerank endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-
-@app.route('/', methods=['GET'])
-def index():
-    """API documentation"""
-    return jsonify({
-        "name": "Cross-Encoder Rerank API",
-        "model": "ms-marco-MiniLM-L6-v2 (ONNX)",
-        "version": "1.0",
-        "endpoints": {
-            "/health": "GET - Health check",
-            "/rerank": "POST - Rerank documents by query relevance",
-            "/": "GET - API documentation"
-        },
-        "usage": {
-            "url": "/rerank",
-            "method": "POST",
-            "body": {
-                "query": "What is machine learning?",
-                "documents": ["ML is a subset of AI...", "Python is a language..."]
-            }
-        }
-    })
-
-
 if __name__ == '__main__':
-    # Load model at startup
     load_model()
-
-    # Run Flask app on port 5002
-    app.run(
-        host='0.0.0.0',
-        port=5002,
-        debug=False
-    )
+    app.run(host='0.0.0.0', port=5002, debug=False)
